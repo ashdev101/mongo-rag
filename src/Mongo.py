@@ -3,9 +3,9 @@ import json
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 from langchain_mongodb.agent_toolkit import (
-    MONGODB_AGENT_SYSTEM_PROMPT,
     MongoDBDatabaseToolkit,
 )
+from MONGODB_AGENT_SYS_PROMPT import MONGODB_AGENT_SYSTEM_PROMPT
 from MogoDBDatabaseToolkitPii import MongoDBDatabasePIIToolkit
 from RegexPIIMasker import FieldBasedPIIMasker
 
@@ -17,16 +17,30 @@ load_dotenv(os.path.join(app_dir, ".env"))
 MONGODB_URI = os.getenv('MONGODB_URI')
 DB_NAME = 'hr'
 # NATURAL_LANGUAGE_QUERY = 'how many people have joined the organisation and resigned at the same year'
-NATURAL_LANGUAGE_QUERY = 'Give me the list of 10  people who have resigned involuntary in the year 2022 from the west region and  return there employee code , first name , last name and email address only'
+# NATURAL_LANGUAGE_QUERY = 'Give me the list of 10  people who have resigned involuntary in the year 2022 from the west region and  return there employee code , first name , last name and email address only'
 # NATURAL_LANGUAGE_QUERY = 'what is the designation of Vikram Kaushik and is he currently with the company?'
 # NATURAL_LANGUAGE_QUERY = 'who replaced Vikram Kaushik ?'
+# NATURAL_LANGUAGE_QUERY = 'which all departments checklist i need to follow for offboarding process ?'
+NATURAL_LANGUAGE_QUERY = "what are the list of things that are needed to be done for offboarding process from IT department ?"
+# NATURAL_LANGUAGE_QUERY = "are sap ids disabled for emp id 245?"
+# NATURAL_LANGUAGE_QUERY = "what is the status of the Donthamsetti Venkata Subbarao on his sap id , is it active or disabled?"
+# NATURAL_LANGUAGE_QUERY = "how many people are pending for offboarding from IT department ?"
+# NATURAL_LANGUAGE_QUERY = "how many people are pending for offboarding from IT department , give me the id and name ?"
+# NATURAL_LANGUAGE_QUERY = "how many people have amount of recovery for accessories?"
+# NATURAL_LANGUAGE_QUERY = "how much is the highest amount of recovery for consumable accessories from it department?"
+# NATURAL_LANGUAGE_QUERY = "how much balance leave is there for emp id 4598?"
+# NATURAL_LANGUAGE_QUERY = "Can u list down total number of employees who have joined the organization in the year 2025"
+# NATURAL_LANGUAGE_QUERY = "how many employees are 30+ years which are active"
+# NATURAL_LANGUAGE_QUERY = "list all employees who have joined in Commercial department this year"
+# NATURAL_LANGUAGE_QUERY = "how many employees left org in 2025  and share the there email ids for them "
+
 
 class NaturalLanguageToMQL:
     def __init__(self):
-        # self.llm = ChatOpenAI(model="gpt-5-mini")
-        # self.llm = ChatOpenAI(model="gpt-4")
+        # self.llm = ChatOpenAI(model="gpt-5")
+        # self.llm = ChatOpenAI(model="gpt-4-turbo")
         self.llm = ChatOpenAI(model="gpt-4o")
-        self.system_message = MONGODB_AGENT_SYSTEM_PROMPT.format(top_k=5)
+        self.system_message = MONGODB_AGENT_SYSTEM_PROMPT.format(top_k=50)
         self.pii_masker = FieldBasedPIIMasker()
         self.db_wrapper = MongoDBDatabasePIIToolkit.from_connection_string(
             MONGODB_URI,

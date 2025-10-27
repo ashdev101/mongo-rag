@@ -6,9 +6,15 @@ from typing import Any, Dict, Tuple
 
 PII_FIELDS = [
     "employee code",
+    "employee id",
     "first name",
     "last name",
+    "employee name",
+    "reporting manager",
     "primary email",
+    "employee email address",
+    "name",
+    "manager email",
 ]
 
 class FieldBasedPIIMasker:
