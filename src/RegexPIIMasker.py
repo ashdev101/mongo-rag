@@ -4,6 +4,17 @@ from typing import Any, Dict, Tuple
 import re
 from typing import Any, Dict, Tuple
 
+# Base keywords for PII
+PII_KEYWORDS = [
+    "employee",
+    "name",
+    "manager",
+    "email",
+    "id",
+    "code",
+]
+
+# Exact matches (for strict masking)
 PII_FIELDS = [
     "employee code",
     "employee id",
@@ -18,9 +29,15 @@ PII_FIELDS = [
 ]
 
 class FieldBasedPIIMasker:
-    def __init__(self):
+    def __init__(self, custom_pii_fields=None):
         self.mapping: Dict[str, str] = {}
         self.counter: Dict[str, int] = {}
+        self.custom_pii_fields = set(f.lower() for f in (custom_pii_fields or []))
+
+        # Precompile regex for dynamic field detection
+        self.pii_pattern = re.compile(
+            r"|".join(rf"\b{kw}\b" for kw in PII_KEYWORDS), re.IGNORECASE
+        )
 
     def mask(self, data: Any) -> Tuple[Any, Dict[str, str]]:
         """Mask PII in JSON-like dict or list."""
@@ -42,17 +59,28 @@ class FieldBasedPIIMasker:
             return obj
 
     def _mask_value(self, key: str, value: Any) -> Any:
+        normalized_key = key.replace("_", " ").strip().lower()
+
         if isinstance(value, dict):
             return self._mask_recursive(value)
         elif isinstance(value, list):
             return [self._mask_value(key, v) for v in value]
-        elif key.lower() in PII_FIELDS:
-            label = key.title()  # e.g., "First Name"
+        elif self._is_pii_key(normalized_key):
+            label = key.title()
             token = self._get_mask_token(label)
             self.mapping[token] = str(value)
             return token
         else:
             return value
+
+    def _is_pii_key(self, key: str) -> bool:
+        # Check explicit or custom list
+        if key in PII_FIELDS or key in self.custom_pii_fields:
+            return True
+        # Fuzzy match for keys containing PII indicators
+        if self.pii_pattern.search(key):
+            return True
+        return False
 
     def _get_mask_token(self, label: str) -> str:
         count = self.counter.get(label, 0)
@@ -71,8 +99,6 @@ class FieldBasedPIIMasker:
             return obj
         else:
             return obj
-
-
 
 
 # json_data =  [
