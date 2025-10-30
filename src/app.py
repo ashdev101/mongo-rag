@@ -2,8 +2,8 @@ from Mongo import NaturalLanguageToMQL
 from langchain_core.messages import HumanMessage
 from langgraph_sample import access_agent
 
-email : str = "irened@tatasky.com"
-NATURAL_LANGUAGE_QUERY : str = "who is my manager email address?"
+email : str = "EMAIL OVER HERE"
+NATURAL_LANGUAGE_QUERY : str = "what is my managers email id?"
 
 state = {
     "email": email,

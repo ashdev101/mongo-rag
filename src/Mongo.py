@@ -143,5 +143,3 @@ class NaturalLanguageToMQL:
 # converter = NaturalLanguageToMQL()
 # converter.convert_to_mql_and_execute_query(NATURAL_LANGUAGE_QUERY)
 # converter.print_results()
-
-

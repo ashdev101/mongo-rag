@@ -29,7 +29,7 @@ llm = ChatOpenAI(model="gpt-4o-mini")  # lightweight but smart
 def input_node(state: AccessState):
     print(state)
     last_msg = state["messages"][-1].content
-    return {"question": last_msg} 
+    return {"question": last_msg}
 
 # connect once (production: use a connection pool)
 client = MongoClient(MONGODB_URI)
@@ -37,8 +37,9 @@ db = client["hr"]
 employees = db["base_report"]
 
 def fetch_role_node(state: AccessState):
-    email = state["email"].lower()
+    email = state["email"]
     record = employees.find_one({"primary email": email}, {"_id": 0, "designation": 1 , "region":1 , "department" : 1})
+    
     if record and "designation" in record:
         role = record["designation"].lower()
         region = record["region"]
@@ -46,6 +47,7 @@ def fetch_role_node(state: AccessState):
     else:
         role = "unknown"
         region = "unknown"
+        department = "unknown"
     print(f"Fetched role for {email}: {role}")
     return {"designation": role , "region": region , "department" : department} 
 
@@ -68,7 +70,7 @@ def classify_query_node(state: AccessState):
 
     2. Classify as 'others' if the question is about another person or entity (e.g., manager, colleague, organization), even if the question includes words like “my” (e.g., “my manager,” “my company”).
 
-    3. Certain work-related queries about others (e.g., “Who is my manager?”, “What is my manager’s email address?”) are allowed but should still be classified as **'self'**, since they concern someone and not diclosing the sensitive info.
+    [IMPORTANT] 3. Certain work-related queries about others (e.g., “Who is my manager?”, “What is my manager’s email address?”) are allowed but should still be classified as **'self'**, since they concern someone and not diclosing the sensitive info.
 
     4. Sensitive or private data about others (e.g., their salary, date of birth, phone number, address, or personal identifiers other than email) are **not allowed** and should be treated as **'others'**.
 
@@ -141,12 +143,12 @@ def response_node(state: AccessState):
 
 workflow = StateGraph(AccessState)
 
-def hr_conditional_path(state: dict):
-    # If HR, go to 'modify_query'; else, skip to 'check_access'
-    if state["department"] == "Human Resources":
-        return "modify_query"
-    else:
-        return "check_access"
+# def hr_conditional_path(state: dict):
+#     # If HR, go to 'modify_query'; else, skip to 'check_access'
+#     if state["department"] == "Human Resources":
+#         return "modify_query"
+#     else:
+#         return "check_access"
 
 workflow.add_node("input", input_node)
 workflow.add_node("fetch_role", fetch_role_node)

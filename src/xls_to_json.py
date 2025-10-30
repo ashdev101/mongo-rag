@@ -29,7 +29,7 @@ def is_date_column(name: str) -> bool:
     date_keywords = [
         "date", "joining", "resignation", "leaving", "dob",
         "date_of_birth", "date_of_joining", "date_of_resignation", "date_of_leaving"
-        "start_date", "end_date" ,
+        "start_date", "end_date" ,"doj"
     ]
     return any(k in name.lower() for k in date_keywords)
 
@@ -107,10 +107,9 @@ def excel_to_nested_json(input_path: str, output_path: str):
     print(f"✅ JSON saved to: {output_path}")
     print(f"📦 Total records: {len(all_docs)}")
 
-
 # Example usage
-input_file = r"C:/Users/ak965/workspace/learning/python/rag/Reports/8.Leave Transaction With Balance Report_Leave Transaction With Balance Report (3).xlsx"
-output_json = r"C:/Users/ak965/workspace/learning/python/rag/output_file/LeaveTransaction.json"
+input_file = r"C:/Users/ak965/workspace/learning/python/rag/Reports/4.Goal Status Report 2025-26 All.xlsx"
+output_json = r"C:/Users/ak965/workspace/learning/python/rag/output_file/goal_setting.json"
 
 excel_to_nested_json(input_file, output_json)
 
