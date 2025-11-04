@@ -80,8 +80,8 @@ def xls_to_csv(input_path, output_dir=None, encoding='utf-8-sig'):
 #     print("Usage: python xls_to_csv.py <input_excel_file> [output_directory]")
 #     sys.exit(1)
 
-input_file = "C:/Users/ak965/workspace/learning/python/rag/Reports/1.DatabaseReport_Rpt_Data base Report.xls"
-output_dir = "C:/Users/ak965/workspace/learning/python/rag/output_file"
+input_file = "Dataset/System Reports/9.Classroom Course Requests.xlsx"
+output_dir = "Outputs/xls_cdv"
 
 try:
     output_files = xls_to_csv(input_file, output_dir)
