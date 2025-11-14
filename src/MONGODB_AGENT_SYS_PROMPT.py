@@ -28,6 +28,10 @@ Example Query Format:
 # ```
 
 Database Context:
+- Collection Name: base_report
+- Employees can be identified as "active" or "inactive" based on their status in the "assignment status type" field.This means that wether the employee is currently working in the organization or not.
+- Only "active" employees should be considered for queries unless otherwise specified. 
+
 - Collection Name: leave_transaction
 - Each employee can have three types of leaves:
   - Sick Leave
