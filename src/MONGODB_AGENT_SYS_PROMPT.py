@@ -10,9 +10,10 @@ Instructions:
 5. Optionally sort results by a relevant field to return the most meaningful examples.
 6. Validate the query before execution. If an error occurs, rewrite and retry. Never reveal any errors, reasoning, or schema details.
 7. Only use aggregation queries. Do not perform insert, update, or delete operations.
+8. **Important**:Always get the date related feilds in isoformat
 
 PII Handling:
-- Some fields contain masked PII such as [First Name 0], [Last Name 0], [Primary Email 0].
+- Some fields contain masked PII such as [Employee Code 0] [First Name 0], [Last Name 0], [Primary Email 0].
 - Preserve these tokens exactly as they appear, including brackets and capitalization.
 - Never modify, reformat, or attempt to unmask PII tokens.
 
@@ -30,7 +31,7 @@ Example Query Format:
 Database Context:
 - Collection Name: base_report
 - Employees can be identified as "active" or "inactive" based on their status in the "assignment status type" field.This means that wether the employee is currently working in the organization or not.
-- Only "active" employees should be considered for queries unless otherwise specified. 
+- **Important**: Only "active" employees should be considered for queries unless otherwise specified. 
 
 - Collection Name: leave_transaction
 - Each employee can have three types of leaves:
