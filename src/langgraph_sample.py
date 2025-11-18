@@ -24,7 +24,7 @@ class AccessState(TypedDict):
     messages: Annotated[list, add_messages]
     modified_query : str
 
-llm = ChatOpenAI(model="gpt-4o-mini")  # lightweight but smart
+# llm = ChatOpenAI(model="gpt-4o-mini")  # lightweight but smart
 
 def input_node(state: AccessState):
     print(state)
@@ -55,37 +55,62 @@ def fetch_role_node(state: AccessState):
 def classify_query_node(state: AccessState):
     question = state["question"]
     email = state["email"]
-
+    llm = ChatOpenAI(model="gpt-5-mini")
     prompt = f"""
     You are given a question: "{question}"
 
-    Determine whether the question is asking for information about:
-    - the user themselves, or
-    - another person or entity.
-
-    Respond only with one word: 'self' or 'others'.
+    Classify the question as either "self" or "others".
+    Respond with only one word: self or others.
 
     Rules:
-    1. Classify as 'self' if the question requests information directly about the user’s own details, preferences, or actions.
+    1. Classify as "self" if the question asks for the user’s own details, preferences, or actions.
 
-    2. Classify as 'others' if the question is about another person or entity (e.g., manager, colleague, organization), even if the question includes words like “my” (e.g., “my manager,” “my company”).
+    2. Classify as "others" if the question asks about another person or entity 
+    (e.g., colleague, employee, organization), even if it uses words like “my”.
 
-    [IMPORTANT] 3. Certain work-related queries about others (e.g., “Who is my manager?”, “What is my manager’s email address?”) are allowed but should still be classified as **'self'**, since they concern someone and not diclosing the sensitive info.
+    3. Exception — Manager Non-Sensitive Information:
+    If the question asks for the user’s manager’s non-sensitive information
+    (email address, phone number, employee code, or employee ID),
+    classify it as "self".
 
-    4. Sensitive or private data about others (e.g., their salary, date of birth, phone number, address, or personal identifiers other than email) are **not allowed** and should be treated as **'others'**.
+    4. Sensitive or private information about others — such as salary, address,
+    date of birth, work schedule, personal habits, or any personal identifiers
+    other than the manager items listed above — must be classified as "others".
+
+    5. If the question is about the user’s own actions or decisions,
+    classify it as "self" unless answering it requires sensitive information 
+    about another person.
+
+    6. **Important**: If answering the question would require sensitive information about another person, 
+    classify it as "others" — even if the question is framed as advice.
+
+    7. **Important**: If a question could reasonably require sensitive information about another person 
+    (e.g., birthday, schedule, habits, preferences, or personal events), 
+    classify it as "others". This rule overrides Rule 5.
+
+    8. **Important**: Questions asking about the user’s own organization or company 
+    (e.g., office location, headquarters, general company information) 
+    should be classified as "self" as long as they do not request sensitive 
+    information about an individual.
 
     Examples:
-    - "What is my name?" → self  
-    - "What is my date of birth?" → self  
-    - "Who is my manager?" → self  
-    - "What is my manager’s email address?" → self  
-    - "What is my manager’s salary?" → others  
-    - "What is my phone number?" → self  
-    - "What is my company’s revenue?" → others  
-    - "Where am I located?" → self  
+    - "What is my name?" → self
+    - "What is my date of birth?" → self
+    - "What is my manager’s email address?" → self
+    - "What is my manager’s phone number?" → self
+    - "What is my manager’s employee ID?" → self
+    - "What is my manager’s salary?" → others
+    - "What is my coworker's phone number?" → others
+    - "What is my phone number?" → self
+    - "What is my company’s revenue?" → others
+    - "Where am I located?" → self
+    - "Where is my organization located?" → self
     - "Where is the head office located?" → self
+    - "When should I wish my manager?" → others
+    - "What should I gift my manager?" → others
 
-    Respond with only one word: 'self' or 'others'.
+    Respond only with one word: self or others.
+
     """
 
     intent = llm.invoke(prompt).content.strip().lower()
@@ -102,7 +127,8 @@ def classify_query_node(state: AccessState):
 def modify_query_node(state: dict):
     question = state["question"]
     region = state["region"]
-    
+    llm = ChatOpenAI(model="gpt-4o-mini")
+
     # If the user is HR, we may need to modify
     if state["department"] == "Human Resources" and region:
         prompt = f"""
@@ -198,14 +224,14 @@ workflow.set_entry_point("input")
 access_agent = workflow.compile()
 
 # state = {
-#     "email": "ashwinit@tatasky.com",
+#     "email": "lynetted@tataplay.com",
 #     "designation": "",
 #     "department" : "",
 #     "region" : "",
 #     "question": "",
 #     "intent": "",
 #     "decision": "",
-#     "messages": [HumanMessage(content="What is John's salary this month?")],
+#     "messages": [HumanMessage(content="What is my name?")],
 #     "modified_query" : ""
 # }
 
