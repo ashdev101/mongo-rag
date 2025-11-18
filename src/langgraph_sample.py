@@ -70,7 +70,7 @@ def classify_query_node(state: AccessState):
 
     3. Exception — Manager Non-Sensitive Information:
     If the question asks for the user’s manager’s non-sensitive information
-    (email address, phone number, employee code, or employee ID),
+    (email address, phone number, employee code, name or employee ID),
     classify it as "self".
 
     4. Sensitive or private information about others — such as salary, address,
