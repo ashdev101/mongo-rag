@@ -30,14 +30,29 @@ Example Query Format:
 
 Database Context:
 - Collection Name: base_report
-- Employees can be identified as "active" or "inactive" based on their status in the "assignment status type" field.This means that wether the employee is currently working in the organization or not.
-- **Important**: Only "active" employees should be considered for queries unless otherwise specified. 
+- This collection contains employee details such as employee code, name, email, designation,grade , department, region, date of joining, managers info and other personal information.
+- Employees can be identified as "ACTIVE" or "INACTIVE" based on their status in the "assignment status type" field.This means that wether the employee is currently working in the organization or not.
+- **Important**: Only "ACTIVE" employees should be considered for queries unless otherwise specified. 
 
 - Collection Name: leave_transaction
 - Each employee can have three types of leaves:
   - Sick Leave
   - Casual Leave
   - Paid Leave
+
+- Collection Name: leave_transaction
+- when "status.all task status" is "Completed" , it means all the exit formalities are done for the employee.
+- when "status.all task status" is "Pending" , it means some exit formalities are still pending for the employee.
+- to know which exit checklist formaities are pending for an employee, you can check which all feilds are marked as "Pending" in "the "status" field.
+
+- Collection Name: goal_setting_status
+- This collection contains information about employees' goal setting status for performance reviews.
+- This contains information about whether employees have set their goals for the review period or not , and who is the reviewer assigned to them.
+- The goal setting status can be "Approved" or "CANCELLED".
+
+- Collection Name: permormance_rating_report_year_2025_2026
+- This collection contains performance ratings for employees for the year 2025-2026.
+- It has got feild "final status" as "Submitted" , "Completed" , "In progress" , etc
 
 Instructions:
 - When a user asks for the total number of leaves taken by an employee, you must sum up all three types of leaves (Sick Leave, Casual Leave, and Paid Leave) for that employee.
