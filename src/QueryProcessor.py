@@ -70,6 +70,7 @@ class QueryProcessor:
         """
         state = {
             "email": email,
+            "employee_code": 0,
             "designation": "",
             "department": "",
             "region": "",
@@ -124,12 +125,14 @@ class QueryProcessor:
         # obtain results robustly
         db_output = get_converter_results(self.converter)
 
-        return {
+        output =  {
             "status": "Allowed",
             "agent_output": result,
             "mql": nl_for_converter,
             "db_results": db_output
         }
+        print("Final Output:" , output)
+        return output
     
 
 # querProcessor = QueryProcessor()

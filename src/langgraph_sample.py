@@ -15,6 +15,7 @@ MONGODB_URI = os.getenv('MONGODB_URI')
 
 class AccessState(TypedDict):
     email: str
+    employee_code : int  # fetched from MongoDB
     designation: str  # fetched from MongoDB
     department : str  # fetched from MongoDB
     region : str  # fetched from MongoDB
@@ -38,18 +39,20 @@ employees = db["base_report"]
 
 def fetch_role_node(state: AccessState):
     email = state["email"]
-    record = employees.find_one({"primary email": email}, {"_id": 0, "designation": 1 , "region":1 , "department" : 1})
+    record = employees.find_one({"primary email": email}, {"_id": 0, "employee code" : 1 , "designation": 1 , "region":1 , "department" : 1})
     
     if record and "designation" in record:
         role = record["designation"].lower()
         region = record["region"]
         department = record["department"]
+        employees_code = record["employee code"]
     else:
         role = "unknown"
         region = "unknown"
         department = "unknown"
+        employees_code = 0
     print(f"Fetched role for {email}: {role}")
-    return {"designation": role , "region": region , "department" : department} 
+    return {"designation": role  , "employee_code" : employees_code, "region": region , "department" : department} 
 
 
 def classify_query_node(state: AccessState):
@@ -69,7 +72,7 @@ def classify_query_node(state: AccessState):
     (e.g., colleague, employee, organization), even if it uses words like “my”.
 
     3. Exception — Manager Non-Sensitive Information:
-    If the question asks for the user’s manager’s non-sensitive information
+    If the question asks for the user’s manager’s , reviewer’s, or non-sensitive information
     (email address, phone number, employee code, name or employee ID),
     classify it as "self".
 
@@ -95,6 +98,8 @@ def classify_query_node(state: AccessState):
 
     Examples:
     - "What is my name?" → self
+    - "Who is my reviewer?" → self
+    - "What is my reviewer’s email address?" → self
     - "What is my date of birth?" → self
     - "What is my manager’s email address?" → self
     - "What is my manager’s phone number?" → self
@@ -158,10 +163,10 @@ def modify_query_node(state: dict):
         USER QUESTION:
         {question}
         """
-        modified_query = f"{llm.invoke(prompt).content.strip()} . My email is {state['email']}" if intent == "self" else f"{llm.invoke(prompt).content.strip()}"
+        modified_query = f"{llm.invoke(prompt).content.strip()} . My employee code is {state['employee_code']}" if intent == "self" else f"{llm.invoke(prompt).content.strip()}"
     else:
         # No modification needed
-        modified_query = f"{question} . My email is {state['email']}"
+        modified_query = f"{question} . My employee code is {state['employee_code']}"
 
     return {"modified_query": modified_query}
 
