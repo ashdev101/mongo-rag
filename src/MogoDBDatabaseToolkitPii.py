@@ -3,6 +3,7 @@ from langchain_mongodb.agent_toolkit import (
     MongoDBDatabase,
 )
 from bson.json_util import dumps
+import json
 from RegexPIIMasker import FieldBasedPIIMasker
 from typing import Any, Dict, List, Optional , Union
 from pymongo.cursor import Cursor
@@ -76,13 +77,39 @@ class MongoDBDatabasePIIToolkit(MongoDBDatabase):
 
         try:
             coll = self._db[col_name]
-            print("Aggregation Pipeline:" , agg_pipeline)
+            print("==="*10,"MongoDBDatabaseToolkitPii.py","==="*10)
+            print("Collection Name:",col_name)
+            print("===="*20)
+            print("Aggregation Pipeline 1 :" , agg_pipeline)
+            print("===="*20)
             result = coll.aggregate(agg_pipeline)
             result_list = list(result)
             # print("Aggregation Result:" , result_list)
             masked_result, mapping = self.piiMasker.mask(result_list)
             # print("Masked Aggregation Result:" , masked_result)
-            return dumps(list(masked_result), indent=2)
+            # Return a JSON object containing both the masked results and the
+            # aggregation pipeline so that it can be used in the feedback mechanism
+            print("===="*20)
+            print("Aggregation Pipeline 2 :" , agg_pipeline)
+            print("===="*20)
+            # Save the last aggregation pipeline on the instance so callers
+            # (e.g. the outer code in `Mongo.py`) can access it after execution.
+            try:
+                self.last_agg_pipeline = agg_pipeline
+            except Exception:
+                # Be defensive: if assignment fails for any reason, continue
+                # but do not block returning results.
+                pass
+            agg_pipeline.append(col_name)
+            return json.dumps(
+                {
+                    
+                    "masked_results": masked_result,
+                    "agg_pipeline": agg_pipeline,
+                },
+                default=str,
+                indent=2,
+            )
         except Exception as e:
             # print("Error executing aggregation:", e)
             raise ValueError(f"Error executing aggregation: {e}") from e

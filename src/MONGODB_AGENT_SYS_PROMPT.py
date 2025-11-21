@@ -12,6 +12,10 @@ Instructions:
 7. Only use aggregation queries. Do not perform insert, update, or delete operations.
 8. **Important**:Always get the date related feilds in isoformat
 
+We may provide example of a MongoDB aggreagation pipeline that you may refer, example will be present only if something similar to similar to the current user query is present in the database history
+Example below(if available):
+{example}
+
 PII Handling:
 - Some fields contain masked PII such as [Employee Code 0] [First Name 0], [Last Name 0], [Primary Email 0].
 - Preserve these tokens exactly as they appear, including brackets and capitalization.

@@ -1,6 +1,7 @@
 import os
 import json
 from langchain_openai import ChatOpenAI
+from feedback.oneshot import oneshot_example
 from langgraph.prebuilt import create_react_agent
 from langchain_mongodb.agent_toolkit import (
     MongoDBDatabaseToolkit,
@@ -36,11 +37,13 @@ NATURAL_LANGUAGE_QUERY = "what are the list of things that are needed to be done
 
 
 class NaturalLanguageToMQL:
-    def __init__(self):
+    def __init__(self, user_query: str = None):
         # self.llm = ChatOpenAI(model="gpt-5")
         # self.llm = ChatOpenAI(model="gpt-4-turbo")
         self.llm = ChatOpenAI(model="gpt-4o")
-        self.system_message = MONGODB_AGENT_SYSTEM_PROMPT.format(top_k=50)
+        example = oneshot_example(query=user_query) if user_query else ""
+        print("+++++++++Similar Search Result: ",example,"+++++++++++++++++++++")
+        self.system_message = MONGODB_AGENT_SYSTEM_PROMPT.format(top_k=50, example=example)
         self.pii_masker = FieldBasedPIIMasker()
         self.db_wrapper = MongoDBDatabasePIIToolkit.from_connection_string(
             MONGODB_URI,
@@ -127,17 +130,35 @@ class NaturalLanguageToMQL:
         for event in events:
             self.messages.extend(event["messages"])
 
-    def print_results(self):
-        if self.messages:
-            final_output = self.messages[-1].content
-            # print("🔒 Masked Output:")
-            # print(final_output)
-
-            unmasked_output = self.pii_masker.unmask({"content": final_output})["content"]
-            # print("\n🔓 Unmasked Output:")
-            print(unmasked_output)
-        else:
+    def print_results(self, return_output: bool = False):
+        """
+        Print or return the final agent output. When `return_output=True` a dict
+        is returned containing the unmasked output and the last aggregation
+        pipeline (if available) from the DB toolkit.
+        """
+        if not self.messages:
+            if return_output:
+                return {"unmasked_output": "No messages to display.", "agg_pipeline": None}
             print("No messages to display.")
+            return
+
+        final_output = self.messages[-1].content
+        unmasked_output = self.pii_masker.unmask({"content": final_output})["content"]
+
+        # Try to obtain the last pipeline from the DB wrapper if present
+        agg_pipeline = getattr(self.db_wrapper, "last_agg_pipeline", None)
+
+        print("===="*10,"Mongo.py",'===='*10)
+        print(unmasked_output,"\n",agg_pipeline)
+        print("Type of agg_pipeline",type(agg_pipeline))
+        print("===="*20)
+
+        agg_pipeline.append(unmasked_output)
+        if return_output:
+            return {"unmasked_output": unmasked_output, "agg_pipeline": agg_pipeline}
+
+        # default behaviour: print unmasked output
+        
 
 
 # converter = NaturalLanguageToMQL()
