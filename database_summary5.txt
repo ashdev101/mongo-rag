@@ -1,0 +1,212 @@
+{
+  "business_domains": [
+    {
+      "name": "Core HR (Employee Master)",
+      "purpose": "Authoritative source of employee identity, organization placement, and lifecycle dates.",
+      "expect": "Stable attributes like employee identifiers, name, department, grade/band, region/location, and joining/leaving dates for headcount, demographics, and org slicing."
+    },
+    {
+      "name": "Performance Management (Goals & Appraisals)",
+      "purpose": "Annual cycle to set goals, track goal-setting status, and record self/manager ratings and final appraisal outcomes.",
+      "expect": "Goal plan and review period context, goal-setting workflow status, and appraisal documents with self/manager ratings and final completion states."
+    },
+    {
+      "name": "Exit Management (Offboarding & Clearance)",
+      "purpose": "Cross-functional clearance workflow when an employee resigns/leaves, consolidating tasks across HR, Manager, IT, Facilities, Finance, and Payroll.",
+      "expect": "Per-function checklist statuses, overall exit status, recovery amounts, and final clearance dependencies tied to resignation/leaving dates."
+    },
+    {
+      "name": "Payroll Settlement (within Exit)",
+      "purpose": "Financial computation at exit (gratuity, incentives, statutory items, recoveries) that depends on clearance results.",
+      "expect": "Eligibility and payable flags, payout/recovery categories, and signals used for full & final settlement."
+    }
+  ],
+  "process_flow": "1) Hire/Change: Core HR establishes employee identity, org (department/grade/region), and manager. 2) Performance Year: Goals are assigned and approved (goal-setting status), followed by year-end self/manager ratings and a final appraisal completion status. 3) Separation: Upon resignation, Exit Management launches multi-department checklists; each function updates its statuses and recoveries, rolling up to an overall exit status. 4) Final Settlement: Payroll uses exit clearances and HR dates to calculate final payouts/recoveries; records close once all tasks reach a completed state.",
+  "semantic_ambiguities": [
+    {
+      "term": "Reviewer",
+      "meanings": [
+        "Performance reviewer approving goals (goal-setting stage).",
+        "Performance appraisal reviewer validating ratings (often manager or designated reviewer).",
+        "Exit reviewers/approvers (e.g., Reporting Manager, HR Ops, IT, Facilities) in offboarding checklists."
+      ],
+      "risk": "Bot may fetch exit checklist approver details when the user meant the performance reviewer, or vice versa.",
+      "ask": "Which reviewer do you mean: performance goal-setting, performance appraisal, or exit/offboarding approver?"
+    },
+    {
+      "term": "Status",
+      "meanings": [
+        "Goal-setting workflow status (draft/submitted/approved/not started).",
+        "Appraisal document final status (open/in progress/completed/closed).",
+        "Exit checklist statuses per function and an overall exit/all-task status.",
+        "Employee assignment status (active/terminated) in Core HR."
+      ],
+      "risk": "Mixing process states (e.g., goal status) with lifecycle states (active vs. exited) or with exit clearance states.",
+      "ask": "Which status are you asking about: goal-setting, appraisal final status, exit clearance, or employee assignment status?"
+    },
+    {
+      "term": "Grade / Grade Level / Parent Grade / Sub Grade",
+      "meanings": [
+        "Compensation/level banding used for HR reporting (grade/grade level).",
+        "Hierarchical rollups (parent grade) and finer bands (sub grade)."
+      ],
+      "risk": "Confusing grade hierarchies or misreading mistyped data types (grade stored as date in some feeds).",
+      "ask": "Do you want the base grade band, the hierarchical parent grade, or the sub-grade; and for which process snapshot (Core HR vs. performance vs. exit)?"
+    },
+    {
+      "term": "Region / Location / Office / Work Location",
+      "meanings": [
+        "Region: geographic grouping for reporting.",
+        "Location/Office: physical site or office name.",
+        "Work location: where work is performed (can differ from office)."
+      ],
+      "risk": "Combining different geographies (region vs. site), causing double counting or misaligned headcount.",
+      "ask": "Should I slice by region, by office/location site, or by work location?"
+    },
+    {
+      "term": "Department / Sub-Department / Parent Department / Business Unit",
+      "meanings": [
+        "Department: primary org unit for the employee.",
+        "Sub-department: finer org split under a department.",
+        "Parent department or business unit: higher-level rollup."
+      ],
+      "risk": "Mixing levels of the org hierarchy or comparing unlike levels across datasets.",
+      "ask": "Which org level do you need: business unit, parent department, department, or sub-department?"
+    },
+    {
+      "term": "Manager vs Reporting To",
+      "meanings": [
+        "Manager in performance documents (may reflect the appraisal manager for the cycle).",
+        "Reporting to in HR/exit (line manager at the time of snapshot or separation)."
+      ],
+      "risk": "Attaching the wrong manager due to timing/cycle context.",
+      "ask": "Do you mean the line manager from Core HR/exit snapshot, or the performance cycle’s appraisal/goal manager?"
+    },
+    {
+      "term": "Employee Identifier",
+      "meanings": [
+        "Employee code/employee id (Core HR).",
+        "Person number (performance datasets)."
+      ],
+      "risk": "Failed joins or partial results if the wrong key is used.",
+      "ask": "Which identifier do you have: employee code/id (HR) or person number (performance)?"
+    },
+    {
+      "term": "Rating",
+      "meanings": [
+        "Self rating (numeric).",
+        "Manager rating (often labeled/string)."
+      ],
+      "risk": "Averaging unlike scales or reading manager labels as numeric scores.",
+      "ask": "Do you want self ratings, manager ratings, or a combined/final rating if available?"
+    },
+    {
+      "term": "Final/Overall Exit Status",
+      "meanings": [
+        "Per-function exit statuses (IT, Facilities, Finance, etc.).",
+        "Aggregated 'all task status' rollup."
+      ],
+      "risk": "Reporting a single function’s status as if it were overall clearance.",
+      "ask": "Do you need the overall exit/all-task status or a specific function’s status?"
+    }
+  ],
+  "clarification_rules": [
+    {
+      "trigger": "User mentions 'status' without context",
+      "question": "Which status do you need: goal-setting, appraisal final status, exit clearance, or employee assignment?",
+      "routing_hint": "Goals -> Goal Setting; Appraisal -> Performance Ratings; Exit -> Offboarding; Assignment -> Core HR",
+      "default": "Ask before proceeding; do not guess."
+    },
+    {
+      "trigger": "User mentions 'reviewer' or 'approver'",
+      "question": "Is this the performance goal-setting/appraisal reviewer, or an exit/offboarding approver?",
+      "routing_hint": "Performance reviewer -> Goal/Rating datasets; Exit approver -> Offboarding checklist",
+      "default": "Performance reviewer if conversation context is about goals/ratings; else ask."
+    },
+    {
+      "trigger": "User asks by 'grade/region/department' without process context",
+      "question": "Do you want this cut for Core HR headcount, performance (goals/appraisals), or exit cases?",
+      "routing_hint": "Headcount -> Core HR; Goals/Status -> Goal Setting; Ratings -> Performance Ratings; Exit -> Offboarding",
+      "default": "Headcount/Core HR if the question is about workforce size; else ask."
+    },
+    {
+      "trigger": "Ambiguous manager references",
+      "question": "Do you mean the line manager from HR/exit or the appraisal/goal manager for the performance cycle?",
+      "routing_hint": "Line manager -> Core HR/Offboarding; Appraisal manager -> Performance datasets",
+      "default": "Ask; manager roles can differ by cycle."
+    },
+    {
+      "trigger": "Identity key provided or requested",
+      "question": "Are you using employee code/id (HR) or person number (performance)?",
+      "routing_hint": "Map to the correct key per dataset; perform crosswalk if needed",
+      "default": "Ask; do not assume key equivalence."
+    },
+    {
+      "trigger": "Location terms used (region/location/office/work location)",
+      "question": "Should I group by region, office/location site, or work location?",
+      "routing_hint": "Use specified geography to avoid mixing levels",
+      "default": "Region for exec summaries; else ask."
+    },
+    {
+      "trigger": "Exit status request",
+      "question": "Do you want the overall ‘all task status’ or a specific function’s checklist status (IT, Facilities, Finance, etc.)?",
+      "routing_hint": "Overall -> all task status; Function -> respective checklist section",
+      "default": "Overall, unless function named."
+    },
+    {
+      "trigger": "Ratings request",
+      "question": "Should I return self ratings, manager ratings, or the final appraisal completion status?",
+      "routing_hint": "Self/Manager -> performance ratings; Final status -> appraisal document state",
+      "default": "Manager ratings for org summaries; else ask."
+    },
+    {
+      "trigger": "Time period ambiguity (e.g., performance year)",
+      "question": "Which review period/year do you want (e.g., 2025–2026)?",
+      "routing_hint": "Filter to the named review period",
+      "default": "Ask; datasets are year-specific."
+    }
+  ],
+  "domain_routing": [
+    {
+      "intent_pattern": "Headcount, demographics, by region/department/grade",
+      "domain": "Core HR",
+      "dataset_hint": "Employee master snapshot",
+      "key_dimensions": ["department hierarchy", "grade/level", "region/location"]
+    },
+    {
+      "intent_pattern": "Goal-setting progress, pending approvals, reviewer info",
+      "domain": "Performance Management",
+      "dataset_hint": "Goal-setting status and reviewer mapping",
+      "key_dimensions": ["review period", "department/grade", "manager/reviewer"]
+    },
+    {
+      "intent_pattern": "Appraisal ratings, self vs manager, completion status",
+      "domain": "Performance Management",
+      "dataset_hint": "Performance ratings and final status",
+      "key_dimensions": ["review period", "department/grade", "manager"]
+    },
+    {
+      "intent_pattern": "Resignation/exit pipeline, clearance, recoveries, payroll at exit",
+      "domain": "Exit Management / Payroll Settlement",
+      "dataset_hint": "Offboarding multi-function checklist and payroll section",
+      "key_dimensions": ["function (IT/Facilities/Finance/HR)", "overall all-task status", "dates of resignation/leaving"]
+    },
+    {
+      "intent_pattern": "Manager’s team summaries",
+      "domain": "Core HR or Performance (depending on context)",
+      "dataset_hint": "Use HR manager for active headcount; use performance manager for cycle-specific items",
+      "key_dimensions": ["manager identity", "time snapshot or review period"]
+    }
+  ],
+  "critical_notes": [
+    "Identifiers differ: Core HR uses employee code/id; performance uses person number. Always clarify and map.",
+    "Data is cycle-bounded: performance and goals are tied to review periods (e.g., 2025–2026). Ask for the period.",
+    "Grade fields have inconsistent typing (some appear as dates). Treat grade/parent grade as categorical bands, not dates.",
+    "Manager vs reviewer roles can diverge by process and time; do not assume they are the same.",
+    "Location granularity varies (region vs office vs work location). Mixing levels causes miscounts.",
+    "Exit has many per-function statuses and one overall 'all task status'. Report the correct level.",
+    "Ratings: self is numeric, manager can be string-labeled. Avoid averaging incompatible scales without mapping.",
+    "PII present (emails, names). Apply least-privilege responses and masking policies if required.",
+    "Naming typos/inconsistencies exist across feeds; rely on semantic intent and domain routing rather than raw field names."
+  ]
+}

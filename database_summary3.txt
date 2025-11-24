@@ -1,0 +1,88 @@
+{
+  "business_domains": [
+    {
+      "name": "Base Employee Data",
+      "description": "Manages core employee information such as identification, biographical details, organizational assignment, and employment timeline. This foundation supports all HR processes throughout the employee lifecycle."
+    },
+    {
+      "name": "Goal Setting & Status Tracking",
+      "description": "Handles the definition, assignment, and progress monitoring of individual employee goals, establishing expectations and tracking alignment with business objectives early in the performance cycle."
+    },
+    {
+      "name": "Performance Management",
+      "description": "Encompasses appraisal cycles, including self-evaluation, managerial review, ratings, and finalization of performance outcomes. This domain impacts career advancement, compensation, and development."
+    },
+    {
+      "name": "Payroll & Compensation (Exit Related)",
+      "description": "Covers payout-related data as part of the exit/offboarding process (e.g., final settlements, incentives, reimbursements). In this schema, payroll information appears specifically in offboarding, not regular cycles."
+    },
+    {
+      "name": "Offboarding/Exit Management",
+      "description": "Manages all activities when an employee separates, including clearance tasks (by department), asset return, payments, and multiple role-based checklists. Ensures compliance and smooth organizational exit."
+    }
+  ],
+  "process_flow": "The journey starts with onboarding (not explicitly present, but inferred from the base report). Employees are first registered in the base employee data. Next, goal setting is initiated, and goals are tracked for progress. Performance management follows, where appraisals and reviews are conducted based on those goals. If an employee exits, offboarding workflows are triggered, collecting information for clearances across departments and final payroll settlements. Throughout, certain key identifiers (name, department, grade) persist across domains, enabling linkage between processes.",
+  "semantic_ambiguities": [
+    {
+      "term": "Reviewer",
+      "differences": "May refer to performance reviewer (performance appraisal), goal setting reviewer (goal approval or alignment), or exit reviewer (exit checklist approver). Each role is associated with a separate workflow and has distinct accountabilities.",
+      "confusion": "The chatbot may not know which workflow the user is referring to when the term 'reviewer' appears generically.",
+      "clarification_question": "Are you asking about your performance reviewer, goal-setting reviewer, or exit (offboarding) reviewer?"
+    },
+    {
+      "term": "Status",
+      "differences": "Can mean different things: onboarding status (not shown), goal setting status (progress of goal plan), performance review status (e.g., completed, pending), overall employee status (active, resigned), or exit checklist/task status.",
+      "confusion": "Ambiguity when the user asks 'What is my status?'—the system must clarify context.",
+      "clarification_question": "Do you mean status of your goals, your performance review, your exit process, or your employment (active/exit) status?"
+    },
+    {
+      "term": "Grade/Region/Department",
+      "differences": "Consistently used for classification but functionally different: In performance, aligns with appraisal cohorts; in base data, represents organizational structure; in offboarding, determines clearance routing and entitlements.",
+      "confusion": "System could return incorrect or irrelevant values if not tied to the correct context.",
+      "clarification_question": "Are you asking about your department/grade/region in the context of your job profile, performance review, or offboarding process?"
+    }
+  ],
+  "clarification_rules": [
+    {
+      "user_query": "Who is my reviewer?",
+      "clarify_with": "Are you referring to your performance reviewer, your goal-setting reviewer, or your exit process reviewer?"
+    },
+    {
+      "user_query": "What is my status?",
+      "clarify_with": "Do you want to know the status of your goals, your performance appraisal, your exit checklist, or your employment (active/inactive) status?"
+    },
+    {
+      "user_query": "What is my grade or department?",
+      "clarify_with": "Are you asking for your official job grade/department, or how you are classified for performance reviews or offboarding?"
+    }
+  ],
+  "domain_routing": [
+    {
+      "if_query_mentions": ["rating", "manager feedback", "self rating", "performance cycle", "final status"],
+      "route_to": "Performance Management"
+    },
+    {
+      "if_query_mentions": ["goal", "goal plan", "goal status", "goal reviewer", "review period"],
+      "route_to": "Goal Setting & Status Tracking"
+    },
+    {
+      "if_query_mentions": ["pending tasks", "clearance", "handover", "asset return", "exit checklist", "relieving", "resignation", "final settlement"],
+      "route_to": "Offboarding/Exit Management"
+    },
+    {
+      "if_query_mentions": ["salary", "CTC", "earnings", "final payout", "gratuity", "bonus", "allowance"],
+      "route_to": "Payroll & Compensation (Exit Related)"
+    },
+    {
+      "if_query_mentions": ["employee code", "personal info", "official info", "DOJ", "date of birth", "basic details"],
+      "route_to": "Base Employee Data"
+    }
+  ],
+  "critical_notes": [
+    "Users rarely use module or technical field names; context must be inferred from everyday language.",
+    "Many terms (like 'reviewer', 'status', 'grade') exist across diverse workflows and carry different business meanings.",
+    "Correct intent can only be determined by clarifying the user's goal, not by field name alone.",
+    "Certain roles and data points overlap between processes (e.g., managers as reviewers, departments as organizational units versus clearance owners).",
+    "Identifiers like name, department, or grade must always be interpreted in the workflow's context to avoid misrouting or incorrect answers."
+  ]
+}

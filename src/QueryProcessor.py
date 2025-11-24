@@ -69,6 +69,8 @@ class QueryProcessor:
         Returns a dict with status, agent_output, generated_mql and db_results (string).
         """
         state = {
+            "needs_clarification": False,
+            "clarification_question": "",
             "email": email,
             "employee_code": 0,
             "designation": "",
@@ -85,10 +87,19 @@ class QueryProcessor:
         result = access_agent.invoke(state)
         print("Access Agent Result:" , result)
 
+        needs_clarification = result.get("needs_clarification")
+        clarification_question = result.get("clarification_question")
         decision = result.get("decision")
         modified_query = result.get("modified_query")
         print("modified query" , modified_query)
 
+        if needs_clarification:
+            return {
+                "status": "Needs Clarification",
+                "agent_output": result,
+                "mql": result.get("clarification_question"),
+                "db_results": clarification_question
+            }
         if decision != "Allowed":
             return {
                 "status": "Access Denied",

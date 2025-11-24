@@ -1,0 +1,102 @@
+{
+  "semantic_ambiguities": [
+    {
+      "term": "Reviewer vs Manager vs Reporting Manager",
+      "semantic_differences": "Reviewer is a workflow role in goal setting; Manager/Reporting Manager is the line manager in HR core and performance rating; Offboarding uses functional approvers (e.g., IT, Facilities) not called reviewers.",
+      "why_confusing": "Users say reviewer when they mean the line manager, or expect offboarding approvers to be included as reviewers.",
+      "bot_must_ask": "Do you mean the goal-setting reviewer, the line manager, or a specific offboarding function approver?"
+    },
+    {
+      "term": "Status",
+      "semantic_differences": "Goal Setting status reflects goal workflow stage; Performance final status indicates appraisal document stage/closure; Offboarding has multiple function-level statuses and an overall all-task status; Core HR has employee status (employment state).",
+      "why_confusing": "A request like 'show status' is underspecified and can pull from different processes.",
+      "bot_must_ask": "Which status do you need: goal workflow, performance document, offboarding (function or overall), or HR employment status?"
+    },
+    {
+      "term": "Grade family (grade, grade level, parent grade, sub grade)",
+      "semantic_differences": "Grade is the band; Grade level is sub-tier; Parent grade suggests roll-up; Sub grade is finer granularity. Some datasets store grade as a date (likely effective date) vs label elsewhere.",
+      "why_confusing": "Same word refers to a hierarchy vs an effective-date attribute; type mismatches make filtering brittle.",
+      "bot_must_ask": "Do you mean the grade label for grouping, the hierarchical level (parent/sub), or the grade effective date?"
+    },
+    {
+      "term": "Department hierarchy (department, sub department, parent department, sub-dept)",
+      "semantic_differences": "Department is primary org unit; Sub/Parent indicate hierarchy; Naming varies across datasets.",
+      "why_confusing": "Users ask for department totals without specifying if sub-departments roll up.",
+      "bot_must_ask": "Which org level should be used�parent, department, or sub-department�and should sub-units roll up into parents?"
+    },
+    {
+      "term": "Region and Location",
+      "semantic_differences": "Region is a broad geography; Location/Location name/Office location/Work location are physical or assignment sites; State is political geography.",
+      "why_confusing": "Users mix region with office or work location; remote vs assigned office differences matter.",
+      "bot_must_ask": "Filter by region, state, office location, or work location? If multiple exist, which takes precedence?"
+    },
+    {
+      "term": "People identifiers (employee person number, person number, employee code, employee id)",
+      "semantic_differences": "All are meant as unique IDs but naming varies by dataset and vendor feed.",
+      "why_confusing": "Joins and filters can fail if the wrong identifier type is assumed.",
+      "bot_must_ask": "Which identifier should be authoritative for matching�person number, employee code, or employee ID?"
+    },
+    {
+      "term": "Manager identifiers and names (manager person number, manager number, reporting to)",
+      "semantic_differences": "Manager identifiers are numeric keys; Reporting to is a name string; different datasets store different variants.",
+      "why_confusing": "Users ask for manager-wise data but provide names; name duplicates can misjoin.",
+      "bot_must_ask": "Can you provide the manager�s numeric ID, or should I match by name (risking duplicates)?"
+    },
+    {
+      "term": "Performance vs Performance-linked Incentive",
+      "semantic_differences": "Performance in appraisal is rating/status; Performance-linked incentive in payroll is a payout component.",
+      "why_confusing": "Queries like 'performance by department' could be ratings or incentive payouts.",
+      "bot_must_ask": "Do you want performance ratings/status, or performance-linked incentive payouts?"
+    },
+    {
+      "term": "Period and artifacts (review period, goal plan, performance document, year range)",
+      "semantic_differences": "Review period is time window; Goal plan is the goals container; Performance document is the appraisal artifact; Some datasets are year-bound (e.g., 2025�2026).",
+      "why_confusing": "Users specify 'this year' without clarifying whether to use review period, goal plan, or document name filters.",
+      "bot_must_ask": "Which period or artifact should constrain the query�review period, goal plan, or performance document�and which year(s)?"
+    },
+    {
+      "term": "Ratings scale and type",
+      "semantic_differences": "Self rating stored as a number; Manager rating stored as text; scales may differ or need mapping.",
+      "why_confusing": "Aggregations and comparisons fail if numeric vs textual scales mix.",
+      "bot_must_ask": "What rating scale/mapping should be used, and should ratings be treated as numeric or categorical?"
+    },
+    {
+      "term": "Employee status during exit vs employment status",
+      "semantic_differences": "Offboarding tracks exit-stage statuses; Core HR tracks employment state (active/terminated/etc.).",
+      "why_confusing": "A request for 'inactive' may refer to exiting vs fully separated.",
+      "bot_must_ask": "Are you asking about offboarding progress or employment state in Core HR?"
+    },
+    {
+      "term": "Exit task statuses: function-level vs overall",
+      "semantic_differences": "Function-level statuses (IT, Facilities, Payroll, etc.) vs consolidated all-task status of the exit.",
+      "why_confusing": "Users ask for 'cleared' without specifying per-function vs overall clearance.",
+      "bot_must_ask": "Do you need per-function exit statuses or the overall all-task exit status?"
+    },
+    {
+      "term": "Dates around movement (DOJ, resignation, leaving)",
+      "semantic_differences": "DOJ marks start; Resignation is intent date; Leaving is termination effective date.",
+      "why_confusing": "Time-based filters (e.g., leavers in Q2) hinge on which date is used.",
+      "bot_must_ask": "Which date should drive the filter�date of joining, resignation, or leaving?"
+    },
+    {
+      "term": "Job vs Designation",
+      "semantic_differences": "Job is the job code/title in performance artifacts; Designation is the HR-facing title in master/offboarding.",
+      "why_confusing": "Users use the terms interchangeably; mapping is not guaranteed 1:1.",
+      "bot_must_ask": "Should I use HR designation or the job title from performance artifacts?"
+    }
+  ],
+  "clarification_rules": [
+    "When a query contains 'status' or 'progress', ask which workflow: goal setting, performance document, offboarding (which function or overall), or HR employment.",
+    "Always confirm the time constraint: review period, goal plan, performance document year, or calendar dates.",
+    "If a manager or reviewer is referenced, ask whether to use manager (line) or reviewer (goal workflow), and request the numeric ID if available.",
+    "If department or region is referenced, ask which hierarchy level and if roll-ups are desired (include sub-units or not).",
+    "For location-based filters, ask to choose among region, state, office location, or work location; define precedence if multiple exist.",
+    "For grades, ask whether grouping is by grade label, grade level, parent grade, or effective date.",
+    "For people matching, ask which identifier is canonical (person number, employee code, employee ID) and use it consistently across joins.",
+    "If 'performance' is mentioned, disambiguate between ratings/status and incentive payouts.",
+    "For ratings analytics, confirm the numeric/text scale and mapping before aggregations.",
+    "For offboarding, clarify if results should be per function or based on overall all-task status.",
+    "When filtering exits or headcount movements, confirm whether to use resignation or leaving date.",
+    "Clarify job vs designation when role/title-based slicing is requested."
+  ]
+}

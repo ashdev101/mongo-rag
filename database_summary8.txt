@@ -1,0 +1,104 @@
+{
+  "semantic_ambiguities": [
+    {
+      "term": "grade vs grade level vs parent grade vs sub grade",
+      "semantic_differences": [
+        "Grade: current position band",
+        "Grade level: broader band/category",
+        "Parent grade: higher-level grade group or prior grade family",
+        "Sub grade: step within a band"
+      ],
+      "why_confusing": "Similar labels represent different layers or effective-time states of seniority.",
+      "bot_must_ask": [
+        "Which grade dimension do you need (grade, grade level, parent grade, sub grade)?",
+        "As of what date should grade be evaluated?"
+      ],
+      "belongs_to_modules": ["core_hr"]
+    },
+    {
+      "term": "manager vs reviewer vs reporting to",
+      "semantic_differences": [
+        "Line manager: operational reporting manager",
+        "Performance reviewer: designated reviewer in appraisal",
+        "Reporting to: could be line or dotted-line relationship"
+      ],
+      "why_confusing": "Performance processes often assign a reviewer different from the HR reporting manager.",
+      "bot_must_ask": [
+        "Do you mean the current line manager, the performance reviewer, or dotted-line?",
+        "For which date or review period?"
+      ],
+      "belongs_to_modules": ["core_hr", "performance_management", "goal_setting"]
+    },
+    {
+      "term": "location",
+      "semantic_differences": [
+        "Work location: where the employee actually works",
+        "Office location: assigned office site",
+        "Region: geographic cluster"
+      ],
+      "why_confusing": "Hybrid/remote arrangements mean office and work locations diverge.",
+      "bot_must_ask": [
+        "Which location type should be used (work, office, region)?",
+        "If hybrid, should we default to work location?"
+      ],
+      "belongs_to_modules": ["core_hr", "goal_setting"]
+    },
+    {
+      "term": "status",
+      "semantic_differences": [
+        "Goal-setting status: draft/submitted/approved",
+        "Performance document status: in progress/complete/closed",
+        "Offboarding task status: pending/cleared",
+        "Employee status: active/on notice/resigned/terminated"
+      ],
+      "why_confusing": "The same word reflects different workflows and value sets.",
+      "bot_must_ask": [
+        "Which status domain do you mean (goal-setting, performance document, offboarding, employee status)?",
+        "Should in-progress or pending be included as complete?"
+      ],
+      "belongs_to_modules": ["goal_setting", "performance_management", "offboarding", "core_hr"]
+    },
+    {
+      "term": "review period (2025-2026)",
+      "semantic_differences": [
+        "Fiscal-year appraisal window",
+        "Calendar-year period",
+        "Mid-year vs annual cycle"
+      ],
+      "why_confusing": "Year labels can map to different start/end dates and cycle types.",
+      "bot_must_ask": [
+        "Confirm the review period start and end dates.",
+        "Is this mid-year or annual cycle, and for goals or performance?"
+      ],
+      "belongs_to_modules": ["performance_management", "goal_setting"]
+    },
+    {
+      "term": "rating (self vs manager vs final)",
+      "semantic_differences": [
+        "Self rating: employee-assessed",
+        "Manager rating: line manager's assessment",
+        "Final rating: calibrated/approved outcome"
+      ],
+      "why_confusing": "Different audiences and scales; numeric vs label scales vary.",
+      "bot_must_ask": [
+        "Which rating should be used (self, manager, final)?",
+        "What rating scale/labels should be assumed and do you need numeric mapping?"
+      ],
+      "belongs_to_modules": ["performance_management"]
+    },
+    {
+      "term": "movement dates",
+      "semantic_differences": [
+        "Date of joining (DOJ)",
+        "Date of resignation (DOR) submission",
+        "Date of leaving (DOL)/last working day"
+      ],
+      "why_confusing": "Users ask for 'resigned in 2025' without clarifying submission vs last day.",
+      "bot_must_ask": [
+        "Which date should drive the filter (DOJ, DOR, DOL)?",
+        "What date range should be applied, and how to handle rescinded or deferred exits?"
+      ],
+      "belongs_to_modules": ["core_hr", "offboarding"]
+    }
+  ]
+}

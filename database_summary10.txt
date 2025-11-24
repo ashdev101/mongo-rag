@@ -1,0 +1,75 @@
+{
+  "entities": {
+    "employee": {
+      "collection": "base_report",
+      "key_fields": {
+        "employee_id": "amount/number",
+        "name": "string",
+        "department": "string",
+        "designation": "string",
+        "location": "string",
+        "region": "string",
+        "date_joined": "date",
+        "employment_status": "status",
+        "departure_date": "date"
+      },
+      "synonyms": ["employee", "staff", "associate", "personnel", "worker", "user"]
+    },
+    "performance_review": {
+      "collection": "permormance_rating_report_year_2025_2026",
+      "key_fields": {
+        "employee_id": "amount/number",
+        "department": "string",
+        "business_unit": "string",
+        "grade": "string",
+        "job_title": "string",
+        "location": "string",
+        "self_rating": "amount/number",
+        "manager_rating": "amount/number",
+        "status": "status"
+      },
+      "synonyms": ["performance rating", "appraisal", "review", "assessment"]
+    },
+    "performance_goal": {
+      "collection": "performance_goal_report_2025_2026",
+      "key_fields": {
+        "employee_id": "amount/number",
+        "department": "string",
+        "review_period": "string",
+        "goal_plan": "string",
+        "goal_name": "string",
+        "weight": "amount/number",
+        "description": "string"
+      },
+      "synonyms": ["goal", "objective", "KPI", "OKR", "target"]
+    },
+    "goal_status": {
+      "collection": "goal_setting_status",
+      "key_fields": {
+        "employee_id": "amount/number",
+        "department": "string",
+        "designation": "string",
+        "work_location": "string",
+        "date_joined": "date",
+        "manager_id": "amount/number",
+        "reviewer_name": "string",
+        "status": "status"
+      },
+      "synonyms": ["goal setting status", "goal progress", "approval status", "workflow status"]
+    },
+    "exit_clearance": {
+      "collection": "offboarding_checklist",
+      "key_fields": {
+        "employee_id": "amount/number",
+        "department": "string",
+        "region": "string",
+        "resignation_date": "date",
+        "last_working_day": "date",
+        "reporting_manager": "string",
+        "employment_status": "status",
+        "overall_status": "status"
+      },
+      "synonyms": ["offboarding", "exit", "separation", "clearance", "relieving"]
+    }
+  }
+}

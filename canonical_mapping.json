@@ -1,0 +1,52 @@
+{
+  "employee number": [
+    "employee person number",
+    "person number",
+    "employee code",
+    "employee id"
+  ],
+  "employee name": [
+    "employee name",
+    "Employee name",
+    "name"
+  ],
+  "employee email": [
+    "employee e mail address"
+  ],
+  "personal email address": [
+    "personal email id address"
+  ],
+  "manager number": [
+    "manager person number",
+    "manager number",
+    "manager code"
+  ],
+  "manager name": [
+    "manager name",
+    "reporting to",
+    "reporting manager"
+  ],
+  "date of joining": [
+    "date of joining",
+    "Date of Joining",
+    "date_of_joining"
+  ],
+  "date of resignation": [
+    "date of resignation",
+    "date_of_resignation"
+  ],
+  "date of leaving": [
+    "date of leaving",
+    "date_of_leaving"
+  ],
+  "date of birth": [
+    "date_of_birth"
+  ],
+  "gender": [
+    "m/f"
+  ],
+  "employee status": [
+    "employee status",
+    "assignment status type"
+  ]
+}

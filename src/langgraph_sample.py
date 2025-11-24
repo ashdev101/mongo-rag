@@ -6,6 +6,9 @@ from langchain_core.messages import AIMessage , HumanMessage
 from langgraph.graph import StateGraph, END
 from pymongo import MongoClient
 from langchain_openai import ChatOpenAI
+from SemanticDictionaryProcessor import SemanticDictionaryProcessor
+from CollectionRouter import CollectionRouterAgent
+from clarifying_agent2 import clarify_query
 # Load environment variables from .env file
 from dotenv import load_dotenv
 app_dir = os.path.join(os.getcwd())
@@ -14,6 +17,8 @@ load_dotenv(os.path.join(app_dir, ".env"))
 MONGODB_URI = os.getenv('MONGODB_URI')
 
 class AccessState(TypedDict):
+    needs_clarification: bool
+    clarification_question: str
     email: str
     employee_code : int  # fetched from MongoDB
     designation: str  # fetched from MongoDB
@@ -129,6 +134,57 @@ def classify_query_node(state: AccessState):
 
     return {"intent": intent}
 
+def query_clarifying_agent_node(state: AccessState):
+    processor = SemanticDictionaryProcessor("database_summary.json")
+    collections = processor.get_collection_routing_list()
+    default_collections = processor.get_default_collections()
+
+    router = CollectionRouterAgent(collections, default_collections)
+    collection = router.route_query(state["question"])
+
+    structure = processor.get_clarification_agent_structure(
+        allowed_collections=collection
+    )
+
+    result = clarify_query(state["question"],
+                           structure["collections"],
+                           structure["ambiguous_terms"])
+    print(state["question"])
+    print(result)
+    if result["status"] == "needs_clarification":
+        print(result["questions"])
+        # This tells LangGraph to PAUSE and ask the user
+        return {
+            "needs_clarification": True,
+            "clarification_question": result["questions"][-1]
+        }
+    else:
+        return {
+            "needs_clarification": False,
+            # "question": result["resolved_query"]
+            "question": state["question"]
+        }
+
+
+def ask_for_clarification_node(state: AccessState):
+
+
+    return {
+            "messages": [
+                AIMessage(content=state["clarification_question"])
+            ]
+    }
+    # return {
+    #     "messages": [
+    #         AIMessage(content=state["clarification_question"])
+    #     ]
+    # }
+def clarification_condition(state: AccessState):
+    if state.get("needs_clarification", False):
+        return "ask_clarification"   # pause + ask user
+    else:
+        return "fetch_role"           # continue normally
+
 def modify_query_node(state: dict):
     question = state["question"]
     region = state["region"]
@@ -204,14 +260,24 @@ workflow = StateGraph(AccessState)
 #         return "check_access"
 
 workflow.add_node("input", input_node)
+workflow.add_node("query_clarifying_agent", query_clarifying_agent_node)
+workflow.add_node("ask_clarification", ask_for_clarification_node)
 workflow.add_node("fetch_role", fetch_role_node)
 workflow.add_node("classify_query", classify_query_node)
 workflow.add_node("modify_query", modify_query_node)
 workflow.add_node("check_access", check_access_node)
 workflow.add_node("response", response_node)
 
+
+workflow.set_entry_point("input")
+workflow.add_edge("input", "query_clarifying_agent")
+workflow.add_conditional_edges(
+    source="query_clarifying_agent",
+    path=clarification_condition
+)
+# workflow.add_edge("ask_clarification", "query_clarifying_agent") 
+
 # Normal flow
-workflow.add_edge("input", "fetch_role")
 workflow.add_edge("fetch_role", "classify_query")
 
 # Conditional edge: HR -> modify query, others -> skip
@@ -229,6 +295,8 @@ workflow.set_entry_point("input")
 access_agent = workflow.compile()
 
 # state = {
+#     "needs_clarification": False,
+#     "clarification_question": "",
 #     "email": "lynetted@tataplay.com",
 #     "designation": "",
 #     "department" : "",
@@ -236,7 +304,7 @@ access_agent = workflow.compile()
 #     "question": "",
 #     "intent": "",
 #     "decision": "",
-#     "messages": [HumanMessage(content="What is my name?")],
+#     "messages": [HumanMessage(content="Whos my reviewer?")],
 #     "modified_query" : ""
 # }
 

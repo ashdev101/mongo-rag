@@ -1,0 +1,152 @@
+{
+  "business_domains": [
+    {
+      "domain": "Base Employee Master",
+      "purpose": "Stores the authoritative profile and org attributes (employee code, name, grade/level, department, location, region, dates such as DOJ/DOR/DOL). Powers identity, hierarchy, and reporting across all other modules."
+    },
+    {
+      "domain": "Performance Goal Setting",
+      "purpose": "Captures goals, goal plans, review period, weights, and goal-setting workflow status (including reviewer and manager relationships) for the performance cycle."
+    },
+    {
+      "domain": "Performance Appraisal & Ratings",
+      "purpose": "Holds outcomes of the performance cycle (self rating, manager rating, document name, final status) tied to the employee-manager hierarchy and org context."
+    },
+    {
+      "domain": "Offboarding/Exit Clearance",
+      "purpose": "Manages resignation-to-relieving process with multi-function checklists (Employee, Manager, IT, Facilities, Finance, HR Ops, Payroll, etc.), asset/claims recovery, and overall task status tracking."
+    },
+    {
+      "domain": "Exit Payroll/Final Settlement",
+      "purpose": "Within offboarding, determines payable/recoverable items (gratuity, incentives, bonuses, reimbursements, PF/NPS recoveries) used for full-and-final settlement."
+    }
+  ],
+  "process_flow": "1) Base profile is created/maintained (employee code, org, grade, locations, DOJ). 2) At the start of a review period, goals are set and routed to manager/reviewer; goal-setting status tracks progress. 3) During/after the cycle, appraisal captures self and manager ratings and a final status. 4) If the employee resigns, offboarding starts using core HR data, orchestrating multi-department clearances and recoveries. 5) Exit payroll/final settlement computes payouts/recoveries (e.g., gratuity, incentives) based on offboarding inputs. 6) Leaving details are finalized and reflected back to the base profile.",
+  "semantic_ambiguities": [
+    {
+      "term": "Identifier: person number vs employee code vs employee id",
+      "differences": "Person number appears in performance modules; employee code in base master; employee id in exit checklists. They likely refer to the same individual but come from different systems/feeds.",
+      "why_confusing": "Users say “my ID” without knowing which identifier the module expects.",
+      "clarification_to_ask": "Do you mean your person number (performance), employee code (master data), or employee ID (used in exit checklists)?"
+    },
+    {
+      "term": "Reviewer vs Manager vs Reporting Manager",
+      "differences": "Reviewer is a role in goal-setting approvals; Manager/Reporting Manager is the line manager shown across modules; performance ratings reference the manager specifically.",
+      "why_confusing": "Users may conflate the person who reviews goals with the line manager or think they are always the same.",
+      "clarification_to_ask": "Are you referring to your goal-setting reviewer, your performance manager, or your reporting manager for org purposes?"
+    },
+    {
+      "term": "Status",
+      "differences": "Goal-setting status reflects progress of goal approvals; Performance final status indicates appraisal completion; Exit statuses track each department’s clearance and overall all-task status; Assignment/employee status indicates employment state.",
+      "why_confusing": "“What’s my status?” could map to any workflow or employment state.",
+      "clarification_to_ask": "Do you mean your goal-setting status, performance cycle final status, exit clearance status, or your employment/assignment status?"
+    },
+    {
+      "term": "Grade vs Grade Level vs Sub Grade vs Parent Grade",
+      "differences": "Grade is the band; grade level/sub grade are finer distinctions; parent grade may indicate the umbrella band or an effective-grade reference.",
+      "why_confusing": "Users ask for “grade” and expect a single value; reports may display different granularity.",
+      "clarification_to_ask": "Do you need your band (grade), the specific level/sub grade, or the parent/umbrella grade?"
+    },
+    {
+      "term": "Location: location vs office location vs work location vs location name",
+      "differences": "Base location/office is official posting; work location may be where work happens; location name appears in performance context.",
+      "why_confusing": "Users say “my location” without specifying office vs actual working site.",
+      "clarification_to_ask": "Are you asking about your official office location, your current work location, or the location recorded for performance reporting?"
+    },
+    {
+      "term": "Dates: DOJ, DoR, DoL",
+      "differences": "Date of joining is start date; date of resignation is when notice was given; date of leaving is exit/relieving date.",
+      "why_confusing": "Multiple modules store these dates; values may change as offboarding progresses.",
+      "clarification_to_ask": "Do you want your date of joining, your resignation date, or your last working/relieving date?"
+    },
+    {
+      "term": "Department vs Sub-department vs Business Unit vs Parent Department",
+      "differences": "Department is primary org; sub-department is nested; business unit is a higher grouping; parent department indicates hierarchy above the department.",
+      "why_confusing": "Users may request “department” but expect BU or sub-dept views.",
+      "clarification_to_ask": "Are you referring to your business unit, department, or sub-department?"
+    },
+    {
+      "term": "Ratings: Self rating vs Manager rating vs Final status",
+      "differences": "Self rating is employee’s self-assessment; manager rating is the manager’s assessment; final status indicates the appraisal stage/completion, not a numeric/qualitative rating.",
+      "why_confusing": "Users might expect a single score or assume final status is a rating.",
+      "clarification_to_ask": "Do you want your self rating, your manager’s rating for you, or the overall appraisal completion status?"
+    },
+    {
+      "term": "Payroll items in exit vs regular payroll",
+      "differences": "Schema focuses on exit-related payouts/recoveries (gratuity, incentives, recoveries) rather than monthly salary or payslips.",
+      "why_confusing": "Users asking about salary or CTC may expect monthly payroll data not present here.",
+      "clarification_to_ask": "Are you asking about exit final settlement components or your regular monthly payroll/payslip (not covered here)?"
+    }
+  ],
+  "clarification_rules": [
+    {
+      "user_intent_pattern": "Who is my reviewer?",
+      "ask": "Do you mean your goal-setting reviewer, your performance manager, or your reporting manager?"
+    },
+    {
+      "user_intent_pattern": "What is my status?",
+      "ask": "Do you mean your goal-setting status, performance cycle final status, exit clearance status, or employment/assignment status?"
+    },
+    {
+      "user_intent_pattern": "What is my grade/level?",
+      "ask": "Do you need your band (grade), the specific level/sub grade, or the parent/umbrella grade?"
+    },
+    {
+      "user_intent_pattern": "What is my location/where am I based?",
+      "ask": "Are you asking about your official office location, your current work location, or the location used in performance reports?"
+    },
+    {
+      "user_intent_pattern": "What is my ID/person number/employee code?",
+      "ask": "Should I use your person number (performance), employee code (master data), or employee ID (exit)?"
+    },
+    {
+      "user_intent_pattern": "Show my goals/progress",
+      "ask": "Do you want your goal details for the current review period, or the goal-setting workflow status?"
+    },
+    {
+      "user_intent_pattern": "What is my rating/score?",
+      "ask": "Do you want your self rating, your manager’s rating, or the overall appraisal completion status?"
+    },
+    {
+      "user_intent_pattern": "What is my last day/relieving date?",
+      "ask": "Do you want your submitted resignation date or your final leaving/relieving date after clearances?"
+    },
+    {
+      "user_intent_pattern": "Any pending tasks/clearances?",
+      "ask": "Are you asking about your exit checklist tasks (employee/manager/IT/Facilities/Finance/HR) or overall exit all-task status?"
+    },
+    {
+      "user_intent_pattern": "What will I be paid at exit?",
+      "ask": "Do you want exit final settlement components (e.g., gratuity, incentives, recoveries) or regular monthly payroll details?"
+    }
+  ],
+  "domain_routing": [
+    {
+      "route_to": "Performance Goal Setting",
+      "keywords_or_clues": ["goal", "goal plan", "review period", "weight", "reviewer", "goal status", "approval"]
+    },
+    {
+      "route_to": "Performance Appraisal & Ratings",
+      "keywords_or_clues": ["rating", "self rating", "manager rating", "performance document", "final status", "appraisal"]
+    },
+    {
+      "route_to": "Offboarding/Exit Clearance",
+      "keywords_or_clues": ["resignation", "relieving", "clearance", "handover", "asset return", "ID card", "disable account", "recovery", "notice period", "NOC", "pending tasks"]
+    },
+    {
+      "route_to": "Exit Payroll/Final Settlement",
+      "keywords_or_clues": ["gratuity", "final settlement", "F&F", "incentive", "bonus", "reimbursement", "PF recovery", "NPS recovery", "buyout", "encashment"]
+    },
+    {
+      "route_to": "Base Employee Master",
+      "keywords_or_clues": ["personal info", "official info", "employee code", "person number", "DOB", "DOJ", "department", "sub-department", "grade", "location", "assignment status"]
+    }
+  ],
+  "critical_notes": [
+    "Users might not know or name the module; infer intent from their words and context.",
+    "The same terms (status, reviewer, grade, location) are used differently across workflows.",
+    "Always infer context from user intent and, if unclear, ask a pointed disambiguation question.",
+    "Processes overlap (e.g., manager/reviewer roles, payroll inside exit) and may reference the same people differently.",
+    "Employee identifiers, names, grades, and departments repeat across modules but may have different granularity or timing."
+  ]
+}

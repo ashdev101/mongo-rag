@@ -1,0 +1,64 @@
+{
+  "ambiguous_terms": [
+    {
+      "term": "manager",
+      "possible_meanings": ["manager person number", "manager name", "reporting manager", "reviewer"],
+      "disambiguation_keywords": ["number", "name", "reviewer"],
+      "ask_user": "Use direct manager id/name or reviewer?"
+    },
+    {
+      "term": "department",
+      "possible_meanings": ["department", "parent department", "sub department", "sub-dept", "business unit"],
+      "disambiguation_keywords": ["parent", "sub", "BU"],
+      "ask_user": "Which level: BU, department, parent department, or sub department?"
+    },
+    {
+      "term": "location",
+      "possible_meanings": ["location name", "office location", "work location", "location", "region", "state"],
+      "disambiguation_keywords": ["office", "work", "region", "state"],
+      "ask_user": "Which location dimension: office, work, site/location, region, or state?"
+    },
+    {
+      "term": "status",
+      "possible_meanings": ["performance final status", "goal-setting status", "offboarding all task status", "core HR employee status"],
+      "disambiguation_keywords": ["performance", "goal", "offboarding", "employee"],
+      "ask_user": "Which status field should be used: performance, goal-setting, offboarding, or employee status?"
+    },
+    {
+      "term": "rating",
+      "possible_meanings": ["self rating", "manager rating"],
+      "disambiguation_keywords": ["self", "manager"],
+      "ask_user": "Use self rating or manager rating?"
+    },
+    {
+      "term": "goal",
+      "possible_meanings": ["goal name", "goal plan name"],
+      "disambiguation_keywords": ["plan", "goal"],
+      "ask_user": "Do you mean goal plan or individual goal?"
+    },
+    {
+      "term": "weight",
+      "possible_meanings": ["goal weight value", "aggregated weight across goals"],
+      "disambiguation_keywords": ["sum", "avg", "per person"],
+      "ask_user": "Aggregate how: sum or average, and at what level (per goal or per person/plan)?"
+    },
+    {
+      "term": "name",
+      "possible_meanings": ["employee name (full)", "first+last name", "manager name", "reviewer name"],
+      "disambiguation_keywords": ["employee", "manager", "reviewer"],
+      "ask_user": "Which name and format: employee, manager, or reviewer?"
+    },
+    {
+      "term": "leavers",
+      "possible_meanings": ["resigned (DoR)", "exited (DoL)"],
+      "disambiguation_keywords": ["resignation", "leaving"],
+      "ask_user": "Filter by resignation date or leaving date?"
+    },
+    {
+      "term": "top/bottom N",
+      "possible_meanings": ["sort by rating", "sort by weight", "sort by count"],
+      "disambiguation_keywords": ["sort by", "descending", "ascending"],
+      "ask_user": "Top/bottom by which metric and order?"
+    }
+  ]
+}

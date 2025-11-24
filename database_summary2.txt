@@ -1,0 +1,49 @@
+{
+  "ambiguous_fields": [
+    {
+      "field": "employee name",
+      "collections": ["permormance_rating_report_year_2025_2026", "offboarding_checklist"],
+      "meaning_notes": "Full name of employee; flat or nested field",
+      "clarification_question": "Do you mean the 'employee name' from performance ratings or from offboarding checklist?"
+    },
+    {
+      "field": "grade",
+      "collections": ["permormance_rating_report_year_2025_2026", "offboarding_checklist", "base_report", "performance_goal_report_2025_2026", "goal_setting_status"],
+      "meaning_notes": "Grade can be string or date, location varies",
+      "clarification_question": "Which collection's 'grade' field do you intend to query?"
+    },
+    {
+      "field": "department",
+      "collections": ["permormance_rating_report_year_2025_2026", "offboarding_checklist", "base_report", "performance_goal_report_2025_2026", "goal_setting_status"],
+      "meaning_notes": "Different structures/nesting",
+      "clarification_question": "Which department field do you need? (performance, offboarding, base, goal report, or goal status)"
+    },
+    {
+      "field": "region",
+      "collections": ["offboarding_checklist", "base_report", "performance_goal_report_2025_2026", "goal_setting_status"],
+      "meaning_notes": "Region in various reports",
+      "clarification_question": "Which report's 'region' are you referring to?"
+    }
+  ],
+  "clarification_rules": [
+    "IF field exists in >1 collection THEN ask user to choose which.",
+    "IF query mentions 'status' THEN clarify which collection/status subtype."
+  ],
+  "intent_routing": {
+    "performance ratings": "permormance_rating_report_year_2025_2026",
+    "goal status": "goal_setting_status",
+    "goal reports": "performance_goal_report_2025_2026",
+    "offboarding": "offboarding_checklist",
+    "employee base info": "base_report",
+    "department": "requires_clarification",
+    "grade": "requires_clarification",
+    "region": "requires_clarification"
+  },
+  "important_notes": [
+    "Field names and types may vary per collection.",
+    "Nested fields (e.g., offboarding_checklist.core hr) require path clarification.",
+    "Confirm context if user mentions ambiguous fields.",
+    "Date, string, and integer types overlap for some fields.",
+    "For status fields, ask which collection or detail needed."
+  ]
+}

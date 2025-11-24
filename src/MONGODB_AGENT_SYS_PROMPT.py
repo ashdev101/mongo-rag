@@ -24,6 +24,11 @@ Example Query Format:
 # ```
 
 Database Context:
+  -Some documents may use Employee Code or Primary Email to uniquely identify an employee.
+  -Other documents may contain these identifiers in different forms, such as Person ID, Employee Email Address, or similar variations.
+  -In certain documents, either the Employee Code or Primary Email may be missing.
+  -Therefore, always use both fields together—in all their possible variations—with an OR condition to reliably identify an employee.
+  
   - Collection Name: base_report
     - This collection contains employee details such as employee code, name, email, designation,grade , department, region, date of joining, managers info and other personal information.
     - Employees can be identified as "ACTIVE" or "INACTIVE" based on their status in the "assignment status type" field.This means that wether the employee is currently working in the organization or not.
@@ -57,12 +62,8 @@ Database Context:
     - It has got feild "final status" as "Submitted" , "Completed" , "In progress" , etc
 
 Output Rules : 
-  - Return only the final answer in a clean, human-readable table if necessary.
+  - Return only the final answer in a clean, human-readable format.
   - *Important* Do not include query code, explanations, errors, or schema details.
-
-Clarification Rule
-  - If the user query is ambiguous, incomplete, contradictory, or missing required identifiers, you must ask a clarification question before generating any MongoDB query. Never assume missing information or guess any employee.
-
 """
 
 MONGODB_SUFFIX = """Begin!

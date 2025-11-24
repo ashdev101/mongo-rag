@@ -1,0 +1,133 @@
+{
+  "business_domains": [
+    "core_hr",
+    "goal_setting",
+    "performance",
+    "offboarding",
+    "payroll",
+    "finance_assets_recovery",
+    "it_deprovisioning",
+    "facilities_admin",
+    "analytics_reporting"
+  ],
+  "process_flow": "Core HR maintains the employee master (identity, org, manager, locations, employment dates). For each review period, Goal Setting is initiated (goal plans, reviewers, workflow status). Performance consolidates self/manager inputs into documents and ratings for the same period. Outcomes can influence incentives handled by Payroll. When an employee resigns or transfers, Offboarding orchestrates multi-department clearances (employee/manager, IT, Facilities, Finance/Assets, HR operations) and feeds recoveries and payouts to Payroll for final settlement. Analytics/Reporting draws from all domains to answer compliance, completion, and trend questions.",
+  "semantic_ambiguities": [
+    {
+      "term": "employee identifier",
+      "semantic_differences": "Could mean employee code, person number, employee ID or employee person number.",
+      "why_confusing": "Different systems/feeds use different keys for the same person.",
+      "bot_must_ask": "Which identifier should we use (employee code, person number, or employee ID)?",
+      "belongs_to_modules": ["core_hr", "goal_setting", "performance", "offboarding", "payroll"]
+    },
+    {
+      "term": "department",
+      "semantic_differences": "Business unit, department, sub-department, parent department.",
+      "why_confusing": "Users often mix org levels; filters and rollups change by level.",
+      "bot_must_ask": "Which org level do you mean (business unit, department, sub-department, parent department)?",
+      "belongs_to_modules": ["core_hr", "goal_setting", "performance", "offboarding", "analytics_reporting"]
+    },
+    {
+      "term": "location",
+      "semantic_differences": "Work location, office location, location name, region, state.",
+      "why_confusing": "Physical office vs assigned work location vs geographic grouping.",
+      "bot_must_ask": "Do you mean office location, work location, region, or state?",
+      "belongs_to_modules": ["core_hr", "goal_setting", "performance", "offboarding", "analytics_reporting"]
+    },
+    {
+      "term": "manager",
+      "semantic_differences": "Current reporting manager, manager for review period, reviewer/approver.",
+      "why_confusing": "Reporting lines can differ between HR master and review workflow.",
+      "bot_must_ask": "Do you mean the HR reporting manager, the performance manager for the cycle, or the reviewer?",
+      "belongs_to_modules": ["core_hr", "goal_setting", "performance", "offboarding"]
+    },
+    {
+      "term": "status",
+      "semantic_differences": "Goal setting workflow status, performance document final status, offboarding task statuses, all-task aggregate status.",
+      "why_confusing": "‘Status’ exists in multiple processes with different meanings.",
+      "bot_must_ask": "Which status do you want: goal setting, performance document, a specific offboarding checklist status, or overall offboarding status?",
+      "belongs_to_modules": ["goal_setting", "performance", "offboarding", "analytics_reporting"]
+    },
+    {
+      "term": "grade",
+      "semantic_differences": "Grade vs grade level vs parent grade vs sub grade.",
+      "why_confusing": "Pay band, job band, and hierarchy level are often conflated.",
+      "bot_must_ask": "Which grade dimension should we use: grade, grade level, parent grade, or sub grade?",
+      "belongs_to_modules": ["core_hr", "goal_setting", "performance"]
+    },
+    {
+      "term": "review period artifacts",
+      "semantic_differences": "Review period name, goal plan name, performance document name.",
+      "why_confusing": "Users say ‘cycle’ or ‘plan’ interchangeably.",
+      "bot_must_ask": "Are you referring to the review period, the goal plan, or the performance document?",
+      "belongs_to_modules": ["goal_setting", "performance", "analytics_reporting"]
+    },
+    {
+      "term": "rating",
+      "semantic_differences": "Self rating, manager rating, final consolidated rating; vs incentives/bonuses tied to ratings.",
+      "why_confusing": "People jump from rating to payout assumptions.",
+      "bot_must_ask": "Do you need self, manager, or final rating — and are you also asking about incentive impact?",
+      "belongs_to_modules": ["performance", "payroll", "analytics_reporting"]
+    },
+    {
+      "term": "employee status",
+      "semantic_differences": "Assignment status type (active/inactive), offboarding HR status during exit, final separation state.",
+      "why_confusing": "Similar labels across lifecycle but different business meanings.",
+      "bot_must_ask": "Is this the HR assignment status, an offboarding process status, or final separation state?",
+      "belongs_to_modules": ["core_hr", "offboarding", "analytics_reporting"]
+    },
+    {
+      "term": "offboarding vs transfer",
+      "semantic_differences": "Full separation vs group-company transfer with leave/gratuity treatments.",
+      "why_confusing": "Transfers may follow parts of exit checklist but with different settlements.",
+      "bot_must_ask": "Is the case a complete exit or a group transfer? Should leaves/payouts be encashed or transferred?",
+      "belongs_to_modules": ["offboarding", "payroll", "core_hr"]
+    },
+    {
+      "term": "recoveries",
+      "semantic_differences": "Notice period, assets, travel/advances, telecom, PF/NPS, IT equipment.",
+      "why_confusing": "Recovery owners differ (HR ops, Finance, Payroll, IT, Facilities).",
+      "bot_must_ask": "Which recovery type and owning function are you referring to?",
+      "belongs_to_modules": ["offboarding", "finance_assets_recovery", "payroll", "it_deprovisioning", "facilities_admin"]
+    },
+    {
+      "term": "gratuity",
+      "semantic_differences": "Eligibility vs payable amount; processed by payroll vs acknowledged by HR.",
+      "why_confusing": "Users ask for ‘gratuity’ without stating whether it’s a rule check or a payable figure.",
+      "bot_must_ask": "Do you need eligibility status or the calculated payable amount (and for which period)?",
+      "belongs_to_modules": ["payroll", "offboarding"]
+    }
+  ],
+  "clarification_rules": [
+    "Always anchor the question to a domain first (core HR, goal setting, performance, offboarding, payroll).",
+    "Confirm the time frame (specific review period/year vs current point-in-time).",
+    "Disambiguate identifiers (employee code vs person number vs employee ID) before filtering or joining.",
+    "Pin down org scope (business unit vs department vs sub-department) and geography (work location vs office vs region).",
+    "Specify manager context (HR reporting manager, performance manager, or reviewer).",
+    "When ‘status’ is mentioned, ask which process and which level (document vs task vs overall).",
+    "For ratings, clarify which stage (self/manager/final) and whether incentive impact is included.",
+    "For offboarding, ask exit type (separation vs group transfer) and which clearance lane (IT, Facilities, Finance, HR, Payroll).",
+    "For recoveries and payouts, identify the owning function and the component (notice, assets, advances, gratuity, incentives).",
+    "If the query implies aggregation, confirm the population filter (active, resigned, within specific departments/regions)."
+  ],
+  "domain_routing": [
+    {"terms": ["employee master", "employee code", "person number", "designation", "date of joining", "org structure"], "domain": "core_hr"},
+    {"terms": ["goal", "goal plan", "review period", "reviewer", "goal status"], "domain": "goal_setting"},
+    {"terms": ["performance document", "rating", "self rating", "manager rating", "final status"], "domain": "performance"},
+    {"terms": ["offboarding", "exit checklist", "clearance", "all task status"], "domain": "offboarding"},
+    {"terms": ["final settlement", "gratuity", "statutory bonus", "incentive", "PF", "NPS"], "domain": "payroll"},
+    {"terms": ["recovery", "advance", "asset recovery", "imprest", "travel claim"], "domain": "finance_assets_recovery"},
+    {"terms": ["laptop return", "account disable", "access removal", "network folders"], "domain": "it_deprovisioning"},
+    {"terms": ["id card", "access card", "keys", "stationery"], "domain": "facilities_admin"},
+    {"terms": ["report", "trend", "completion rate", "headcount", "distribution"], "domain": "analytics_reporting"}
+  ],
+  "critical_notes": [
+    "Multiple identifiers exist for the same person; never assume a default key.",
+    "Org and location terms are hierarchical; confirm the level to avoid miscounts.",
+    "Review period 2025–2026 binds goal setting and performance; ensure period alignment before comparing.",
+    "Ratings scales and mapping to incentives may vary; do not infer payout logic without explicit confirmation.",
+    "Offboarding involves parallel tracks (IT, Facilities, Finance, HR, Payroll); ‘overall status’ may mask pending sub-tasks.",
+    "Group-company transfers resemble exits but differ in leave and gratuity handling; clarify before reporting settlements.",
+    "PII is present (names, emails, DOB); apply least-necessary disclosure in responses.",
+    "Source labels may contain typos or inconsistent naming; use fuzzy intent but confirm critical terms with the user."
+  ]
+}

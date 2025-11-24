@@ -1,0 +1,106 @@
+{
+  "Ambiguity_Map": {
+    "grade": {
+      "base_report": "Date: Likely represents the employee's date of attaining grade or grade update.",
+      "offboarding_checklist.core hr": "Date: Likely represents date tied to grade, but semantics unclear.",
+      "performance_goal_report_2025_2026": "Date: Appears to represent employee's grade, but unusually stored as 'date'.",
+      "permormance_rating_report_year_2025_2026": "String: Represents the grade level or band of the employee."
+    },
+    "department": {
+      "base_report": "String: Employee's assigned department.",
+      "offboarding_checklist.core hr": "String: Employee's department at exit.",
+      "permormance_rating_report_year_2025_2026": "String: Employee's department at the time of rating.",
+      "performance_goal_report_2025_2026": "String: Department relevant to the performance goal.",
+      "goal_setting_status": "String: Employee's department for goal setting."
+    },
+    "sub department" / "sub-dept": {
+      "base_report": "String: Sub-department (spelled 'sub-dept' here).",
+      "offboarding_checklist.core hr": "String: Sub-department.",
+      "performance_goal_report_2025_2026": "String: Sub department for goal reporting.",
+      "goal_setting_status": "String: Sub department."
+    },
+    "grade level": {
+      "base_report": "String: Granular grade classification.",
+      "offboarding_checklist.core hr": "String: Grade level at exit."
+    },
+    "designation": {
+      "base_report": "String: Employee's role/title.",
+      "offboarding_checklist.core hr": "String: Designation at exit.",
+      "goal_setting_status": "String: Designation during goal setting."
+    },
+    "region": {
+      "base_report": "String: Geographic region of employment.",
+      "offboarding_checklist.core hr": "String: Region at exit.",
+      "performance_goal_report_2025_2026": "String: Region for goals.",
+      "goal_setting_status": "String: Region for goal setting."
+    },
+    "status": {
+      "offboarding_checklist": "Object: Contains task completion statuses for offboarding steps.",
+      "goal_setting_status": "String: Status of goal setting process."
+    },
+    "employee name": {
+      "permormance_rating_report_year_2025_2026": "String: Employee's full name.",
+      "offboarding_checklist.core hr": "String: Employee's name, at exit.",
+      "goal_setting_status": "String: Employee's name for goal setting."
+    },
+    "reporting manager": {
+      "offboarding_checklist.core hr": "String: Reporting manager's name at the time of exit.",
+      "goal_setting_status": "String (as 'reporting to'): Reporting manager during goal setting.",
+      "permormance_rating_report_year_2025_2026": "Possible as 'manager name' or 'manager person number': Reporting manager during appraisal."
+    },
+    "manager name/person number": {
+      "permormance_rating_report_year_2025_2026": "String/Integer: Direct manager during rating.",
+      "goal_setting_status": "As 'manager number': Reporting manager for goal setting."
+    }
+  },
+  "Clarification_Rules": [
+    {
+      "if": "User refers to 'grade'",
+      "then": "Ask: 'Do you mean the employee grade as a level (e.g. band/level), or the date when the grade was assigned?'"
+    },
+    {
+      "if": "User mentions 'department' or 'sub department'",
+      "then": "Ask: 'Is this in the context of performance, offboarding, or general HR data?'"
+    },
+    {
+      "if": "User asks for 'status'",
+      "then": "Ask: 'Do you mean the status of the exit checklist, or the status of the goal setting process?'"
+    },
+    {
+      "if": "User mentions 'designation' or 'grade level'",
+      "then": "Ask: 'Is this for a base employee record, offboarding process, or goal setting?'"
+    },
+    {
+      "if": "User refers to 'reporting manager' or 'manager'",
+      "then": "Ask: 'Are you referring to the manager for performance appraisal, offboarding, or goal setting?'"
+    },
+    {
+      "if": "User mentions 'employee name'",
+      "then": "Ask: 'Are you referring to the employee in context of performance, offboarding, or goal setting?'"
+    }
+  ],
+  "Intent_Routing_Guide": {
+    "reviewer": {
+      "goal_setting_status": "Field: reviewer name/reviewer number",
+      "rule": "If user says 'reviewer', clarify if they mean for goal setting or another HR process."
+    },
+    "status": {
+      "offboarding_checklist": "Field: status (exit checklist progress)",
+      "goal_setting_status": "Field: status (goal setting workflow)",
+      "rule": "If user says 'status', clarify if they want exit checklist status or goal setting status."
+    },
+    "pending tasks": {
+      "offboarding_checklist": "Fields under 'status' and per-department offboarding objects indicate pending tasks.",
+      "rule": "Pending tasks are only available in offboarding_checklist. If unsure, confirm context."
+    },
+    "salary": {
+      "not_present": "No salary or pay-related fields found. Clarify intent."
+    },
+    "reporting manager": {
+      "offboarding_checklist": "core hr.reporting manager",
+      "permormance_rating_report_year_2025_2026": "manager name/manager person number",
+      "goal_setting_status": "reporting to/manager number",
+      "rule": "If user mentions reporting manager, clarify which process (offboarding, performance, goal setting)."
+    }
+  }
+}
