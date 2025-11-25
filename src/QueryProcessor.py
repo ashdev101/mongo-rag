@@ -18,6 +18,8 @@ def get_converter_results(converter):
     # 1) Preferred: method returns structured data
     try:
         out = converter.print_results(return_output=True)
+        print("===="*10,"QueryProcessor.py",'===='*10)
+        print("Out:",out)
         # If it returned a dict/list, return it as-is for callers to inspect
         if isinstance(out, (list, dict)):
             return out

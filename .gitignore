@@ -15,7 +15,10 @@ wheels/
 # Private files 
 output_file/
 Reports/
+Harsh_Router_gpt.py
 
 # debugging scripts
 test.py
 test.txt
+test.ipynb
+tex.py
