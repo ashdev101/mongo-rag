@@ -1,7 +1,7 @@
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
-from rag.VectorStoreManager import VectorStoreManager
+from VectorStoreManager import VectorStoreManager
 from dotenv import load_dotenv
 import os
 
@@ -41,3 +41,6 @@ def query_main_store(question):
     )
 
     return qa.run(question)
+
+
+print(query_main_store("what is the role of a manager in performance review?"))
