@@ -9,10 +9,15 @@ from langchain_openai import ChatOpenAI
 from SemanticDictionaryProcessor import SemanticDictionaryProcessor
 from CollectionRouter import CollectionRouterAgent
 from clarifying_agent2 import clarify_query
+from rbac_tool import run_query
+import json
+import databse_dsitcint_values
 # Load environment variables from .env file
 from dotenv import load_dotenv
 app_dir = os.path.join(os.getcwd())
 load_dotenv(os.path.join(app_dir, ".env"))
+
+access_record = json.load(open("access_record.json", "r"))
 
 MONGODB_URI = os.getenv('MONGODB_URI')
 
@@ -24,6 +29,9 @@ class AccessState(TypedDict):
     designation: str  # fetched from MongoDB
     department : str  # fetched from MongoDB
     region : str  # fetched from MongoDB
+    department_exception : list[str]
+    grade_allowed : list[str]
+    region_access : list[str]
     question: str
     intent: str
     decision: str
@@ -49,15 +57,29 @@ def fetch_role_node(state: AccessState):
     if record and "designation" in record:
         role = record["designation"].lower()
         region = record["region"]
+        region_access = [region] #instantiate with single region by default
         department = record["department"]
+        department_exception = [] #no exception by default
+        grade_allowed = databse_dsitcint_values.CANONICAL_GRADES #all grades by default
         employees_code = record["employee code"]
+
+        #look if we have the relevant record into the access_record.json
+        for rec in access_record:
+            # print(rec["Emp Code"], record["employee_code"])
+            if rec["Emp Code"] == record["employee code"]:
+                # print("Found access record for", email)
+                # print(rec)
+                region_access = rec["Region"]
+                department_exception = rec["Department_exception"]
+                grade_allowed = rec["Grade"]
+                break
     else:
         role = "unknown"
         region = "unknown"
         department = "unknown"
         employees_code = 0
     print(f"Fetched role for {email}: {role}")
-    return {"designation": role  , "employee_code" : employees_code, "region": region , "department" : department} 
+    return {"designation": role  , "employee_code" : employees_code, "region": region , "department" : department , "region_access": region_access , "department_exception": department_exception , "grade_allowed": grade_allowed} 
 
 
 def classify_query_node(state: AccessState):
@@ -174,11 +196,7 @@ def ask_for_clarification_node(state: AccessState):
                 AIMessage(content=state["clarification_question"])
             ]
     }
-    # return {
-    #     "messages": [
-    #         AIMessage(content=state["clarification_question"])
-    #     ]
-    # }
+
 def clarification_condition(state: AccessState):
     if state.get("needs_clarification", False):
         return "ask_clarification"   # pause + ask user
@@ -188,7 +206,10 @@ def clarification_condition(state: AccessState):
 def modify_query_node(state: dict):
     question = state["question"]
     region = state["region"]
-    llm = ChatOpenAI(model="gpt-4o-mini")
+    regions_access = state["region_access"]
+    department_exceptions = state["department_exception"]
+    grades = state["grade_allowed"]
+    # llm = ChatOpenAI(model="gpt-4o-mini")
     intent = state["intent"]
     # If the user is HR, we may need to modify
     if state["department"] == "Human Resources" and region:
@@ -218,11 +239,18 @@ def modify_query_node(state: dict):
 
         USER QUESTION:
         {question}
+
         """
-        modified_query = f"{llm.invoke(prompt).content.strip()} . My employee code is {state['employee_code']}" if intent == "self" else f"{llm.invoke(prompt).content.strip()}"
-    else:
-        # No modification needed
-        modified_query = f"{question} . My employee code is {state['employee_code']}"
+        if intent == "self" :
+            modified_query = f"{question} . My employee code is {state['employee_code']}"
+        else :
+            rbac_result = run_query(
+            user_question= question,
+            allowed_regions= regions_access,
+            allowed_grades= grades,
+            department_exceptions= department_exceptions
+            )
+            modified_query = rbac_result["rbac_result"]
 
     return {"modified_query": modified_query}
 
@@ -251,6 +279,49 @@ def response_node(state: AccessState):
 
 
 workflow = StateGraph(AccessState)
+# -------with the clarifying agent node--------
+# # def hr_conditional_path(state: dict):
+# #     # If HR, go to 'modify_query'; else, skip to 'check_access'
+# #     if state["department"] == "Human Resources":
+# #         return "modify_query"
+# #     else:
+# #         return "check_access"
+
+# workflow.add_node("input", input_node)
+# workflow.add_node("query_clarifying_agent", query_clarifying_agent_node)
+# workflow.add_node("ask_clarification", ask_for_clarification_node)
+# workflow.add_node("fetch_role", fetch_role_node)
+# workflow.add_node("classify_query", classify_query_node)
+# workflow.add_node("modify_query", modify_query_node)
+# workflow.add_node("check_access", check_access_node)
+# workflow.add_node("response", response_node)
+
+
+# workflow.set_entry_point("input")
+# workflow.add_edge("input", "query_clarifying_agent")
+# workflow.add_conditional_edges(
+#     source="query_clarifying_agent",
+#     path=clarification_condition
+# )
+# # workflow.add_edge("ask_clarification", "query_clarifying_agent") 
+
+# # Normal flow
+# workflow.add_edge("fetch_role", "classify_query")
+
+# # Conditional edge: HR -> modify query, others -> skip
+# # workflow.add_conditional_edges(
+# #     source="classify_query",
+# #     path=hr_conditional_path
+# # )
+# workflow.add_edge("classify_query", "modify_query")
+# workflow.add_edge("modify_query", "check_access")
+# workflow.add_edge("check_access", "response")
+# workflow.add_edge("response", END)
+
+# workflow.set_entry_point("input")
+
+
+# -------without the clarifying agent node--------
 
 # def hr_conditional_path(state: dict):
 #     # If HR, go to 'modify_query'; else, skip to 'check_access'
@@ -260,24 +331,14 @@ workflow = StateGraph(AccessState)
 #         return "check_access"
 
 workflow.add_node("input", input_node)
-workflow.add_node("query_clarifying_agent", query_clarifying_agent_node)
-workflow.add_node("ask_clarification", ask_for_clarification_node)
 workflow.add_node("fetch_role", fetch_role_node)
 workflow.add_node("classify_query", classify_query_node)
 workflow.add_node("modify_query", modify_query_node)
 workflow.add_node("check_access", check_access_node)
 workflow.add_node("response", response_node)
 
-
-workflow.set_entry_point("input")
-workflow.add_edge("input", "query_clarifying_agent")
-workflow.add_conditional_edges(
-    source="query_clarifying_agent",
-    path=clarification_condition
-)
-# workflow.add_edge("ask_clarification", "query_clarifying_agent") 
-
 # Normal flow
+workflow.add_edge("input", "fetch_role")
 workflow.add_edge("fetch_role", "classify_query")
 
 # Conditional edge: HR -> modify query, others -> skip
@@ -297,14 +358,17 @@ access_agent = workflow.compile()
 # state = {
 #     "needs_clarification": False,
 #     "clarification_question": "",
-#     "email": "lynetted@tataplay.com",
+#     "email": "lalitg@tataplay.com",
 #     "designation": "",
 #     "department" : "",
 #     "region" : "",
+#     "department_exception" : [],
+#     "grade_allowed" : [],
+#     "region_access" : [],
 #     "question": "",
 #     "intent": "",
 #     "decision": "",
-#     "messages": [HumanMessage(content="Whos my reviewer?")],
+#     "messages": [HumanMessage(content="give me the people who have resigned this year 2025")],
 #     "modified_query" : ""
 # }
 
