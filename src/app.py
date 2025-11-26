@@ -144,16 +144,29 @@ def combined_execute(email, question):
             final_output = safe_json(final_output_dict)
 
         # ===== AUTO-SAVE CHAT HISTORY =====
+        final_output_string=''
         try:
-            push_convo_pair(
-                email=email,
-                user_msg=question,
-                bot_msg=final_output_dict.get("db_results")
-            )
+            if route == "document":
+                push_convo_pair(
+                    email=email,
+                    user_msg=question,
+                    bot_msg=final_output_dict.get("db_results")
+                )
+                final_output_string=final_output_dict.get("db_results")
+
+
+            elif route == "policy":
+                push_convo_pair(
+                    email=email,
+                    user_msg=question,
+                    bot_msg=final_output_dict.get("policy_answer")
+                )
+                final_output_string=final_output_dict.get("policy_answer")
+
         except Exception as e:
             print("Failed to push conversation history:", e)
 
-        return router_out_str, final_output
+        return router_out_str, final_output_string
 
     except Exception as e:
         err = safe_json({"error": str(e)})
@@ -290,8 +303,8 @@ with gr.Blocks(title="MQL Access Agent UI (robust)") as demo:
 
             combined_btn = gr.Button("Run Combined Router")
 
-            router_output = gr.Textbox(label="Router Output (JSON)", lines=12)
-            final_output = gr.Textbox(label="Final Result (Executed Output)", lines=15)
+            router_output = gr.Textbox(label="Router Output (JSON)", lines=6)
+            final_output = gr.Textbox(label="Final Result (Executed Output)", lines=6)
 
             combined_btn.click(
                 combined_execute,
