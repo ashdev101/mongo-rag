@@ -30,7 +30,7 @@ class SemanticDictionaryProcessor:
             # Deduplicate and normalize
             seen = set()
             _routing_keywords = []
-            for s in _routing_keywords:
+            for s in routing_keywords:  # Fixed: iterate over routing_keywords, not _routing_keywords
                 s_norm = s.lower().strip()
                 if s_norm not in seen:
                     seen.add(s_norm)
@@ -40,7 +40,7 @@ class SemanticDictionaryProcessor:
 
             collection_routing_list.append({
                 "collection_name": collection_name,
-                "routing_keywords": routing_keywords
+                "routing_keywords": _routing_keywords  # Fixed: use deduplicated list
             })
 
         return collection_routing_list

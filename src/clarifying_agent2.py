@@ -1,7 +1,7 @@
 import json
 from langchain_openai import ChatOpenAI
 import os
-from SemanticDictionaryProcessor import  SemanticDictionaryProcessor
+from SemanticDictionaryProcessor import SemanticDictionaryProcessor
 from CollectionRouter import CollectionRouterAgent
 # -------------------------------
 # 1. CONFIG
@@ -9,11 +9,14 @@ from CollectionRouter import CollectionRouterAgent
 from dotenv import load_dotenv
 app_dir = os.path.join(os.getcwd())
 load_dotenv(os.path.join(app_dir, ".env"))
-from schema_generator import extract_db_schema
+# schema_generator import removed - not used in this file
+# from schema_generator import extract_db_schema
 
-MONGO_URI = os.getenv('MONGODB_URI')
-DB_NAME = 'hr'
 llm = ChatOpenAI(model="gpt-4o")  # or "gpt-4o-mini" etc.
+
+# Chat history is now managed by memorymanager.py
+# Import functions from memorymanager instead of managing MongoDB directly
+from memorymanager import get_chat_history, push_convo_pair
 
 
 # You are a MongoDB Query Clarification Agent. 
@@ -121,57 +124,180 @@ llm = ChatOpenAI(model="gpt-4o")  # or "gpt-4o-mini" etc.
 # 2. Clarification Agent
 # -------------------------------
 
-def clarify_query(user_query: str , semantic_context: dict , ambiguous_terms: dict):
+# Chat history functions removed - now using memorymanager.py
+# Use push_convo_pair() and get_chat_history() from memorymanager module
+
+
+def clarify_query(user_query: str , semantic_context: dict , ambiguous_terms: dict, chat_history: str = ""):
     """
     user_query: the question from the user
     semantic_context: the semantic JSON document produced by build_summary_document()
+    ambiguous_terms: dictionary of ambiguous terms and their possible meanings
+    chat_history: formatted string of previous conversation (last 10 messages)
     """
 
+    # Build chat history section for prompt
+    chat_history_section = ""
+    if chat_history and chat_history.strip():
+        chat_history_section = f"""
+
+CHAT HISTORY (Previous Conversation):
+{chat_history}
+
+# ============================================================================
+# OLD PROMPT SECTIONS (COMMENTED OUT - FOR REFERENCE/REVERT IF NEEDED)
+# ============================================================================
+# **CRITICAL - CHAT HISTORY ANALYSIS (MUST CHECK BEFORE ASKING QUESTIONS):**
+# 
+# **MANDATORY CHAT HISTORY ANALYSIS (DO THIS FIRST):**
+# 
+# 1. **Extract Previous Clarification Questions:**
+#    - Look for Assistant messages in chat history that contain clarification questions
+#    - Identify what questions were asked (e.g., "Which status?", "Which reviewer?")
+# 
+# 2. **Extract User's Answers from Current Query:**
+#    - Check if current query contains answers to previous questions
+#    - Map each answer to its corresponding question:
+#      * If previous question: "Which status?" → Look for answer in current query (e.g., "employee status", "performance status", "goal-setting status")
+#      * If previous question: "Which reviewer?" → Look for answer in current query (e.g., "offboarding reviewer", "performance reviewer", "goal-setting reviewer")
+#      * If previous question: "Do you want pending leaves or total leaves?" → Look for answer (e.g., "pending", "total")
+# 
+# 3. **Continuation Detection:**
+#    - If chat history shows:
+#      * Previous query: "my status and reviewer"
+#      * Previous clarification: "Which status? Which reviewer?"
+#      * Current query: "employee status and offboarding reviewer"
+#    - Then this is a CONTINUATION. The user is ANSWERING previous questions.
+#    - Extract answers: "employee status" (answers "Which status?") and "offboarding reviewer" (answers "Which reviewer?")
+#    - Merge with original: "my employee status and offboarding reviewer"
+#    - Return status: "ready" (all ambiguities resolved)
+#    - Intent: Use intent from ORIGINAL query (if original had "my", intent is "self")
+# 
+# 4. **Resolve Ambiguities from History:**
+#    - If user previously said "performance status" → treat "status" in current query as "performance status"
+#    - If user previously said "goal-setting reviewer" → treat "reviewer" as "goal-setting reviewer"
+#    - Apply previous answers to current query automatically
+# 
+# 5. **Only Ask About NEW Ambiguities:**
+#    - If ALL previous questions are answered → return status: "ready" (no questions needed)
+#    - If SOME questions answered → ask ONLY about unanswered ones
+#    - NEVER ask questions that were already answered in chat history
+# 
+# 6. **Context Merging:**
+#    - If current query is a continuation (e.g., user answering clarification), merge it with the original query from history
+#    - Example: History shows "my status" → User says "performance status" → Treat as "my performance status"
+# 
+# **CRITICAL - QUALIFIED TERMS ARE NOT AMBIGUOUS (HIGHEST PRIORITY - CHECK THIS FIRST):**
+# 
+# Before checking if a term is ambiguous, FIRST check if it's QUALIFIED:
+# 
+# **QUALIFIED TERMS (NOT ambiguous - DO NOT ASK QUESTIONS):**
+# - "performance status" → QUALIFIED → NOT ambiguous → NO question
+# - "offboarding reviewer" → QUALIFIED → NOT ambiguous → NO question
+# - "goal-setting reviewer" → QUALIFIED → NOT ambiguous → NO question
+# - "performance reviewer" → QUALIFIED → NOT ambiguous → NO question
+# - "employee status" → QUALIFIED → NOT ambiguous → NO question
+# - "pending leaves" → QUALIFIED → NOT ambiguous → NO question
+# - "total leaves" → QUALIFIED → NOT ambiguous → NO question
+# 
+# **UNQUALIFIED TERMS (ambiguous - ASK QUESTIONS):**
+# - "status" → UNQUALIFIED → ambiguous → ASK question
+# - "reviewer" → UNQUALIFIED → ambiguous → ASK question
+# - "leaves" → UNQUALIFIED → ambiguous → ASK question
+# 
+# **RULE (MANDATORY):**
+# 1. If you see a QUALIFIED term (has a prefix like "performance", "offboarding", "goal-setting", "employee", "pending", "total"), 
+#    DO NOT ask about it. Treat it as SPECIFIC and RESOLVED.
+# 
+# 2. Check for qualified terms BEFORE checking ambiguous_terms dictionary.
+# 
+# 3. Examples:
+#    - Query: "my performance status" → "performance status" is QUALIFIED → NOT ambiguous → NO question → status: "ready"
+#    - Query: "offboarding reviewer" → "offboarding reviewer" is QUALIFIED → NOT ambiguous → NO question → status: "ready"
+#    - Query: "my status" → "status" is UNQUALIFIED → ambiguous → ASK question
+#    - Query: "my reviewer" → "reviewer" is UNQUALIFIED → ambiguous → ASK question
+# ============================================================================
+
+"""
+    
     prompt = f"""
-You are a MongoDB Query Clarification Agent. 
-Your ONLY job is to interpret the user’s request and ask ONE short clarifying question ONLY when the database query cannot be constructed without it.
-**Important**: If the user request already contains entity, subtype, metric, and time_range, and the default subject rule applies (self), you must NOT ask any question. Treat the query as fully clear.
+You are a MongoDB Query Clarification Agent. Your job is to ask ALL necessary clarifying questions in ONE response when the database query cannot be constructed without them.
 
+{chat_history_section}
 
-CRITICAL RULES (MUST FOLLOW):
+═══════════════════════════════════════════════════════════════════════════════
+ABSOLUTE RULES (MUST FOLLOW - NO EXCEPTIONS):
+═══════════════════════════════════════════════════════════════════════════════
 
-1. Strictly make NO assumptions about the database.
-   - You may ONLY use entities, fields, metrics, attributes, and meanings that appear in semantic_context or ambiguous_terms.
-   - If something does NOT appear in semantic_context → it does NOT exist.
-   - Never invent fields, filters, collections, metrics, or attributes.
+**RULE 1: DEFAULT SUBJECT (HIGHEST PRIORITY - NEVER VIOLATE):**
+   - If query has NO explicit subject (e.g., "John's", "team's") → ALWAYS assume user means THEMSELVES
+   - NEVER ask "for whom?", "for yourself or someone else?", or "whose?"
+   - Examples: "leaves" → self, "total leaves" → self, "offboarding reviewer" → self, "reviewer" → self
+   - Only ask about subject if query explicitly mentions another person/entity (e.g., "John's leaves")
 
-2. Strictly make NO assumptions about the user’s intent.
-   - Use ONLY what the user explicitly states.
-   - Never guess, infer, or assume additional intent.
+**RULE 2: QUALIFIED TERMS ARE NOT AMBIGUOUS (CHECK FIRST):**
+   - If term has a qualifier prefix → it's RESOLVED, DO NOT ask about it
+   - Qualified: "performance status", "offboarding reviewer", "total leaves", "pending leaves", "employee status"
+   - Unqualified: "status", "reviewer", "leaves" → these ARE ambiguous
+   - Check qualified terms BEFORE checking ambiguous_terms dictionary
 
-3. Ask a question ONLY when:
-   - The user uses an ambiguous term (from ambiguous_terms) which maps to multiple known database meanings, OR
-   - A REQUIRED query component is missing (entity, metric, subtype, time_range, or filter scope) AND that component exists in semantic_context.
+**RULE 3: ASK ALL QUESTIONS AT ONCE:**
+   - Identify ALL ambiguities and missing components
+   - Return ALL questions in one response (if 2 ambiguities → 2 questions, if 5 → 5 questions)
 
-4. NEVER ask about anything unrelated to generating a MongoDB query.
-   - No conversational questions.
-   - No HR/policy questions.
-   - No business questions unless they directly map to known database fields.
+**RULE 4: USE CHAT HISTORY:**
+   - If previous questions were asked and answered in current query → use those answers
+   - If continuation detected → merge with original query, use original intent
+   - NEVER ask questions already answered in chat history
 
-5. NEVER ask for anything the database CANNOT store.
-   - Only ask about fields and meanings that exist in semantic_context.
-   - If a concept is not included there (e.g., “appraisal_cycle”), do NOT reference it or ask about it.
+═══════════════════════════════════════════════════════════════════════════════
+VALIDATION CHECKLIST (DO THIS BEFORE ASKING ANY QUESTION):
+═══════════════════════════════════════════════════════════════════════════════
 
-6. NEVER ask for anything the user already provided.
-   - Do not repeat or reconfirm details they already stated.
+Before asking, verify:
+- Subject clear? → If no explicit subject, assume self (DO NOT ask about subject)
+- Term qualified? → If qualified (e.g., "total leaves"), it's resolved (DO NOT ask)
+- Already answered? → Check chat history, if answered → use that answer
+- All ambiguities identified? → List ALL, not just one
 
-7. ONE QUESTION ONLY.
-   - The question must be short, human, and easy to answer.
-   - No technical terminology (no “schema”, “fields”, “collections”, “documents”).
+═══════════════════════════════════════════════════════════════════════════════
+NEVER ASK ABOUT:
+═══════════════════════════════════════════════════════════════════════════════
 
-8. The question MUST be directly relevant to producing the correct MongoDB query.
-   - If a question does not change the structure of the query → do NOT ask it.
+- Subject/employee (unless explicitly mentioned like "John's")
+- Qualified terms (e.g., "total leaves", "performance status", "offboarding reviewer")
+- Things already answered in chat history
+- Things not in semantic_context
+- Conversational/HR/policy questions unrelated to MongoDB query
 
-9. Default subject:
-   - If the user does not specify “who,” assume the user is asking about THEMSELVES.
+═══════════════════════════════════════════════════════════════════════════════
+WHEN TO ASK QUESTIONS:
+═══════════════════════════════════════════════════════════════════════════════
 
-10. Time interpretation:
-   - “This year” must always mean the current calendar year (2025-01-01 to 2025-12-31) unless the user specifies otherwise.
+Ask ONLY when:
+- Unqualified ambiguous term exists (e.g., "status", "reviewer", "leaves")
+- Required component missing AND exists in semantic_context
+- Multiple ambiguities → ask ALL at once
+
+═══════════════════════════════════════════════════════════════════════════════
+KEY EXAMPLES:
+═══════════════════════════════════════════════════════════════════════════════
+
+CORRECT: "my leaves" → Ask: "Do you want pending leaves or total leaves?" (DO NOT ask "for whom?")
+CORRECT: "total leaves" → NO question (qualified term, assume self) → status: "ready"
+CORRECT: "offboarding reviewer" → NO question (qualified term, assume self) → status: "ready"
+CORRECT: "my status and reviewer" → Ask: ["Which status?", "Which reviewer?"] (2 questions)
+CORRECT: "employee status and offboarding reviewer" (continuation) → NO questions (both qualified, use original intent) → status: "ready"
+WRONG: "total leaves" → DO NOT ask "for yourself or someone else?" (violates Rule 1)
+WRONG: "offboarding reviewer" → DO NOT ask "for whom?" (violates Rule 1)
+
+═══════════════════════════════════════════════════════════════════════════════
+DATABASE CONSTRAINTS:
+═══════════════════════════════════════════════════════════════════════════════
+
+- Use ONLY entities/fields/metrics in semantic_context (never invent)
+- Time_range is OPTIONAL unless query is about historical data (e.g., "leaves this year" needs time)
+- For leaves: time period is usually optional (can query all-time leaves)
 
 You are given:
 1) semantic_context (database concepts and collections)
@@ -218,63 +344,85 @@ Database Context:
     - It has got feild "final status" as "Submitted" , "Completed" , "In progress" , etc
 
 
-Ask a clarifying question ONLY when:
-- The user uses an ambiguous term AND the possible meanings map to different database fields or collections.
-- The request is incomplete in a way that prevents generating the MongoDB query.
-- A required database dimension is missing (metric, subtype, time_range, or scope).
+═══════════════════════════════════════════════════════════════════════════════
+DETAILED EXAMPLES:
+═══════════════════════════════════════════════════════════════════════════════
 
-If the user request already maps cleanly to one entity, one metric, and optional time_range → DO NOT ASK.
+Example 1: "my leaves"
+  → Subject: "my" → self (DO NOT ask "for whom?")
+  → Term: "leaves" → unqualified → ambiguous
+  → Ask: "Do you want pending leaves or total leaves?"
 
-Your clarifying question must:
-- Be ONE sentence.
-- Be simple and easy to answer.
-- Refer ONLY to details needed for the database query.
-- Never include technical words like “field”, “schema”, “collection”, or “document”.
+Example 2: "total leaves" (continuation from "my leaves")
+  → Subject: No explicit subject → assume self (DO NOT ask "for whom?")
+  → Term: "total leaves" → QUALIFIED → NOT ambiguous
+  → Status: "ready" (no questions needed)
 
-If ambiguous_terms defines a question → use that as your ONLY question, but rephrase it to be short and human.
+Example 3: "offboarding reviewer"
+  → Subject: No explicit subject → assume self (DO NOT ask "for whom?")
+  → Term: "offboarding reviewer" → QUALIFIED → NOT ambiguous
+  → Status: "ready" (no questions needed)
 
-Examples:
-1. User: “my leaves”
-   → Ask: “Do you want pending leaves or total leaves?” 
-   (because these map to different database fields)
+Example 4: "my status and reviewer"
+  → Subject: "my" → self (DO NOT ask "for whom?")
+  → Terms: "status" (unqualified) + "reviewer" (unqualified) → both ambiguous
+  → Ask: [
+      "Which status do you need: performance, goal-setting, offboarding, or employee status?",
+      "Do you mean goal-setting reviewer, performance reviewer, or offboarding reviewer?"
+  ]
 
-2. User: “my manager”
-   → Ask: “Do you want your manager’s name or email?”
-   (database has multiple manager attributes)
+Example 5: "employee status and offboarding reviewer" (continuation)
+  → Both terms QUALIFIED → NOT ambiguous
+  → Use intent from original query ("my status and reviewer" → "self")
+  → Status: "ready" (no questions needed)
 
-3. User: “attendance”
-   → Ask: “Do you want your attendance count or a day-wise breakdown?”
-   (different database metrics)
+═══════════════════════════════════════════════════════════════════════════════
+COMMON MISTAKES TO AVOID:
+═══════════════════════════════════════════════════════════════════════════════
 
-4. User: “leaves this month”
-   → No question (entity + time are clear)
+WRONG: "total leaves" → Ask "for yourself or someone else?"
+CORRECT: "total leaves" → NO question (qualified term, assume self)
 
-5. User: “manager’s email”
-   → No question (specific database attribute)
+WRONG: "offboarding reviewer" → Ask "for whom?"
+CORRECT: "offboarding reviewer" → NO question (qualified term, assume self)
 
-6. User: “team attendance last week”
-   → No question (intent, scope, time all clear)
+WRONG: "my leaves" → Ask only "Do you want pending or total?" (missing time period)
+CORRECT: "my leaves" → Ask "Do you want pending leaves or total leaves?" (time is optional for leaves)
 
 OUTPUT FORMAT:
 
-If clarification is needed:
+If clarification is needed (MUST return ALL questions at once):
 {{
   "status": "needs_clarification",
-  "questions": ["<one short database-relevant question>"],
-  "missing": ["metric", "time_range", ...]
+  "questions": ["<question 1>", "<question 2>", "<question 3>", ...],
+  "intent": "self" or "others"
 }}
+**CRITICAL**: The "questions" array MUST contain ALL necessary questions. If there are 2 ambiguities, return 2 questions. If there are 5, return 5. NEVER return just one question when multiple are needed.
 
-If everything is clear:
+If everything is clear (no clarification needed):
 {{
   "status": "ready",
-  "structured_query": {{
-    "entity": "...",
-    "metric": "...",
-    "filters": {...},
-    "time_range": "...",
-    "collection": "..."
-  }}
+  "intent": "self" or "others"
 }}
+
+═══════════════════════════════════════════════════════════════════════════════
+INTENT CLASSIFICATION:
+═══════════════════════════════════════════════════════════════════════════════
+
+**If CONTINUATION (answers previous questions):**
+  → Use intent from ORIGINAL query in chat history
+  → Example: Original "my status" → Current "employee status" → intent: "self" (from original)
+
+**If STANDALONE:**
+  → "self": User's own details, manager's/reviewer's non-sensitive info
+  → "others": Another person's info or sensitive data (salary, DOB, etc.)
+  → Default: If no explicit subject → intent: "self"
+
+Examples:
+- "my leaves" → "self"
+- "total leaves" → "self" (no subject, assume self)
+- "offboarding reviewer" → "self" (no subject, assume self)
+- "John's leaves" → "others" (explicit subject)
 
 User Query: "{user_query}"
     """
@@ -283,42 +431,92 @@ User Query: "{user_query}"
             {
                 "role": "system",
                 "content": (
-                    "You are a MongoDB Query Clarification Agent."
-                    "Your response MUST be only valid JSON. "
-                    "No markdown, no comments, no backticks."
+                    "You are a MongoDB Query Clarification Agent. "
+                    "CRITICAL RULES: "
+                    "1. NEVER ask 'for whom?' or 'for yourself or someone else?' - always assume self if no explicit subject. "
+                    "2. Qualified terms (e.g., 'total leaves', 'offboarding reviewer') are NOT ambiguous - do NOT ask about them. "
+                    "3. Ask ALL necessary questions at once in the questions array. "
+                    "Your response MUST be only valid JSON. No markdown, no comments, no backticks."
                 )
             },
             {"role": "user", "content": prompt}
         ]
     )
-
-    return json.loads(response.content.strip())
+    
+    # Parse JSON response, handling potential markdown code blocks
+    response_text = response.content.strip()
+    
+    # Debug: Print raw LLM response
+    print(f"\n=== RAW LLM RESPONSE ===")
+    print(response_text[:500])  # First 500 chars
+    print("=======================\n")
+    
+    # Remove markdown code blocks if present
+    if response_text.startswith("```"):
+        # Extract JSON from markdown code block
+        lines = response_text.split("\n")
+        response_text = "\n".join([line for line in lines if not line.strip().startswith("```")])
+    
+    try:
+        result = json.loads(response_text)
+        # Validate that questions is a list
+        if result.get("status") == "needs_clarification":
+            questions = result.get("questions", [])
+            if not isinstance(questions, list):
+                # If questions is not a list, wrap it
+                result["questions"] = [questions] if questions else []
+            else:
+                # Log how many questions were returned
+                print(f"LLM returned {len(questions)} question(s): {questions}")
+        
+        # Ensure intent is always present (default to "self" if missing)
+        if "intent" not in result:
+            result["intent"] = "self"  # Default assumption
+            print("WARNING: Intent not in LLM response, defaulting to 'self'")
+        else:
+            # Sanitize intent
+            intent = result["intent"].lower()
+            if "self" in intent:
+                result["intent"] = "self"
+            elif "other" in intent:
+                result["intent"] = "others"
+            else:
+                result["intent"] = "unknown"
+                print(f"WARNING: Unrecognized intent: {intent}, setting to 'unknown'")
+        
+        return result
+    except json.JSONDecodeError as e:
+        print(f"ERROR: Error parsing JSON response: {e}")
+        print(f"Response text: {response_text}")
+        # Return a fallback response with default intent
+        return {"status": "ready", "intent": "self"}
 
 
 # -------------------------------
-# 3. RUN THE CLARIFICATION AGENT
+# 3. TEST CODE (only runs if file is executed directly)
 # -------------------------------
 
-processor = SemanticDictionaryProcessor("database_summary.json")
-collections = processor.get_collection_routing_list()
-defualt_collections = processor.get_default_collections()
-router = CollectionRouterAgent(collections , defualt_collections)
+if __name__ == "__main__":
+    processor = SemanticDictionaryProcessor("database_summary.json")
+    collections = processor.get_collection_routing_list()
+    defualt_collections = processor.get_default_collections()
+    router = CollectionRouterAgent(collections , defualt_collections)
 
-queries = [
-    "Show me my performance rating for this year",
-    "I want the list of employees in IT",
-    "Get my appraisal score"
-]
+    queries = [
+        "Show me my performance rating for this year",
+        "I want the list of employees in IT",
+        "Get my appraisal score"
+    ]
 
-# for q in queries:
-query = "my status"
-collection = router.route_query(query)
-print(f"Routed Collection: {collection}\n")
-result = processor.get_clarification_agent_structure(
-    allowed_collections=collection
-)
+    # for q in queries:
+    query = "my status"
+    collection = router.route_query(query)
+    print(f"Routed Collection: {collection}\n")
+    result = processor.get_clarification_agent_structure(
+        allowed_collections=collection
+    )
 
-# print(json.dumps(result, indent=2))
-res = clarify_query(query, result["collections"], result["ambiguous_terms"])
-print(res)
-print(query)
+    # print(json.dumps(result, indent=2))
+    res = clarify_query(query, result["collections"], result["ambiguous_terms"])
+    print(res)
+    print(query)

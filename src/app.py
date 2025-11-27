@@ -1,6 +1,6 @@
 import gradio as gr
 from QueryProcessor import QueryProcessor
-from rag.queryengine import query_main_store     # <-- update to your real module
+from rag.queryengine import query_main_store
 
 # =====================================================================
 # Existing processor
@@ -9,6 +9,10 @@ processor = QueryProcessor()
 
 def run_query(email, question):
     try:
+        # Validate email is provided
+        if not email or not email.strip():
+            return "Error", "Please provide a valid email address", None, "Email is required to fetch your employee information and process the query."
+        
         output = processor.process(email.strip(), question.strip())
         status = output["status"]
         agent_output = output["agent_output"]
