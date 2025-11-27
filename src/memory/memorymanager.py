@@ -2,7 +2,7 @@ import os
 from pymongo import MongoClient
 from datetime import datetime
 from dotenv import load_dotenv
-
+import threading
 
 load_dotenv()
 
@@ -17,32 +17,39 @@ collection = db["chat-history"]
 
 def push_convo_pair(email: str, user_msg: str, bot_msg: str):
     """
-    Push the latest conversation pair and keep only the last 10 items.
+    Fire-and-forget version.
+    Runs DB update in a background daemon thread.
+    Caller will NOT wait; thread auto-kills itself after completion.
     """
-    try:
-        print("Updating History for",email)
-        collection.update_one(
-            {"email": email},
-            {
-                "$push": {
-                    "history": {
-                        "$each": [
-                            {
-                                "user": user_msg,
-                                "assistant": bot_msg,
-                                "ts": datetime.now()
-                            }
-                        ],
-                        "$slice": -10
-                    }
+
+    def _task():
+        try:
+            print("Updating History for", email)
+            collection.update_one(
+                {"email": email},
+                {
+                    "$push": {
+                        "history": {
+                            "$each": [
+                                {
+                                    "user": user_msg,
+                                    "assistant": bot_msg,
+                                    "ts": datetime.now()
+                                }
+                            ],
+                            "$slice": -10
+                        }
+                    },
+                    "$set": {"updated_at": datetime.now()}
                 },
-                "$set": {"updated_at": datetime.now()}
-            },
-            upsert=True
-        )
-        return
-    except:
-        print("Failed to Update History for",email)
+                upsert=True
+            )
+        except Exception as e:
+            print("Failed to Update History for", email, "Error:", e)
+
+    # daemon=True ensures the thread dies automatically after finishing
+    t = threading.Thread(target=_task, daemon=True)
+    t.start()
 
 def get_chat_history(email: str):
     """
