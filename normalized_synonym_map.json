@@ -1,0 +1,332 @@
+{
+    "employee person number": [
+        "employee code",
+        "employee e mail address",
+        "employee name",
+        "employee person number",
+        "manager number",
+        "manager person number",
+        "person number",
+        "review period name",
+        "reviewer number"
+    ],
+    "employee name": [
+        "Employee name",
+        "employee code",
+        "employee e mail address",
+        "employee name",
+        "goal name",
+        "last name",
+        "location name",
+        "reviewer name"
+    ],
+    "employee e mail address": [
+        "employee code",
+        "employee e mail address",
+        "manager e mail address"
+    ],
+    "manager person number": [
+        "manager code",
+        "manager name",
+        "manager number",
+        "manager person number",
+        "manager rating",
+        "person number"
+    ],
+    "manager name": [
+        "Employee name",
+        "first name",
+        "goal name",
+        "goal plan name",
+        "last name",
+        "location name",
+        "manager code",
+        "manager e mail address",
+        "manager name",
+        "manager number",
+        "manager rating",
+        "reviewer name"
+    ],
+    "manager e mail address": [
+        "manager code",
+        "manager e mail address",
+        "manager number",
+        "manager rating"
+    ],
+    "department": [
+        "department",
+        "parent department",
+        "parent grade",
+        "reporting to",
+        "sub department"
+    ],
+    "parent department": [
+        "parent department",
+        "parent grade",
+        "sub department"
+    ],
+    "grade": [
+        "grade",
+        "grade level",
+        "parent grade",
+        "sub grade"
+    ],
+    "parent grade": [
+        "parent grade",
+        "sub grade"
+    ],
+    "location name": [
+        "Employee name",
+        "first name",
+        "goal name",
+        "goal plan name",
+        "last name",
+        "location",
+        "location name",
+        "office location",
+        "work location"
+    ],
+    "self rating": [
+        "last year rating",
+        "location",
+        "manager rating",
+        "reporting to",
+        "self rating"
+    ],
+    "manager rating": [
+        "last year rating",
+        "manager code",
+        "manager number",
+        "manager rating"
+    ],
+    "final status": [
+        "assignment status type",
+        "final status",
+        "status"
+    ],
+    "status": [
+        "state",
+        "status"
+    ],
+    "exit checklist employee": [
+        "exit checklist chr",
+        "exit checklist chr ops",
+        "exit checklist customer operations",
+        "exit checklist employee",
+        "exit checklist facilities",
+        "exit checklist finance accounts",
+        "exit checklist finance assets",
+        "exit checklist it",
+        "exit checklist payroll",
+        "exit checklist reporting manager",
+        "exit checklist rhr",
+        "exit checklist rhr ops"
+    ],
+    "exit checklist reporting manager": [
+        "exit checklist chr",
+        "exit checklist chr ops",
+        "exit checklist customer operations",
+        "exit checklist facilities",
+        "exit checklist finance accounts",
+        "exit checklist finance assets",
+        "exit checklist it",
+        "exit checklist payroll",
+        "exit checklist reporting manager",
+        "exit checklist rhr",
+        "exit checklist rhr ops"
+    ],
+    "exit checklist customer operations": [
+        "exit checklist chr",
+        "exit checklist chr ops",
+        "exit checklist customer operations",
+        "exit checklist facilities",
+        "exit checklist finance accounts",
+        "exit checklist finance assets",
+        "exit checklist it",
+        "exit checklist payroll",
+        "exit checklist rhr",
+        "exit checklist rhr ops"
+    ],
+    "exit checklist facilities": [
+        "exit checklist chr",
+        "exit checklist chr ops",
+        "exit checklist facilities",
+        "exit checklist finance accounts",
+        "exit checklist finance assets",
+        "exit checklist it",
+        "exit checklist payroll",
+        "exit checklist rhr",
+        "exit checklist rhr ops"
+    ],
+    "exit checklist it": [
+        "exit checklist chr",
+        "exit checklist chr ops",
+        "exit checklist finance accounts",
+        "exit checklist finance assets",
+        "exit checklist it",
+        "exit checklist payroll",
+        "exit checklist rhr",
+        "exit checklist rhr ops"
+    ],
+    "exit checklist finance accounts": [
+        "exit checklist chr",
+        "exit checklist chr ops",
+        "exit checklist finance accounts",
+        "exit checklist finance assets",
+        "exit checklist payroll",
+        "exit checklist rhr",
+        "exit checklist rhr ops"
+    ],
+    "exit checklist finance assets": [
+        "exit checklist chr",
+        "exit checklist chr ops",
+        "exit checklist finance assets",
+        "exit checklist payroll",
+        "exit checklist rhr",
+        "exit checklist rhr ops"
+    ],
+    "exit checklist rhr ops": [
+        "exit checklist chr",
+        "exit checklist chr ops",
+        "exit checklist payroll",
+        "exit checklist rhr",
+        "exit checklist rhr ops"
+    ],
+    "exit checklist rhr": [
+        "exit checklist chr",
+        "exit checklist chr ops",
+        "exit checklist payroll",
+        "exit checklist rhr"
+    ],
+    "exit checklist chr ops": [
+        "exit checklist chr",
+        "exit checklist chr ops",
+        "exit checklist payroll"
+    ],
+    "exit checklist chr": [
+        "exit checklist chr",
+        "exit checklist payroll"
+    ],
+    "version": [
+        "description",
+        "designation",
+        "region",
+        "version"
+    ],
+    "employee code": [
+        "Employee name",
+        "employee code"
+    ],
+    "first name": [
+        "first name",
+        "goal name",
+        "last name",
+        "name",
+        "person number",
+        "reviewer name",
+        "state"
+    ],
+    "last name": [
+        "Employee name",
+        "goal name",
+        "goal plan name",
+        "last name",
+        "name",
+        "state"
+    ],
+    "designation": [
+        "date_of_resignation",
+        "description",
+        "designation",
+        "location",
+        "reason for resignation",
+        "region"
+    ],
+    "sub dept": [
+        "sub department",
+        "sub grade",
+        "sub-dept"
+    ],
+    "location": [
+        "description",
+        "location",
+        "office location",
+        "work location"
+    ],
+    "office": [
+        "office",
+        "office location"
+    ],
+    "date of joining": [
+        "Date of Joining",
+        "date_of_birth",
+        "date_of_joining",
+        "date_of_leaving",
+        "date_of_resignation"
+    ],
+    "manager code": [
+        "manager code",
+        "manager number"
+    ],
+    "date of birth": [
+        "date_of_birth",
+        "date_of_leaving",
+        "date_of_resignation"
+    ],
+    "date of resignation": [
+        "date_of_leaving",
+        "date_of_resignation",
+        "description",
+        "reason for resignation"
+    ],
+    "date of leaving": [
+        "Date of Joining",
+        "date_of_leaving"
+    ],
+    "last year rating": [
+        "last year rating",
+        "reason for resignation"
+    ],
+    "circle": [
+        "circle",
+        "role"
+    ],
+    "person number": [
+        "manager number",
+        "person number",
+        "reviewer number"
+    ],
+    "name": [
+        "goal name",
+        "name"
+    ],
+    "sub department": [
+        "sub department",
+        "sub grade"
+    ],
+    "review period name": [
+        "review period name",
+        "reviewer name",
+        "reviewer number"
+    ],
+    "goal plan name": [
+        "goal name",
+        "goal plan name"
+    ],
+    "goal name": [
+        "Employee name",
+        "goal name"
+    ],
+    "office location": [
+        "office location",
+        "work location"
+    ],
+    "manager number": [
+        "manager number",
+        "reviewer number"
+    ],
+    "reviewer number": [
+        "reviewer name",
+        "reviewer number"
+    ]
+}

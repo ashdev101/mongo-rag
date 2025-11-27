@@ -1,7 +1,7 @@
 import io
 import contextlib
 from Mongo import NaturalLanguageToMQL
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage
 from langgraph_sample import access_agent
 
 # =====================================================================
@@ -70,7 +70,10 @@ class QueryProcessor:
         Returns a dict with status, agent_output, generated_mql and db_results (string).
         """
         state = {
+            "needs_clarification": False,
+            "clarification_question": "",
             "email": email,
+            "employee_code": 0,
             "designation": "",
             "department": "",
             "region": "",
@@ -85,10 +88,41 @@ class QueryProcessor:
         result = access_agent.invoke(state)
         print("Access Agent Result:" , result)
 
+        needs_clarification = result.get("needs_clarification")
+        clarification_question = result.get("clarification_question")
         decision = result.get("decision")
         modified_query = result.get("modified_query")
         print("modified query" , modified_query)
 
+        # Save conversation to chat history for future context
+        try:
+            from memorymanager import push_convo_pair
+            # Get the conversation messages
+            messages = result.get("messages", [])
+            if messages:
+                user_msg = None
+                assistant_msg = None
+                for msg in reversed(messages):
+                    if (hasattr(msg, 'type') and msg.type == "human") or isinstance(msg, HumanMessage):
+                        if not user_msg:
+                            user_msg = msg.content
+                    elif (hasattr(msg, 'type') and msg.type == "ai") or isinstance(msg, AIMessage):
+                        if not assistant_msg:
+                            assistant_msg = msg.content
+                
+                if user_msg:
+                    # Use memorymanager's push_convo_pair function
+                    push_convo_pair(email, user_msg, assistant_msg or clarification_question or "")
+        except Exception as e:
+            print(f"Warning: Could not save chat history: {e}")
+
+        if needs_clarification:
+            return {
+                "status": "Needs Clarification",
+                "agent_output": result,
+                "mql": result.get("clarification_question"),
+                "db_results": clarification_question
+            }
         if decision != "Allowed":
             return {
                 "status": "Access Denied",
@@ -163,13 +197,15 @@ class QueryProcessor:
             except Exception:
                 agg_pipeline = None
 
-        return {
+        output =  {
             "status": "Allowed",
             "agent_output": result,
             "mql": nl_for_converter,
              "db_results": db_results,
             "agg_pipeline": agg_pipeline,
         }
+        print("Final Output:" , output)
+        return output
     
 
 # querProcessor = QueryProcessor()

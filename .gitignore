@@ -16,9 +16,12 @@ wheels/
 output_file/
 Reports/
 Harsh_Router_gpt.py
+*.md
 
 # debugging scripts
 test.py
 test.txt
 test.ipynb
 tex.py
+# UV package manager files
+.uv.*.exe

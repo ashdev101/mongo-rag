@@ -16,6 +16,10 @@ def run_query(email, question):
     Wrapper for running the main processor.
     """
     try:
+        # Validate email is provided
+        if not email or not email.strip():
+            return "Error", "Please provide a valid email address", None, "Email is required to fetch your employee information and process the query."
+        
         output = processor.process(email.strip(), question.strip())
         
         status = output["status"]

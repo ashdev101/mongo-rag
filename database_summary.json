@@ -1,0 +1,276 @@
+{
+    "entities": {
+        "Performance Rating": {
+            "collection": "permormance_rating_report_year_2025_2026",
+            "key_fields": [
+                "employee person number",
+                "employee name",
+                "manager person number",
+                "performance document name",
+                "department",
+                "final status"
+            ],
+            "synonyms": [
+                "performance rating",
+                "performance ratings",
+                "appraisal",
+                "review score",
+                "annual review"
+            ],
+            "intent_patterns": [
+                "show performance ratings",
+                "what is <employee>'s rating",
+                "ratings by department",
+                "ratings by manager",
+                "count by final status"
+            ],
+            "ambiguous_fields": [
+                "rating",
+                "final status",
+                "department",
+                "location name",
+                "grade",
+                "parent grade"
+            ],
+            "routing_keywords": [
+                "rating",
+                "self rating",
+                "manager rating",
+                "performance document",
+                "final status",
+                "appraisal",
+                "review",
+                "2025",
+                "2026"
+            ]
+        },
+        "Offboarding Checklist": {
+            "collection": "offboarding_checklist",
+            "key_fields": [
+                "core hr.employee id",
+                "core hr.employee name",
+                "core hr.department",
+                "status.all task status",
+                "core hr.date of resignation",
+                "core hr.date of leaving",
+                "core hr.reporting manager"
+            ],
+            "synonyms": [
+                "offboarding checklist",
+                "offboarding checklists",
+                "exit checklist",
+                "separation checklist",
+                "clearance"
+            ],
+            "intent_patterns": [
+                "track offboarding status",
+                "show checklist for <employee>",
+                "which tasks are pending",
+                "leavers with pending clearance",
+                "status by department"
+            ],
+            "ambiguous_fields": [
+                "status",
+                "department",
+                "employee status",
+                "date of leaving",
+                "date of resignation",
+                "region"
+            ],
+            "routing_keywords": [
+                "offboarding",
+                "exit",
+                "checklist",
+                "clearance",
+                "resignation",
+                "leaving",
+                "payroll",
+                "facilities",
+                "IT",
+                "assets",
+                "recovery"
+            ]
+        },
+        "Employee Base Report": {
+            "collection": "base_report",
+            "key_fields": [
+                "employee code",
+                "first name",
+                "last name",
+                "department",
+                "grade level",
+                "designation",
+                "location",
+                "primary email",
+                "assignment status type",
+                "date_of_joining",
+                "date_of_resignation",
+                "date_of_leaving"
+            ],
+            "synonyms": [
+                "employee base report",
+                "employee base reports",
+                "employee list",
+                "staff roster",
+                "HR master",
+                "headcount data"
+            ],
+            "intent_patterns": [
+                "find employee by code or email",
+                "list employees by department",
+                "headcount by location",
+                "recent joiners or leavers",
+                "export employee master"
+            ],
+            "ambiguous_fields": [
+                "department",
+                "location",
+                "office",
+                "region",
+                "grade",
+                "assignment status type",
+                "date_of_leaving"
+            ],
+            "routing_keywords": [
+                "employee",
+                "manager",
+                "staff",
+                "code",
+                "designation",
+                "department",
+                "sub-dept",
+                "location",
+                "office",
+                "region",
+                "joiners",
+                "leavers",
+                "leave",
+                "leave balance",
+                "headcount",
+                "master"
+            ]
+        },
+        "Performance Goals": {
+            "collection": "performance_goal_report_2025_2026",
+            "key_fields": [
+                "person number",
+                "name",
+                "department",
+                "review period name",
+                "goal plan name",
+                "goal name",
+                "weight"
+            ],
+            "synonyms": [
+                "performance goal",
+                "performance goals",
+                "goals",
+                "objectives",
+                "KPIs"
+            ],
+            "intent_patterns": [
+                "show goals for <employee>",
+                "goals by department",
+                "search goal by name",
+                "goal weights by plan",
+                "goals for review period"
+            ],
+            "ambiguous_fields": [
+                "goal name",
+                "goal plan name",
+                "weight",
+                "department",
+                "name",
+                "region"
+            ],
+            "routing_keywords": [
+                "goal",
+                "goal plan",
+                "review period",
+                "weight",
+                "objective",
+                "KPI",
+                "description"
+            ]
+        },
+        "Goal Setting Status": {
+            "collection": "goal_setting_status",
+            "key_fields": [
+                "person number",
+                "Employee name",
+                "department",
+                "manager number",
+                "reporting to",
+                "reviewer number",
+                "reviewer name",
+                "status",
+                "office location",
+                "work location"
+            ],
+            "synonyms": [
+                "goal setting status",
+                "goal setting statuses",
+                "goal status",
+                "PMS status",
+                "review status"
+            ],
+            "intent_patterns": [
+                "who has not set goals",
+                "status by department",
+                "show reviewer for <employee>",
+                "list pending approvals",
+                "goal setting completion rate"
+            ],
+            "ambiguous_fields": [
+                "status",
+                "reviewer name",
+                "manager number",
+                "office location",
+                "work location",
+                "sub grade",
+                "parent grade",
+                "region"
+            ],
+            "routing_keywords": [
+                "goal setting",
+                "status",
+                "reviewer",
+                "manager",
+                "pending",
+                "approval",
+                "completion",
+                "PMS",
+                "work location",
+                "office location"
+            ]
+        }
+    },
+    "ambiguous_terms": [
+    {
+      "term": "reviewer",
+      "possible_meanings": ["goal-setting reviewer", "performance reviewer", "offboarding reviewer"],
+      "disambiguation_keywords": [],
+      "ask_user": "Do you mean goal-setting reviewer, performance reviewer, or offboarding reviewer?"
+    },
+    {
+      "term": "rating",
+      "possible_meanings": ["self rating", "manager rating"],
+      "disambiguation_keywords": ["self", "manager"],
+      "ask_user": "Do you mean self rating or manager rating?"
+    },
+    {
+      "term": "status",
+      "possible_meanings": ["performance final status", "goal-setting status", "offboarding all task status", "core HR employee status"],
+      "disambiguation_keywords": ["performance", "goal", "offboarding", "employee"],
+      "ask_user": "Which status do you need: performance, goal-setting, offboarding, or employee status?"
+    },
+    {
+      "term": "leavers",
+      "possible_meanings": ["resigned (DoR)", "exited (DoL)"],
+      "disambiguation_keywords": ["resignation", "leaving"],
+      "ask_user": "Filter by resignation date or leaving date?"
+    }
+
+  ],
+    "default_collections" : ["base_report"]
+}
