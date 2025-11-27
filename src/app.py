@@ -4,6 +4,7 @@ from QueryProcessor import QueryProcessor
 from rag.queryengine import query_main_store
 from query_router import router as query_router
 from memory.memorymanager import push_convo_pair
+from clarifying_agent_ui import run_clarifying_agent
 
 # =====================================================================
 # Existing processor
@@ -104,13 +105,35 @@ def combined_execute(email, question):
             return str(v)
 
     try:
-        route_result = query_router(question, email)
+        # ===== STEP 1: CLARIFYING AGENT (FIRST) =====
+        clarification_result = run_clarifying_agent(email, question)
+        
+        # If clarification needed, return questions to UI
+        if clarification_result.get("needs_clarification", False):
+            questions = clarification_result.get("questions", [])
+            if len(questions) == 1:
+                clarification_text = questions[0]
+            else:
+                clarification_text = "I need a few clarifications:\n\n"
+                for i, q in enumerate(questions, 1):
+                    clarification_text += f"{i}. {q}\n"
+            
+            # Return format compatible with UI (two string outputs)
+            clarification_json = safe_json({
+                "status": "needs_clarification",
+                "questions": questions
+            })
+            return clarification_json, clarification_text
+        
+        # ===== STEP 2: ROUTER (receives clarified query) =====
+        final_clarified_query = clarification_result.get("final_clarified_query", question)
+        route_result = query_router(final_clarified_query, email)
         router_out_str = safe_json(route_result)
 
         route = route_result.get("route")
-        query = route_result.get("query", "")
+        query = route_result.get("query", final_clarified_query)
 
-        # ===== EXECUTE TARGET ENGINE =====
+        # ===== STEP 3: EXECUTE TARGET ENGINE =====
         if route == "document":
             status, agent_out_str, mql, db_results, agg_pipeline = run_query(email, query)
             final_output_dict = {

@@ -82,3 +82,63 @@ def get_chat_history(email: str):
         return "\n\n".join(formatted_lines)
     except:
         return "Error retreiving Chat History"
+
+def get_chat_history_as_messages(email: str):
+    """
+    Retrieve the last conversation turns (up to 10) as a list of message dictionaries.
+    Returns list of dicts with 'user' and 'assistant' keys.
+    """
+    try:
+        doc = collection.find_one(
+            {"email": email},
+            {"_id": 0, "history": 1}
+        )
+
+        if not doc or "history" not in doc:
+            return []
+
+        history = doc["history"]
+        # Return last 10 messages as list of dicts
+        return [{"user": turn.get("user", "").strip(), "assistant": turn.get("assistant", "").strip()} 
+                for turn in history[-10:]]
+    except Exception as e:
+        print(f"Error retrieving chat history as messages: {e}")
+        return []
+
+def push_clarification_turns_async(email: str, clarification_turns: list):
+    """
+    Asynchronously push clarification conversation turns to MongoDB.
+    clarification_turns: list of dicts with 'user' and 'assistant' keys
+    """
+    def _task():
+        try:
+            print(f"Updating clarification history for {email}")
+            for turn in clarification_turns:
+                user_msg = turn.get("user", "").strip()
+                bot_msg = turn.get("assistant", "").strip()
+                if user_msg or bot_msg:  # Only save non-empty turns
+                    collection.update_one(
+                        {"email": email},
+                        {
+                            "$push": {
+                                "history": {
+                                    "$each": [
+                                        {
+                                            "user": user_msg,
+                                            "assistant": bot_msg,
+                                            "ts": datetime.now()
+                                        }
+                                    ],
+                                    "$slice": -10
+                                }
+                            },
+                            "$set": {"updated_at": datetime.now()}
+                        },
+                        upsert=True
+                    )
+        except Exception as e:
+            print(f"Failed to update clarification history for {email}, Error: {e}")
+
+    # Run in background thread
+    t = threading.Thread(target=_task, daemon=True)
+    t.start()

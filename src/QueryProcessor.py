@@ -69,6 +69,7 @@ class QueryProcessor:
         and converts the natural language query into MQL.
         Returns a dict with status, agent_output, generated_mql and db_results (string).
         """
+        # Query is already clarified at UI level, so we skip clarification here
         state = {
             "needs_clarification": False,
             "clarification_question": "",
@@ -77,11 +78,20 @@ class QueryProcessor:
             "designation": "",
             "department": "",
             "region": "",
-            "question": "",
-            "intent": "",
+            "question": nl_query,  # Set question directly (already clarified)
+            "intent": "",  # Will be set by modify_query or check_access if needed
             "decision": "",
             "messages": [HumanMessage(content=nl_query)],
-            "modified_query": ""
+            "modified_query": "",
+            # New fields for compatibility (not used since clarification is at UI level)
+            "chat_history_loaded": False,
+            "chat_history_messages": [],
+            "clarification_progress": {
+                "original_query": "",
+                "clarified_terms": [],
+                "pending_terms": []
+            },
+            "final_clarified_query": ""
         }
 
         # invoke the access agent
@@ -96,7 +106,7 @@ class QueryProcessor:
 
         # Save conversation to chat history for future context
         try:
-            from memorymanager import push_convo_pair
+            from memory.memorymanager import push_convo_pair
             # Get the conversation messages
             messages = result.get("messages", [])
             if messages:

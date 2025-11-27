@@ -16,7 +16,7 @@ llm = ChatOpenAI(model="gpt-4o")  # or "gpt-4o-mini" etc.
 
 # Chat history is now managed by memorymanager.py
 # Import functions from memorymanager instead of managing MongoDB directly
-from memorymanager import get_chat_history, push_convo_pair
+from memory.memorymanager import get_chat_history, push_convo_pair
 
 
 # You are a MongoDB Query Clarification Agent. 
@@ -141,8 +141,22 @@ def clarify_query(user_query: str , semantic_context: dict , ambiguous_terms: di
     if chat_history and chat_history.strip():
         chat_history_section = f"""
 
+═══════════════════════════════════════════════════════════════════════════════
 CHAT HISTORY (Previous Conversation):
+═══════════════════════════════════════════════════════════════════════════════
 {chat_history}
+
+**IMPORTANT - CHAT HISTORY ANALYSIS:**
+1. If you see a previous Assistant message with clarification questions (e.g., "Which status?", "Which reviewer?")
+2. And the current user query contains answers to those questions (e.g., "employee status", "offboarding reviewer")
+3. Then this is a CONTINUATION - the user is answering your previous questions
+4. In this case:
+   - Mark the answered terms as clarified in clarification_progress
+   - Remove them from pending_terms
+   - If ALL questions are answered → return status="ready" with final_clarified_query
+   - If SOME questions answered → ask ONLY about remaining ambiguities
+   - Use the original_query from the first interaction (preserve it in clarification_progress)
+   - Preserve the intent from the original query (if original had "my", intent is "self")
 
 # ============================================================================
 # OLD PROMPT SECTIONS (COMMENTED OUT - FOR REFERENCE/REVERT IF NEEDED)
@@ -245,10 +259,19 @@ ABSOLUTE RULES (MUST FOLLOW - NO EXCEPTIONS):
    - Identify ALL ambiguities and missing components
    - Return ALL questions in one response (if 2 ambiguities → 2 questions, if 5 → 5 questions)
 
-**RULE 4: USE CHAT HISTORY:**
+**RULE 4: USE CHAT HISTORY AND TRACK PROGRESS:**
    - If previous questions were asked and answered in current query → use those answers
    - If continuation detected → merge with original query, use original intent
    - NEVER ask questions already answered in chat history
+   - Track which terms have been clarified and which are still pending in clarification_progress
+   - When continuation detected: mark previously pending terms as clarified in clarification_progress
+
+**RULE 5: BUILD FINAL QUERY WHEN READY:**
+   - When all ambiguities are resolved (status="ready"), build a complete natural language query
+   - The final_clarified_query should be self-contained, unambiguous, and ready for the router agent
+   - Include all resolved terms in the final query (e.g., "Show me my employee status and offboarding reviewer information")
+   - If original query had "my" or similar self-reference, preserve it in final_clarified_query
+   - Make the final query natural and complete (e.g., "Show me my employee status" not just "employee status")
 
 ═══════════════════════════════════════════════════════════════════════════════
 VALIDATION CHECKLIST (DO THIS BEFORE ASKING ANY QUESTION):
@@ -395,15 +418,38 @@ If clarification is needed (MUST return ALL questions at once):
 {{
   "status": "needs_clarification",
   "questions": ["<question 1>", "<question 2>", "<question 3>", ...],
-  "intent": "self" or "others"
+  "intent": "self" or "others",
+  "clarification_progress": {{
+    "original_query": "<original user query from first interaction>",
+    "clarified_terms": ["<term1> → <resolved_value1>", "<term2> → <resolved_value2>"],  # Terms that have been clarified
+    "pending_terms": ["<term1>", "<term2>"]  # List of ambiguous terms still needing clarification
+  }}
 }}
-**CRITICAL**: The "questions" array MUST contain ALL necessary questions. If there are 2 ambiguities, return 2 questions. If there are 5, return 5. NEVER return just one question when multiple are needed.
+**CRITICAL**: 
+- The "questions" array MUST contain ALL necessary questions. If there are 2 ambiguities, return 2 questions. If there are 5, return 5. NEVER return just one question when multiple are needed.
+- If this is a continuation (user answering previous questions), update clarification_progress:
+  * Mark answered terms in clarified_terms (e.g., "status → employee status")
+  * Remove answered terms from pending_terms
+  * Keep original_query from the first interaction
+- If this is the first clarification, set original_query to current user_query and list all ambiguous terms in pending_terms
 
 If everything is clear (no clarification needed):
 {{
   "status": "ready",
-  "intent": "self" or "others"
+  "intent": "self" or "others",
+  "final_clarified_query": "<natural language query with all ambiguities resolved, ready for router>",
+  "clarification_progress": {{
+    "original_query": "<original user query>",
+    "clarified_terms": ["<all resolved terms>"],
+    "pending_terms": []  # Empty when ready
+  }}
 }}
+**IMPORTANT**: 
+- When status is "ready", you MUST provide a "final_clarified_query" that is a complete, unambiguous natural language query.
+- This query should be self-contained and ready to be passed to the router agent.
+- Preserve the original intent (e.g., if original had "my", include it: "Show me my employee status" not just "employee status").
+- Make it natural and complete: "Show me my employee status and offboarding reviewer information" not just "employee status offboarding reviewer".
+- Example: If original was "my status" and user answered "employee status", the final_clarified_query should be "Show me my employee status information" or "my employee status".
 
 ═══════════════════════════════════════════════════════════════════════════════
 INTENT CLASSIFICATION:
@@ -483,6 +529,49 @@ User Query: "{user_query}"
             else:
                 result["intent"] = "unknown"
                 print(f"WARNING: Unrecognized intent: {intent}, setting to 'unknown'")
+        
+        # Ensure clarification_progress is present
+        if "clarification_progress" not in result:
+            result["clarification_progress"] = {
+                "original_query": user_query,
+                "clarified_terms": [],
+                "pending_terms": []
+            }
+        
+        # If needs_clarification, ensure pending_terms are set
+        if result.get("status") == "needs_clarification":
+            # If pending_terms is empty but we have questions, infer from questions
+            if not result["clarification_progress"].get("pending_terms") and questions:
+                # Try to infer pending terms from questions (simple heuristic)
+                pending = []
+                for q in questions:
+                    if "status" in q.lower():
+                        pending.append("status")
+                    if "reviewer" in q.lower():
+                        pending.append("reviewer")
+                    if "leave" in q.lower():
+                        pending.append("leaves")
+                if pending:
+                    result["clarification_progress"]["pending_terms"] = list(set(pending))
+        
+        # Ensure final_clarified_query is present if ready
+        if result.get("status") == "ready":
+            if "final_clarified_query" not in result or not result.get("final_clarified_query"):
+                # Build final query from original + clarified terms
+                original = result["clarification_progress"].get("original_query", user_query)
+                clarified = result["clarification_progress"].get("clarified_terms", [])
+                
+                # If we have clarified terms, try to build a better query
+                if clarified:
+                    # Simple fallback: use original query (it should already be merged by input_node)
+                    result["final_clarified_query"] = user_query
+                else:
+                    # No clarification happened, use user_query as-is
+                    result["final_clarified_query"] = user_query
+                print(f"WARNING: LLM didn't provide final_clarified_query, using: {result['final_clarified_query']}")
+            
+            # Ensure pending_terms is empty when ready
+            result["clarification_progress"]["pending_terms"] = []
         
         return result
     except json.JSONDecodeError as e:
