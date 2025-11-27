@@ -2,9 +2,9 @@ import gradio as gr
 import json
 from QueryProcessor import QueryProcessor
 from rag.queryengine import query_main_store
+from feedback.lander import lander
 from query_router import router as query_router
 from memory.memorymanager import push_convo_pair
-
 # =====================================================================
 # Existing processor
 # =====================================================================
@@ -23,7 +23,6 @@ def run_query(email, question):
         mql = output["mql"]
         db_results = output["db_results"]
         agg_pipeline = output.get("agg_pipeline")
-
         print("===="*10,"app.py","===="*10)
         print("User Question:",agent_output["question"])
         print("Generated Output:",output["db_results"])
@@ -58,16 +57,22 @@ def router(question):
     Decide whether to call:
     - run_query (MQL agent)
     - run_policy_query (policy engine)
+
+    PLACEHOLDER LOGIC:
+      If question contains the word 'policy' → use policy engine
+      Otherwise → treat as an MQL query with dummy email
     """
 
     q_lower = question.lower()
 
     try:
         if "policy" in q_lower or "regulation" in q_lower:
+            # Route to Policy Engine
             result = run_policy_query(question)
             return f"[ROUTED TO POLICY ENGINE]\n\n{result}"
 
         else:
+            # Route to MQL Agent
             status, agent_out_str, mql, db_results, agg_pipeline = run_query("combined@auto", question)
 
             return (
@@ -83,14 +88,26 @@ def router(question):
 
 
 # =====================================================================
+# Feedback handler
+# =====================================================================
+def submit_feedback(choice, feedback_data):
+    print("\n===== FEEDBACK RECEIVED =====")
+    print("agg_pipeline:",feedback_data["agg_pipeline"])
+    print("query:",feedback_data["query"])
+    msg = lander(choice, feedback_data)
+    
+    return msg
+
+
+# =====================================================================
 # Combined Flow Function
 # =====================================================================
 def combined_execute(email, question):
     """
     1. Call router
-    2. Execute the actual target agent
+    2. Execute the actual target agent (document or policy)
     3. Store conversation history
-    4. Return router output + executed result
+    4. Return both router output and final agent output
     """
 
     def safe_json(v):
@@ -127,7 +144,7 @@ def combined_execute(email, question):
             final_output = safe_json(final_output_dict)
 
         # ===== AUTO-SAVE CHAT HISTORY =====
-        final_output_string = ""
+        final_output_string=''
         try:
             if route == "document":
                 push_convo_pair(
@@ -135,7 +152,8 @@ def combined_execute(email, question):
                     user_msg=question,
                     bot_msg=final_output_dict.get("db_results")
                 )
-                final_output_string = final_output_dict.get("db_results")
+                final_output_string=final_output_dict.get("db_results")
+
 
             elif route == "policy":
                 push_convo_pair(
@@ -143,7 +161,7 @@ def combined_execute(email, question):
                     user_msg=question,
                     bot_msg=final_output_dict.get("policy_answer")
                 )
-                final_output_string = final_output_dict.get("policy_answer")
+                final_output_string=final_output_dict.get("policy_answer")
 
         except Exception as e:
             print("Failed to push conversation history:", e)
@@ -153,7 +171,6 @@ def combined_execute(email, question):
     except Exception as e:
         err = safe_json({"error": str(e)})
         return err, err
-
 
 # =====================================================================
 # UI
@@ -189,16 +206,73 @@ with gr.Blocks(title="MQL Access Agent UI (robust)") as demo:
 
             db_out = gr.Textbox(label="Database Results / Converter Output", lines=12)
 
-            # ========== RUN QUERY ==========
+            # Hidden stores
+            agg_pipeline_store = gr.Textbox(label="_agg_pipeline_store", visible=False)
+            query_store = gr.Textbox(label="_query_store", visible=False)
 
-            def run_query_only(email, question):
+            # =============================================================
+            # Feedback Section
+            # =============================================================
+            gr.Markdown("### Was this result correct?")
+
+            with gr.Row():
+                yes_btn = gr.Button("Yes", interactive=False)
+                no_btn = gr.Button("No", interactive=False)
+
+            feedback_output = gr.Textbox(label="Feedback Status", interactive=False)
+
+            # ========== RUN QUERY + ENABLE FEEDBACK ==========
+            def run_query_and_enable(email, question):
                 status, agent_out_str, mql, db_results, agg_pipeline = run_query(email, question)
-                return status, agent_out_str, mql, db_results
+
+                return (
+                    status,
+                    agent_out_str,
+                    mql,
+                    db_results,
+                    gr.update(value=json.dumps(agg_pipeline, default=str), visible=False),
+                    gr.update(value=question, visible=False),
+                    gr.update(interactive=True),
+                    gr.update(interactive=True),
+                    ""
+                )
 
             run_btn.click(
-                run_query_only,
+                run_query_and_enable,
                 inputs=[email_in, query_in],
-                outputs=[status_out, agent_out, mql_out, db_out]
+                outputs=[
+                    status_out, agent_out, mql_out, db_out,
+                    agg_pipeline_store, query_store,
+                    yes_btn, no_btn, feedback_output
+                ]
+            )
+
+            # Reset feedback
+            def reset_feedback():
+                return gr.update(interactive=False), gr.update(interactive=False), ""
+
+            email_in.change(reset_feedback, None, [yes_btn, no_btn, feedback_output])
+            query_in.change(reset_feedback, None, [yes_btn, no_btn, feedback_output])
+
+            # Feedback actions
+            def yes_feedback_action(agg_pipeline, query_value):
+                msg = submit_feedback("Yes", {"agg_pipeline": agg_pipeline, "query": query_value})
+                return msg, gr.update(interactive=False), gr.update(interactive=False)
+
+            def no_feedback_action(agg_pipeline, query_value):
+                msg = submit_feedback("No", {"agg_pipeline": agg_pipeline, "query": query_value})
+                return msg, gr.update(interactive=False), gr.update(interactive=False)
+
+            yes_btn.click(
+                yes_feedback_action,
+                inputs=[agg_pipeline_store, query_store],
+                outputs=[feedback_output, yes_btn, no_btn]
+            )
+
+            no_btn.click(
+                no_feedback_action,
+                inputs=[agg_pipeline_store, query_store],
+                outputs=[feedback_output, yes_btn, no_btn]
             )
 
         # =============================================================
