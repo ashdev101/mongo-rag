@@ -59,8 +59,9 @@ def router(query, email):
     SYSTEM_PROMPT = """You are an HR assistant *intent classifier* and query chat history summarizer used in production.
 
 1. Choose one route for the user query:
-   - "policy"   : HR rules, eligibility, guidelines, what-to-do.
-   - "document" : factual lookup, IDs, employee records, manager data.
+    - "document" : factual lookup, IDs, employee records, manager data. It requires fetching user data from the database.
+    - "policy"   : HR rules, eligibility, guidelines, what-to-do. Its about policies and other regular information for which no user data is required
+   
 
 2. Use chat history *only if the query refers to prior entities* (he, she, they, it, that, him, her, the above, earlier question, previous answer).  
    Otherwise, do not alter the query.
@@ -81,10 +82,11 @@ def router(query, email):
 
     Operational rules (enforced in code):
     - Final allowed routes: policy, document.
-    - If the user request includes explicit instructions to fetch records or IDs, prefer document.
-    - If the request asks for rules/eligibility/what-to-do, prefer policy.
+    - If the user request includes explicit instructions to fetch records or IDs, then it is always document.
+    - Any confusing or ambiguous requests should always default to document
+    - If the request asks for rules/eligibility/what-to-do, then only it will be policy.
     - Modified query must stay close to original except for inserting resolved references.
-    - If history is irrelevant, return the original query unchanged.
+    - If history is irrelevant or empty, return the original query unchanged.
     - The modified query should be self sufficient to answer and need not refer to history explicitly
     - Always output JSON only:
       {"route":"policy"|"document", "confidence":<0-1 float>, "query":<modified query with reference of history if required>}
