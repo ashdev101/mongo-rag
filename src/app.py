@@ -154,23 +154,31 @@ def combined_execute(email, question):
             final_output = safe_json(final_output_dict)
 
         # ===== AUTO-SAVE CHAT HISTORY =====
+        # Only save actual conversation (user query + final answer)
+        # Filter out "Allowed"/"Not allowed" messages - they're access checks, not conversation
         final_output_string = ""
         try:
             if route == "document":
-                push_convo_pair(
-                    email=email,
-                    user_msg=question,
-                    bot_msg=final_output_dict.get("db_results")
-                )
-                final_output_string = final_output_dict.get("db_results")
+                bot_response = final_output_dict.get("db_results", "")
+                # Filter out access check messages
+                if bot_response and bot_response.strip().lower() not in ["allowed", "not allowed", "unclear intent"]:
+                    push_convo_pair(
+                        email=email,
+                        user_msg=question,
+                        bot_msg=bot_response
+                    )
+                final_output_string = bot_response
 
             elif route == "policy":
-                push_convo_pair(
-                    email=email,
-                    user_msg=question,
-                    bot_msg=final_output_dict.get("policy_answer")
-                )
-                final_output_string = final_output_dict.get("policy_answer")
+                bot_response = final_output_dict.get("policy_answer", "")
+                # Filter out access check messages
+                if bot_response and bot_response.strip().lower() not in ["allowed", "not allowed", "unclear intent"]:
+                    push_convo_pair(
+                        email=email,
+                        user_msg=question,
+                        bot_msg=bot_response
+                    )
+                final_output_string = bot_response
 
         except Exception as e:
             print("Failed to push conversation history:", e)

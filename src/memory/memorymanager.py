@@ -48,6 +48,9 @@ def push_convo_pair(email: str, user_msg: str = None, bot_msg: str = None, turns
                 for turn in turns:
                     user = turn.get("user", "").strip() if isinstance(turn, dict) else ""
                     bot = turn.get("assistant", "").strip() if isinstance(turn, dict) else ""
+                    # Filter out access check messages - they're not part of conversation
+                    if bot and bot.lower() in ["allowed", "not allowed", "unclear intent"]:
+                        continue  # Skip this turn
                     if user or bot:  # Only save non-empty turns
                         turns_to_save.append({
                             "user": user,
@@ -58,6 +61,9 @@ def push_convo_pair(email: str, user_msg: str = None, bot_msg: str = None, turns
                 # Single turn provided
                 user = user_msg.strip() if user_msg else ""
                 bot = bot_msg.strip() if bot_msg else ""
+                # Filter out access check messages - they're not part of conversation
+                if bot and bot.lower() in ["allowed", "not allowed", "unclear intent"]:
+                    return  # Don't save access check messages
                 if user or bot:  # Only save non-empty turn
                     turns_to_save.append({
                         "user": user,

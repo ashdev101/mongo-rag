@@ -105,26 +105,10 @@ class QueryProcessor:
         print("modified query" , modified_query)
 
         # Save conversation to chat history for future context
-        try:
-            from memory.memorymanager import push_convo_pair
-            # Get the conversation messages
-            messages = result.get("messages", [])
-            if messages:
-                user_msg = None
-                assistant_msg = None
-                for msg in reversed(messages):
-                    if (hasattr(msg, 'type') and msg.type == "human") or isinstance(msg, HumanMessage):
-                        if not user_msg:
-                            user_msg = msg.content
-                    elif (hasattr(msg, 'type') and msg.type == "ai") or isinstance(msg, AIMessage):
-                        if not assistant_msg:
-                            assistant_msg = msg.content
-                
-                if user_msg:
-                    # Use memorymanager's push_convo_pair function
-                    push_convo_pair(email, user_msg, assistant_msg or clarification_question or "")
-        except Exception as e:
-            print(f"Warning: Could not save chat history: {e}")
+        # NOTE: We don't save "Allowed"/"Not allowed" messages - they're access checks, not conversation
+        # Chat history should only contain actual user queries and final answers
+        # This is handled in app.py where final results are saved after execution
+        # So we skip saving here to avoid storing intermediate "Allowed" messages
 
         if needs_clarification:
             return {
