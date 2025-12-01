@@ -141,6 +141,29 @@ def run_clarifying_agent(email: str, question: str, session_id: Optional[str] = 
     
     if needs_clarification:
         questions = result.get("questions", [])
+        
+        # ===== SAVE CLARIFICATION QUESTIONS IMMEDIATELY =====
+        # Format questions nicely for chat history
+        if questions:
+            if len(questions) == 1:
+                clarification_text = questions[0]
+            else:
+                clarification_text = "I need a few clarifications:\n\n"
+                for i, q in enumerate(questions, 1):
+                    clarification_text += f"{i}. {q}\n"
+            
+            # Get the original query from state (already stored at line 131)
+            # Use original query, not current question (which might be a continuation answer)
+            original_query = state["clarification_progress"].get("original_query", question)
+            
+            # Save original query → clarification questions to MongoDB (async)
+            # This ensures clean chat history with no empty assistant fields
+            push_clarification_turns_async(email, [{
+                "user": original_query,
+                "assistant": clarification_text
+            }])
+            print(f"✅ Saved clarification questions to MongoDB (async)")
+        
         return {
             "needs_clarification": True,
             "questions": questions,
@@ -151,23 +174,9 @@ def run_clarifying_agent(email: str, question: str, session_id: Optional[str] = 
         # All clarified - get final query
         final_clarified_query = result.get("final_clarified_query", question)
         
-        # Save clarification conversation to MongoDB (async) if there was a clarification process
-        original_query = state["clarification_progress"].get("original_query", "")
-        if original_query and original_query != question:
-            # There was a clarification process - save it
-            clarification_turns = [
-                {
-                    "user": original_query,
-                    "assistant": ""  # Will be filled from questions if available
-                },
-                {
-                    "user": question,  # User's answer/clarified response
-                    "assistant": ""  # Empty, will be filled by final response later
-                }
-            ]
-            # Async save
-            push_clarification_turns_async(email, clarification_turns)
-            print(f"✅ Saved clarification conversation to MongoDB (async)")
+        # NOTE: We don't save anything here anymore
+        # Clarification questions were already saved when needs_clarification was True
+        # Final response will be saved in app.py after query execution
         
         # Reset clarification progress for next query
         state["clarification_progress"] = {
