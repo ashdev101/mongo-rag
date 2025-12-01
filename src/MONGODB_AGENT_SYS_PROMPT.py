@@ -59,11 +59,11 @@ Database Context:
   - Collection Name: goal_setting_status
     - This collection contains information about employees' performance goal setting status .
     - This contains information about whether employees have set their goals for the review period or not , and who is the reviewer assigned to them.
-    - The goal setting status can be "Approved" or "CANCELLED".
+    - The goal setting "status" can be  'APPROVED','CANCELLED','DRAFT','Pending with Employee','Pending with Manager','Pending with Reviewer','REJECTED'.
 
   - Collection Name: permormance_rating_report_year_2025_2026
     - This collection contains performance ratings for employees for the year 2025-2026.
-    - It has got feild "final status" as "Submitted" , "Completed" , "In progress" , etc
+    - Performance rating "final status" can be 'Approved', 'Completed', 'In progress', 'Submitted'
 
 Output Rules : 
   - Return only the final answer in a clean, human-readable format.

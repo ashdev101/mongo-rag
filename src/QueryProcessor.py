@@ -204,5 +204,5 @@ class QueryProcessor:
 
 # querProcessor = QueryProcessor()
 
-# ans = querProcessor.process("ashwinit@tatasky.com" , "what is the dob of vikram kaushik")
+# ans = querProcessor.process("mehaboobb@tataplay.com" , "goal setting status")
 # print(ans)
