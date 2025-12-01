@@ -50,17 +50,18 @@ def run_clarifying_agent(email: str, question: str, session_id: Optional[str] = 
     if session_id not in _clarification_state:
         _clarification_state[session_id] = {
             "chat_history_loaded": False,
-            "chat_history_messages": [],
+            "chat_history_messages": [],  # MongoDB history (previous sessions)
+            "current_session_turns": [],  # Current session conversation turns (query/answer pairs)
             "clarification_progress": {
                 "original_query": "",
-                "clarified_terms": [],
-                "pending_terms": []
+                "pending_ambiguities": {},  # Track ambiguities that need clarification
+                "resolved_ambiguities": {}  # Track ambiguities that have been resolved
             }
         }
     
     state = _clarification_state[session_id]
     
-    # Load chat history once per session
+    # Load chat history once per session (from MongoDB - previous sessions)
     if not state["chat_history_loaded"]:
         state["chat_history_messages"] = get_chat_history_as_messages(email)
         state["chat_history_loaded"] = True
@@ -80,6 +81,7 @@ def run_clarifying_agent(email: str, question: str, session_id: Optional[str] = 
     )
     
     # Build chat history text from state
+    # Include: MongoDB history (previous sessions) + Current session turns (recent conversation)
     chat_history_text = ""
     all_history_parts = []
     
@@ -92,15 +94,29 @@ def run_clarifying_agent(email: str, question: str, session_id: Optional[str] = 
             if user_msg or bot_msg:
                 all_history_parts.append(f"User: {user_msg}\nAssistant: {bot_msg}")
     
+    # Add current session conversation turns (most recent context)
+    # This includes queries/answers from the current session that haven't been saved to MongoDB yet
+    for turn in state.get("current_session_turns", []):
+        user_msg = turn.get("user", "").strip()
+        bot_msg = turn.get("assistant", "").strip()
+        # Skip "Allowed" messages
+        if bot_msg and bot_msg.lower() not in ["allowed", "not allowed", "unclear intent"]:
+            if user_msg or bot_msg:
+                all_history_parts.append(f"User: {user_msg}\nAssistant: {bot_msg}")
+    
     if all_history_parts:
         chat_history_text = "\n\n".join(all_history_parts)
+    
+    # Pass current clarification progress to clarifying agent
+    current_progress = state.get("clarification_progress", {})
     
     # Call clarifying agent
     result = clarify_query(
         question,
         structure["collections"],
         structure["ambiguous_terms"],
-        chat_history=chat_history_text
+        chat_history=chat_history_text,
+        clarification_progress=current_progress
     )
     
     # Extract results
@@ -108,13 +124,20 @@ def run_clarifying_agent(email: str, question: str, session_id: Optional[str] = 
     intent = result.get("intent", "self")
     clarification_progress = result.get("clarification_progress", {})
     
-    # Update session state
+    # Update session state with clarification progress
     if clarification_progress:
         # If this is first clarification, store original query
         if not state["clarification_progress"].get("original_query"):
             state["clarification_progress"]["original_query"] = clarification_progress.get("original_query", question)
-        # Update progress
-        state["clarification_progress"].update(clarification_progress)
+        
+        # Update pending_ambiguities and resolved_ambiguities
+        if "pending_ambiguities" in clarification_progress:
+            state["clarification_progress"]["pending_ambiguities"] = clarification_progress["pending_ambiguities"]
+        if "resolved_ambiguities" in clarification_progress:
+            # Merge resolved ambiguities (don't overwrite, merge)
+            current_resolved = state["clarification_progress"].get("resolved_ambiguities", {})
+            current_resolved.update(clarification_progress.get("resolved_ambiguities", {}))
+            state["clarification_progress"]["resolved_ambiguities"] = current_resolved
     
     if needs_clarification:
         questions = result.get("questions", [])
@@ -149,8 +172,8 @@ def run_clarifying_agent(email: str, question: str, session_id: Optional[str] = 
         # Reset clarification progress for next query
         state["clarification_progress"] = {
             "original_query": "",
-            "clarified_terms": [],
-            "pending_terms": []
+            "pending_ambiguities": {},
+            "resolved_ambiguities": {}
         }
         
         return {
@@ -159,6 +182,48 @@ def run_clarifying_agent(email: str, question: str, session_id: Optional[str] = 
             "intent": intent,
             "clarification_progress": {}
         }
+
+def add_session_turn(email: str, user_query: str, bot_response: str, session_id: Optional[str] = None):
+    """
+    Add a conversation turn to the current session state.
+    This allows the clarifying agent to see recent conversation context.
+    
+    Args:
+        email: User email
+        user_query: User's query
+        bot_response: Bot's response (final answer, not "Allowed")
+        session_id: Optional session ID (defaults to email)
+    """
+    if session_id is None:
+        session_id = email
+    
+    # Initialize state if needed
+    if session_id not in _clarification_state:
+        _clarification_state[session_id] = {
+            "chat_history_loaded": False,
+            "chat_history_messages": [],
+            "current_session_turns": [],
+            "clarification_progress": {
+                "original_query": "",
+                "pending_ambiguities": {},
+                "resolved_ambiguities": {}
+            }
+        }
+    
+    state = _clarification_state[session_id]
+    
+    # Add turn to current session (keep last 10 turns)
+    if "current_session_turns" not in state:
+        state["current_session_turns"] = []
+    
+    # Filter out "Allowed" messages
+    if bot_response and bot_response.strip().lower() not in ["allowed", "not allowed", "unclear intent"]:
+        state["current_session_turns"].append({
+            "user": user_query,
+            "assistant": bot_response
+        })
+        # Keep only last 10 turns to avoid memory bloat
+        state["current_session_turns"] = state["current_session_turns"][-10:]
 
 def clear_clarification_state(session_id: str):
     """Clear clarification state for a session"""

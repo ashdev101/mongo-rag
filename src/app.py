@@ -4,6 +4,7 @@ from QueryProcessor import QueryProcessor
 from rag.queryengine import query_main_store
 from query_router import router as query_router
 from memory.memorymanager import push_convo_pair
+from clarifying_agent_ui import add_session_turn
 from clarifying_agent_ui import run_clarifying_agent
 
 # =====================================================================
@@ -88,6 +89,72 @@ def router(question):
 
 
 # =====================================================================
+# MQL Agent Flow Function (with Clarifying Agent)
+# =====================================================================
+def mql_execute(email, question):
+    """
+    1. Call clarifying agent first
+    2. If clarified, execute MQL query directly (no router)
+    3. Store conversation history
+    4. Return results
+    """
+    
+    def safe_json(v):
+        try:
+            return json.dumps(v, indent=2, default=str)
+        except Exception:
+            return str(v)
+    
+    try:
+        # ===== STEP 1: CLARIFYING AGENT (FIRST) =====
+        clarification_result = run_clarifying_agent(email, question)
+        
+        # If clarification needed, return questions to UI
+        if clarification_result.get("needs_clarification", False):
+            questions = clarification_result.get("questions", [])
+            if len(questions) == 1:
+                clarification_text = questions[0]
+            else:
+                clarification_text = "I need a few clarifications:\n\n"
+                for i, q in enumerate(questions, 1):
+                    clarification_text += f"{i}. {q}\n"
+            
+            # Return format compatible with MQL Agent UI
+            # For MQL Agent tab, we'll show clarification in the db_out field
+            clarification_json = safe_json({
+                "status": "needs_clarification",
+                "questions": questions
+            })
+            return "Needs Clarification", clarification_json, None, clarification_text
+        
+        # ===== STEP 2: EXECUTE MQL QUERY DIRECTLY =====
+        final_clarified_query = clarification_result.get("final_clarified_query", question)
+        status, agent_out_str, mql, db_results, agg_pipeline = run_query(email, final_clarified_query)
+        
+        # ===== AUTO-SAVE CHAT HISTORY =====
+        # Only save actual conversation (user query + final answer)
+        # Filter out "Allowed"/"Not allowed" messages
+        try:
+            if db_results and db_results.strip().lower() not in ["allowed", "not allowed", "unclear intent"]:
+                # Save to MongoDB (async)
+                push_convo_pair(
+                    email=email,
+                    user_msg=question,
+                    bot_msg=db_results
+                )
+                # Also add to current session state for immediate context
+                add_session_turn(email, question, db_results)
+        except Exception as e:
+            print("Failed to push conversation history:", e)
+        
+        return status, agent_out_str, mql, db_results
+    
+    except Exception as e:
+        err = safe_json({"error": str(e)})
+        return "Error", err, None, str(e)
+
+
+# =====================================================================
 # Combined Flow Function
 # =====================================================================
 def combined_execute(email, question):
@@ -162,22 +229,28 @@ def combined_execute(email, question):
                 bot_response = final_output_dict.get("db_results", "")
                 # Filter out access check messages
                 if bot_response and bot_response.strip().lower() not in ["allowed", "not allowed", "unclear intent"]:
+                    # Save to MongoDB (async)
                     push_convo_pair(
                         email=email,
                         user_msg=question,
                         bot_msg=bot_response
                     )
+                    # Also add to current session state for immediate context
+                    add_session_turn(email, question, bot_response)
                 final_output_string = bot_response
 
             elif route == "policy":
                 bot_response = final_output_dict.get("policy_answer", "")
                 # Filter out access check messages
                 if bot_response and bot_response.strip().lower() not in ["allowed", "not allowed", "unclear intent"]:
+                    # Save to MongoDB (async)
                     push_convo_pair(
                         email=email,
                         user_msg=question,
                         bot_msg=bot_response
                     )
+                    # Also add to current session state for immediate context
+                    add_session_turn(email, question, bot_response)
                 final_output_string = bot_response
 
         except Exception as e:
@@ -224,14 +297,9 @@ with gr.Blocks(title="MQL Access Agent UI (robust)") as demo:
 
             db_out = gr.Textbox(label="Database Results / Converter Output", lines=12)
 
-            # ========== RUN QUERY ==========
-
-            def run_query_only(email, question):
-                status, agent_out_str, mql, db_results, agg_pipeline = run_query(email, question)
-                return status, agent_out_str, mql, db_results
-
+            # ========== RUN QUERY (with Clarifying Agent) ==========
             run_btn.click(
-                run_query_only,
+                mql_execute,
                 inputs=[email_in, query_in],
                 outputs=[status_out, agent_out, mql_out, db_out]
             )

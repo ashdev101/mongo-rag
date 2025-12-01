@@ -248,26 +248,73 @@
     "ambiguous_terms": [
     {
       "term": "reviewer",
-      "possible_meanings": ["goal-setting reviewer", "performance reviewer", "offboarding reviewer"],
-      "disambiguation_keywords": [],
+      "collections": {
+        "goal_setting_status": {
+          "field": "reviewer name",
+          "short_name": "goal-setting reviewer",
+          "keywords": ["goal", "goal-setting", "goal setting"]
+        },
+        "permormance_rating_report_year_2025_2026": {
+          "field": "reviewer",
+          "short_name": "performance reviewer",
+          "keywords": ["performance", "rating", "appraisal"]
+        },
+        "offboarding_checklist": {
+          "field": "reviewer",
+          "short_name": "offboarding reviewer",
+          "keywords": ["offboarding", "exit", "clearance"]
+        }
+      },
       "ask_user": "Do you mean goal-setting reviewer, performance reviewer, or offboarding reviewer?"
     },
     {
       "term": "rating",
-      "possible_meanings": ["self rating", "manager rating"],
-      "disambiguation_keywords": ["self", "manager"],
+      "collections": {
+        "permormance_rating_report_year_2025_2026": {
+          "fields": [
+            {"field": "self rating", "short_name": "self rating", "keywords": ["self"]},
+            {"field": "manager rating", "short_name": "manager rating", "keywords": ["manager"]}
+          ]
+        }
+      },
       "ask_user": "Do you mean self rating or manager rating?"
     },
     {
       "term": "status",
-      "possible_meanings": ["performance final status", "goal-setting status", "offboarding all task status", "core HR employee status"],
-      "disambiguation_keywords": ["performance", "goal", "offboarding", "employee"],
+      "collections": {
+        "permormance_rating_report_year_2025_2026": {
+          "field": "final status",
+          "short_name": "performance status",
+          "keywords": ["performance", "rating", "appraisal"]
+        },
+        "goal_setting_status": {
+          "field": "status",
+          "short_name": "goal-setting status",
+          "keywords": ["goal", "goal-setting", "goal setting"]
+        },
+        "offboarding_checklist": {
+          "field": "status.all task status",
+          "short_name": "offboarding status",
+          "keywords": ["offboarding", "exit", "clearance"]
+        },
+        "base_report": {
+          "field": "assignment status type",
+          "short_name": "employee status",
+          "keywords": ["employee", "active", "inactive"]
+        }
+      },
       "ask_user": "Which status do you need: performance, goal-setting, offboarding, or employee status?"
     },
     {
       "term": "leavers",
-      "possible_meanings": ["resigned (DoR)", "exited (DoL)"],
-      "disambiguation_keywords": ["resignation", "leaving"],
+      "collections": {
+        "base_report": {
+          "fields": [
+            {"field": "date_of_resignation", "short_name": "resigned (DoR)", "keywords": ["resignation", "resigned"]},
+            {"field": "date_of_leaving", "short_name": "exited (DoL)", "keywords": ["leaving", "exited"]}
+          ]
+        }
+      },
       "ask_user": "Filter by resignation date or leaving date?"
     }
 

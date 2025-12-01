@@ -19,6 +19,60 @@ llm = ChatOpenAI(model="gpt-4o")  # or "gpt-4o-mini" etc.
 from memory.memorymanager import get_chat_history, push_convo_pair
 
 
+# -------------------------------
+# TOON Format Converter
+# -------------------------------
+
+def format_ambiguous_terms_toon(ambiguous_terms: list) -> str:
+    """
+    Convert ambiguous_terms list to TOON (Token-Oriented Object Notation) format.
+    This reduces token count by 50-60% compared to JSON while maintaining readability.
+    
+    Args:
+        ambiguous_terms: List of ambiguous term dictionaries with collection-aware structure
+    
+    Returns:
+        TOON formatted string
+    """
+    if not ambiguous_terms:
+        return "None"
+    
+    lines = []
+    for term_data in ambiguous_terms:
+        term = term_data.get("term", "")
+        collections = term_data.get("collections", {})
+        ask_user = term_data.get("ask_user", "")
+        
+        if not term:
+            continue
+        
+        # Format: term[collection|field|short_name|keywords]
+        term_lines = [f"{term}:"]
+        
+        for collection_name, collection_info in collections.items():
+            # Handle both single field and multiple fields (for rating, leavers)
+            if "fields" in collection_info:
+                # Multiple fields in same collection (e.g., rating has self and manager)
+                for field_info in collection_info["fields"]:
+                    field = field_info.get("field", "")
+                    short_name = field_info.get("short_name", "")
+                    keywords = ",".join(field_info.get("keywords", []))
+                    term_lines.append(f"  [{collection_name}|{field}|{short_name}|{keywords}]")
+            else:
+                # Single field per collection
+                field = collection_info.get("field", "")
+                short_name = collection_info.get("short_name", "")
+                keywords = ",".join(collection_info.get("keywords", []))
+                term_lines.append(f"  [{collection_name}|{field}|{short_name}|{keywords}]")
+        
+        if ask_user:
+            term_lines.append(f"  ask: \"{ask_user}\"")
+        
+        lines.append("\n".join(term_lines))
+    
+    return "\n\n".join(lines)
+
+
 # You are a MongoDB Query Clarification Agent. 
 # Your ONLY job is to interpret the user’s request and ask ONE short clarifying question ONLY when the database query cannot be constructed without it.
 
@@ -128,13 +182,29 @@ from memory.memorymanager import get_chat_history, push_convo_pair
 # Use push_convo_pair() and get_chat_history() from memorymanager module
 
 
-def clarify_query(user_query: str , semantic_context: dict , ambiguous_terms: dict, chat_history: str = ""):
+def clarify_query(user_query: str , semantic_context: dict , ambiguous_terms: dict, chat_history: str = "", clarification_progress: dict = None):
     """
     user_query: the question from the user
     semantic_context: the semantic JSON document produced by build_summary_document()
     ambiguous_terms: dictionary of ambiguous terms and their possible meanings
     chat_history: formatted string of previous conversation (last 10 messages)
+    clarification_progress: current clarification progress from state (optional)
     """
+    # Initialize clarification_progress if not provided
+    if clarification_progress is None:
+        clarification_progress = {
+            "original_query": "",
+            "pending_ambiguities": {},
+            "resolved_ambiguities": {}
+        }
+    
+    # Format clarification progress for prompt
+    pending_count = len(clarification_progress.get("pending_ambiguities", {}))
+    resolved_count = len(clarification_progress.get("resolved_ambiguities", {}))
+    original_query = clarification_progress.get("original_query", user_query) if clarification_progress.get("original_query") else "(first query)"
+    
+    pending_list = "\n".join([f"- {term}: {info.get('question', 'needs clarification')}" for term, info in clarification_progress.get("pending_ambiguities", {}).items()]) if clarification_progress.get("pending_ambiguities") else "None"
+    resolved_list = "\n".join([f"- {term}: resolved to '{info.get('resolved_to', 'unknown')}'" for term, info in clarification_progress.get("resolved_ambiguities", {}).items()]) if clarification_progress.get("resolved_ambiguities") else "None"
 
     # Build chat history section for prompt
     chat_history_section = ""
@@ -146,17 +216,43 @@ CHAT HISTORY (Previous Conversation):
 ═══════════════════════════════════════════════════════════════════════════════
 {chat_history}
 
-**IMPORTANT - CHAT HISTORY ANALYSIS:**
-1. If you see a previous Assistant message with clarification questions (e.g., "Which status?", "Which reviewer?")
-2. And the current user query contains answers to those questions (e.g., "employee status", "offboarding reviewer")
-3. Then this is a CONTINUATION - the user is answering your previous questions
-4. In this case:
-   - Mark the answered terms as clarified in clarification_progress
-   - Remove them from pending_terms
-   - If ALL questions are answered → return status="ready" with final_clarified_query
-   - If SOME questions answered → ask ONLY about remaining ambiguities
-   - Use the original_query from the first interaction (preserve it in clarification_progress)
-   - Preserve the intent from the original query (if original had "my", intent is "self")
+**IMPORTANT - CHAT HISTORY ANALYSIS (CRITICAL - CHECK THIS FIRST):**
+1. **Context from Previous Queries:**
+   - If chat history shows a previous query about a specific topic (e.g., "goal setting status information")
+   - And the current query references the same topic (e.g., "My goal setting reviewer")
+   - Then use the context from the previous query to resolve ambiguities
+   - Example: If previous query was about "goal setting status", then "goal setting reviewer" is CLEAR from context → NO question needed
+
+2. **Continuation Detection (CRITICAL - MOST IMPORTANT):**
+   - If you see a previous Assistant message with clarification questions (e.g., "Which status?", "Which reviewer?")
+   - And the current user query contains answers to those questions (e.g., "performance status", "performance reviewer", "current manager")
+   - Then this is a CONTINUATION - the user is answering your previous questions
+   - **CRITICAL RULES FOR CONTINUATION:**
+     - If user answers with QUALIFIED terms (e.g., "performance status", "current manager") → Those terms are FULLY RESOLVED
+     - Mark ALL answered terms as clarified in clarification_progress
+     - Remove ALL answered terms from pending_ambiguities
+     - **If ALL questions are answered with qualified terms → return status="ready" IMMEDIATELY**
+     - **Do NOT ask follow-up questions about already-qualified terms**
+     - Use the original_query from the first interaction (preserve it in clarification_progress)
+     - Preserve the intent from the original query (if original had "my", intent is "self")
+   - **Example**: 
+     * Previous: "Which status? Which reviewer? Which manager?"
+     * Current: "1. Performance status, 2. performance reviewer, 3. current manager"
+     * → ALL terms QUALIFIED → ALL RESOLVED → status="ready" (NO questions)
+
+3. **Context-Aware Term Resolution:**
+   - If previous conversation mentioned "goal setting" → "goal setting reviewer" is QUALIFIED and CLEAR
+   - If previous conversation mentioned "performance" → "performance reviewer" is QUALIFIED and CLEAR
+   - If previous conversation mentioned "offboarding" → "offboarding reviewer" is QUALIFIED and CLEAR
+   - Use chat history to automatically qualify terms that appear in current query
+   - Example: History shows "goal setting status" → Current query "My goal setting reviewer" → "goal setting reviewer" is clear from context → NO question
+
+4. **Qualified Term Recognition (CRITICAL):**
+   - When user provides qualified terms in their answer, recognize them as COMPLETE
+   - "Performance status" = qualified, complete, ready → NO questions
+   - "Performance reviewer for current month" = qualified, complete, ready → NO questions
+   - "Current manager" = qualified, complete, ready → NO questions
+   - Do NOT ask for "exact information", "specific details", or "which type" about qualified terms
 
 # ============================================================================
 # OLD PROMPT SECTIONS (COMMENTED OUT - FOR REFERENCE/REVERT IF NEEDED)
@@ -249,22 +345,29 @@ ABSOLUTE RULES (MUST FOLLOW - NO EXCEPTIONS):
    - Examples: "leaves" → self, "total leaves" → self, "offboarding reviewer" → self, "reviewer" → self
    - Only ask about subject if query explicitly mentions another person/entity (e.g., "John's leaves")
 
-**RULE 2: QUALIFIED TERMS ARE NOT AMBIGUOUS (CHECK FIRST):**
-   - If term has a qualifier prefix → it's RESOLVED, DO NOT ask about it
-   - Qualified: "performance status", "offboarding reviewer", "total leaves", "pending leaves", "employee status"
-   - Unqualified: "status", "reviewer", "leaves" → these ARE ambiguous
+**RULE 2: QUALIFIED TERMS ARE NOT AMBIGUOUS (CHECK FIRST - CRITICAL):**
+   - If term has a qualifier prefix → it's FULLY RESOLVED, DO NOT ask ANY questions about it
+   - Qualified terms are COMPLETE and READY for query - no further clarification needed
+   - Qualified: "performance status", "offboarding reviewer", "total leaves", "pending leaves", "employee status", "goal-setting reviewer", "current manager"
+   - Unqualified: "status", "reviewer", "leaves", "manager" → these ARE ambiguous
    - Check qualified terms BEFORE checking ambiguous_terms dictionary
+   - **CRITICAL**: Once a term is qualified (e.g., "performance status"), it's DONE. Do NOT ask for:
+     * "What exact information do you need about performance status?" → NO, it's already clear
+     * "Which performance status?" → NO, "performance status" is already specific
+     * "Current or historical?" → NO, if user said "performance status", that's enough
 
 **RULE 3: ASK ALL QUESTIONS AT ONCE:**
    - Identify ALL ambiguities and missing components
    - Return ALL questions in one response (if 2 ambiguities → 2 questions, if 5 → 5 questions)
 
-**RULE 4: USE CHAT HISTORY AND TRACK PROGRESS:**
+**RULE 4: USE CHAT HISTORY AND TRACK PROGRESS (CRITICAL):**
    - If previous questions were asked and answered in current query → use those answers
    - If continuation detected → merge with original query, use original intent
    - NEVER ask questions already answered in chat history
    - Track which terms have been clarified and which are still pending in clarification_progress
    - When continuation detected: mark previously pending terms as clarified in clarification_progress
+   - **CRITICAL**: If user answers with qualified terms (e.g., "performance status", "performance reviewer"), those terms are RESOLVED
+   - **CRITICAL**: Do NOT ask follow-up questions about already-qualified terms. Once qualified = ready to query
 
 **RULE 5: BUILD FINAL QUERY WHEN READY:**
    - When all ambiguities are resolved (status="ready"), build a complete natural language query
@@ -279,19 +382,26 @@ VALIDATION CHECKLIST (DO THIS BEFORE ASKING ANY QUESTION):
 
 Before asking, verify:
 - Subject clear? → If no explicit subject, assume self (DO NOT ask about subject)
-- Term qualified? → If qualified (e.g., "total leaves"), it's resolved (DO NOT ask)
-- Already answered? → Check chat history, if answered → use that answer
+- Term qualified? → If qualified (e.g., "performance status", "current manager"), it's FULLY resolved (DO NOT ask ANY questions)
+- Already answered? → Check chat history, if answered → use that answer, mark as clarified
 - All ambiguities identified? → List ALL, not just one
+- **CRITICAL CHECK**: If ALL terms in current query are qualified → status="ready", NO questions
+- **CRITICAL CHECK**: If user answered previous questions with qualified terms → those are RESOLVED, do NOT ask for more details
 
 ═══════════════════════════════════════════════════════════════════════════════
 NEVER ASK ABOUT:
 ═══════════════════════════════════════════════════════════════════════════════
 
 - Subject/employee (unless explicitly mentioned like "John's")
-- Qualified terms (e.g., "total leaves", "performance status", "offboarding reviewer")
+- Qualified terms (e.g., "total leaves", "performance status", "offboarding reviewer", "current manager", "performance reviewer")
 - Things already answered in chat history
 - Things not in semantic_context
 - Conversational/HR/policy questions unrelated to MongoDB query
+- **CRITICAL**: Do NOT ask for granular details about already-qualified terms:
+  * "What exact information do you need about [qualified term]?" → NO
+  * "Which [qualified term]?" → NO (it's already qualified)
+  * "Current or historical [qualified term]?" → NO (if user said "performance status", that's enough)
+  * "Specific [qualified term] or all [qualified term]?" → NO (qualified = ready)
 
 ═══════════════════════════════════════════════════════════════════════════════
 WHEN TO ASK QUESTIONS:
@@ -326,6 +436,8 @@ You are given:
 1) semantic_context (database concepts and collections)
 {json.dumps(semantic_context, indent=2)}
 
+2) ambiguous_terms (terms with multiple database meanings - TOON format):
+{format_ambiguous_terms_toon(ambiguous_terms)}
 
 Important database context to keep in mind:
 Database Context:
@@ -399,6 +511,50 @@ Example 5: "employee status and offboarding reviewer" (continuation)
   → Use intent from original query ("my status and reviewer" → "self")
   → Status: "ready" (no questions needed)
 
+Example 6: "1. Performance status, 2. performance reviewer for current month and 3. current manager" (continuation)
+  → ALL terms QUALIFIED: "performance status", "performance reviewer", "current manager"
+  → ALL terms are RESOLVED → NO questions needed
+  → Status: "ready" (build final query immediately)
+
+Example 7: "Current Performance status" (continuation)
+  → Term QUALIFIED: "Current Performance status" → RESOLVED
+  → Do NOT ask "What exact information?" or "Current or historical?" → It's already clear
+  → Status: "ready"
+
+Example 8: CONTINUATION SCENARIO (CRITICAL - FOLLOW THIS EXACTLY):
+  Previous query: "My status, reviewer and manager name"
+  Previous questions: ["Which status?", "Which reviewer?", "Which manager?"]
+  Current query: "1. Performance status, 2. performance reviewer for current month and 3. current manager"
+  → ALL terms are QUALIFIED: "performance status", "performance reviewer", "current manager"
+  → ALL terms are RESOLVED → NO questions needed
+  → Status: "ready", questions: [], final_clarified_query: "My performance status, performance reviewer for current month, and current manager name"
+  → **DO NOT** ask "What exact information about performance status?" or "Which performance reviewer?" → They're already qualified
+
+Example 9: CONTINUATION SCENARIO (WRONG vs CORRECT):
+  Previous: "My status and reviewer"
+  Previous questions: ["Which status?", "Which reviewer?"]
+  Current: "1. Current Performance status, 2. performance reviewer for current month and 3. current manager"
+  
+  WRONG Response:
+  {{
+    "status": "needs_clarification",
+    "questions": ["What exact information about performance status?", "Which performance reviewer?"]
+  }}
+  
+  CORRECT Response:
+  {{
+    "status": "ready",
+    "final_clarified_query": "My current performance status, performance reviewer for current month, and current manager name",
+    "clarification_progress": {{
+      "original_query": "My status and reviewer",
+      "resolved_ambiguities": {{
+        "status": {{"term": "status", "resolved_to": "current performance status"}},
+        "reviewer": {{"term": "reviewer", "resolved_to": "performance reviewer for current month"}}
+      }},
+      "pending_ambiguities": {{}}
+    }}
+  }}
+
 ═══════════════════════════════════════════════════════════════════════════════
 COMMON MISTAKES TO AVOID:
 ═══════════════════════════════════════════════════════════════════════════════
@@ -412,6 +568,15 @@ CORRECT: "offboarding reviewer" → NO question (qualified term, assume self)
 WRONG: "my leaves" → Ask only "Do you want pending or total?" (missing time period)
 CORRECT: "my leaves" → Ask "Do you want pending leaves or total leaves?" (time is optional for leaves)
 
+WRONG: User answers "performance status" → Ask "What exact information do you need about performance status?"
+CORRECT: User answers "performance status" → It's qualified, resolved → status="ready"
+
+WRONG: User answers "performance reviewer for current month" → Ask "Which performance reviewer?" or "For which period?"
+CORRECT: User answers "performance reviewer for current month" → It's qualified, resolved → status="ready"
+
+WRONG: User answers "current manager" → Ask "Do you mean current manager's name, role, or details?"
+CORRECT: User answers "current manager" → It's qualified, resolved → status="ready"
+
 OUTPUT FORMAT:
 
 If clarification is needed (MUST return ALL questions at once):
@@ -421,17 +586,41 @@ If clarification is needed (MUST return ALL questions at once):
   "intent": "self" or "others",
   "clarification_progress": {{
     "original_query": "<original user query from first interaction>",
-    "clarified_terms": ["<term1> → <resolved_value1>", "<term2> → <resolved_value2>"],  # Terms that have been clarified
-    "pending_terms": ["<term1>", "<term2>"]  # List of ambiguous terms still needing clarification
+    "pending_ambiguities": {{
+      "<term1>": {{
+        "term": "<term1>",
+        "question": "<question asked for this term>",
+        "possible_meanings": ["<meaning1>", "<meaning2>"]
+      }},
+      "<term2>": {{
+        "term": "<term2>",
+        "question": "<question asked for this term>",
+        "possible_meanings": ["<meaning1>", "<meaning2>"]
+      }}
+    }},
+    "resolved_ambiguities": {{
+      "<term>": {{
+        "term": "<term>",
+        "resolved_to": "<resolved value>",
+        "collection": "<collection name if applicable>"
+      }}
+    }}
   }}
 }}
 **CRITICAL**: 
 - The "questions" array MUST contain ALL necessary questions. If there are 2 ambiguities, return 2 questions. If there are 5, return 5. NEVER return just one question when multiple are needed.
+- **CONTINUATION DETECTION (MOST IMPORTANT):**
+  * If chat history shows you asked questions (e.g., "Which status?", "Which reviewer?")
+  * And current query contains qualified answers (e.g., "performance status", "performance reviewer", "current manager")
+  * Then this is a CONTINUATION - user is answering your questions
+  * **ACTION**: Move answered terms from pending_ambiguities to resolved_ambiguities, and if ALL are answered → return status="ready" with NO questions
+  * **DO NOT** ask follow-up questions about already-qualified terms
 - If this is a continuation (user answering previous questions), update clarification_progress:
-  * Mark answered terms in clarified_terms (e.g., "status → employee status")
-  * Remove answered terms from pending_terms
+  * Move answered terms from pending_ambiguities to resolved_ambiguities (e.g., "status" → resolved with "performance status")
+  * Remove answered terms from pending_ambiguities
   * Keep original_query from the first interaction
-- If this is the first clarification, set original_query to current user_query and list all ambiguous terms in pending_terms
+  * **If ALL pending_ambiguities are now resolved → status="ready", questions=[]**
+- If this is the first clarification, set original_query to current user_query and add all ambiguous terms to pending_ambiguities
 
 If everything is clear (no clarification needed):
 {{
@@ -440,8 +629,19 @@ If everything is clear (no clarification needed):
   "final_clarified_query": "<natural language query with all ambiguities resolved, ready for router>",
   "clarification_progress": {{
     "original_query": "<original user query>",
-    "clarified_terms": ["<all resolved terms>"],
-    "pending_terms": []  # Empty when ready
+    "pending_ambiguities": {{}},  # Empty when ready
+    "resolved_ambiguities": {{
+      "<term1>": {{
+        "term": "<term1>",
+        "resolved_to": "<resolved value>",
+        "collection": "<collection name if applicable>"
+      }},
+      "<term2>": {{
+        "term": "<term2>",
+        "resolved_to": "<resolved value>",
+        "collection": "<collection name if applicable>"
+      }}
+    }}
   }}
 }}
 **IMPORTANT**: 
@@ -471,6 +671,22 @@ Examples:
 - "John's leaves" → "others" (explicit subject)
 
 User Query: "{user_query}"
+
+═══════════════════════════════════════════════════════════════════════════════
+CURRENT CLARIFICATION PROGRESS:
+═══════════════════════════════════════════════════════════════════════════════
+Original Query: {original_query}
+
+Pending Ambiguities: {pending_count} term(s)
+{pending_list}
+
+Resolved Ambiguities: {resolved_count} term(s)
+{resolved_list}
+
+**IMPORTANT**: 
+- If user's current query answers any pending ambiguities, move them from pending_ambiguities to resolved_ambiguities
+- If ALL pending_ambiguities are resolved, return status="ready"
+- Use the resolved_ambiguities to build the final_clarified_query
     """
     response = llm.invoke(
         [
@@ -478,10 +694,13 @@ User Query: "{user_query}"
                 "role": "system",
                 "content": (
                     "You are a MongoDB Query Clarification Agent. "
-                    "CRITICAL RULES: "
+                    "CRITICAL RULES (MUST FOLLOW): "
                     "1. NEVER ask 'for whom?' or 'for yourself or someone else?' - always assume self if no explicit subject. "
-                    "2. Qualified terms (e.g., 'total leaves', 'offboarding reviewer') are NOT ambiguous - do NOT ask about them. "
-                    "3. Ask ALL necessary questions at once in the questions array. "
+                    "2. Qualified terms (e.g., 'performance status', 'current manager', 'offboarding reviewer') are FULLY RESOLVED - do NOT ask ANY questions about them. "
+                    "3. If user answers previous questions with qualified terms, those are RESOLVED - do NOT ask follow-up questions. "
+                    "4. Once a term is qualified, it's COMPLETE and READY for query - no further clarification needed. "
+                    "5. Ask ALL necessary questions at once in the questions array. "
+                    "6. If ALL terms in current query are qualified → return status='ready' immediately. "
                     "Your response MUST be only valid JSON. No markdown, no comments, no backticks."
                 )
             },
@@ -530,39 +749,48 @@ User Query: "{user_query}"
                 result["intent"] = "unknown"
                 print(f"WARNING: Unrecognized intent: {intent}, setting to 'unknown'")
         
-        # Ensure clarification_progress is present
+        # Ensure clarification_progress is present with new structure
         if "clarification_progress" not in result:
             result["clarification_progress"] = {
                 "original_query": user_query,
-                "clarified_terms": [],
-                "pending_terms": []
+                "pending_ambiguities": {},
+                "resolved_ambiguities": {}
             }
         
-        # If needs_clarification, ensure pending_terms are set
+        # Ensure pending_ambiguities and resolved_ambiguities are dicts
+        if "pending_ambiguities" not in result["clarification_progress"]:
+            result["clarification_progress"]["pending_ambiguities"] = {}
+        if "resolved_ambiguities" not in result["clarification_progress"]:
+            result["clarification_progress"]["resolved_ambiguities"] = {}
+        
+        # If needs_clarification, ensure pending_ambiguities are set
         if result.get("status") == "needs_clarification":
-            # If pending_terms is empty but we have questions, infer from questions
-            if not result["clarification_progress"].get("pending_terms") and questions:
-                # Try to infer pending terms from questions (simple heuristic)
-                pending = []
+            # If pending_ambiguities is empty but we have questions, infer from questions
+            if not result["clarification_progress"].get("pending_ambiguities") and questions:
+                # Try to infer pending terms from questions and ambiguous_terms
+                pending_ambiguities = {}
                 for q in questions:
-                    if "status" in q.lower():
-                        pending.append("status")
-                    if "reviewer" in q.lower():
-                        pending.append("reviewer")
-                    if "leave" in q.lower():
-                        pending.append("leaves")
-                if pending:
-                    result["clarification_progress"]["pending_terms"] = list(set(pending))
+                    # Match questions to ambiguous terms
+                    for amb_term in ambiguous_terms:
+                        term_name = amb_term.get("term", "")
+                        if term_name and term_name.lower() in q.lower():
+                            pending_ambiguities[term_name] = {
+                                "term": term_name,
+                                "question": q,
+                                "possible_meanings": amb_term.get("possible_meanings", [])
+                            }
+                if pending_ambiguities:
+                    result["clarification_progress"]["pending_ambiguities"] = pending_ambiguities
         
         # Ensure final_clarified_query is present if ready
         if result.get("status") == "ready":
             if "final_clarified_query" not in result or not result.get("final_clarified_query"):
-                # Build final query from original + clarified terms
+                # Build final query from original + resolved ambiguities
                 original = result["clarification_progress"].get("original_query", user_query)
-                clarified = result["clarification_progress"].get("clarified_terms", [])
+                resolved = result["clarification_progress"].get("resolved_ambiguities", {})
                 
-                # If we have clarified terms, try to build a better query
-                if clarified:
+                # If we have resolved ambiguities, try to build a better query
+                if resolved:
                     # Simple fallback: use original query (it should already be merged by input_node)
                     result["final_clarified_query"] = user_query
                 else:
@@ -570,8 +798,12 @@ User Query: "{user_query}"
                     result["final_clarified_query"] = user_query
                 print(f"WARNING: LLM didn't provide final_clarified_query, using: {result['final_clarified_query']}")
             
-            # Ensure pending_terms is empty when ready
-            result["clarification_progress"]["pending_terms"] = []
+            # Ensure pending_ambiguities is empty when ready
+            if "pending_ambiguities" not in result["clarification_progress"]:
+                result["clarification_progress"]["pending_ambiguities"] = {}
+            # Ensure resolved_ambiguities is populated
+            if "resolved_ambiguities" not in result["clarification_progress"]:
+                result["clarification_progress"]["resolved_ambiguities"] = {}
         
         return result
     except json.JSONDecodeError as e:
