@@ -106,8 +106,9 @@ def mql_execute(email, question):
             return str(v)
     
     try:
-        # ===== STEP 1: CLARIFYING AGENT (FIRST) =====
-        clarification_result = run_clarifying_agent(email, question)
+        # ===== STEP 1: UNIFIED AGENT (FIRST) =====
+        # needs_routing=False for MQL Agent tab (always document queries)
+        clarification_result = run_clarifying_agent(email, question, needs_routing=False)
         
         # If clarification needed, return questions to UI
         if clarification_result.get("needs_clarification", False):
@@ -132,20 +133,35 @@ def mql_execute(email, question):
         status, agent_out_str, mql, db_results, agg_pipeline = run_query(email, final_clarified_query)
         
         # ===== AUTO-SAVE CHAT HISTORY =====
-        # Only save actual conversation (user query + final answer)
+        # Save exactly what the user sees in UI: user's current input → bot's current output
         # Filter out "Allowed"/"Not allowed" messages
         try:
+            # Check if there was a clarification process
+            # If original_query exists and differs from current question, user provided clarification answer
+            # In that case, save current question (clarification answer) → final response
+            # Otherwise, save current question (original query) → final response
+            original_query = clarification_result.get("original_query", "")
+            if original_query and original_query != question:
+                # There was clarification - save user's clarification answer → final response
+                user_msg_to_save = question  # User's clarification answer
+            else:
+                # No clarification - save user's original query → final response
+                user_msg_to_save = question  # User's original query
+            
             if db_results and db_results.strip().lower() not in ["allowed", "not allowed", "unclear intent"]:
-                # Save to MongoDB (async)
+                print(f"💾 Saving chat history to MongoDB: user_msg='{user_msg_to_save[:50]}...', bot_msg length={len(db_results)}")
+                # Save to MongoDB (async) - save what user sees: their input → bot's output
                 push_convo_pair(
                     email=email,
-                    user_msg=question,
+                    user_msg=user_msg_to_save,
                     bot_msg=db_results
                 )
                 # Also add to current session state for immediate context
-                add_session_turn(email, question, db_results)
+                add_session_turn(email, user_msg_to_save, db_results)
+            else:
+                print(f"⚠️ Skipping save: db_results is empty or access check message")
         except Exception as e:
-            print("Failed to push conversation history:", e)
+            print(f"❌ Failed to push conversation history: {e}")
         
         return status, agent_out_str, mql, db_results
     
@@ -172,8 +188,9 @@ def combined_execute(email, question):
             return str(v)
 
     try:
-        # ===== STEP 1: CLARIFYING AGENT (FIRST) =====
-        clarification_result = run_clarifying_agent(email, question)
+        # ===== STEP 1: UNIFIED AGENT (FIRST) =====
+        # needs_routing=True for Combined tab (routes to document/policy)
+        clarification_result = run_clarifying_agent(email, question, needs_routing=True)
         
         # If clarification needed, return questions to UI
         if clarification_result.get("needs_clarification", False):
@@ -192,13 +209,19 @@ def combined_execute(email, question):
             })
             return clarification_json, clarification_text
         
-        # ===== STEP 2: ROUTER (receives clarified query) =====
+        # ===== STEP 2: USE ROUTE FROM UNIFIED AGENT =====
         final_clarified_query = clarification_result.get("final_clarified_query", question)
-        route_result = query_router(final_clarified_query, email)
+        route = clarification_result.get("route", "document")  # Default to document if not provided
+        
+        # Create router output format (for UI display)
+        route_result = {
+            "route": route,
+            "confidence": 1.0,
+            "query": final_clarified_query
+        }
         router_out_str = safe_json(route_result)
-
-        route = route_result.get("route")
-        query = route_result.get("query", final_clarified_query)
+        
+        query = final_clarified_query
 
         # ===== STEP 3: EXECUTE TARGET ENGINE =====
         if route == "document":
@@ -221,40 +244,58 @@ def combined_execute(email, question):
             final_output = safe_json(final_output_dict)
 
         # ===== AUTO-SAVE CHAT HISTORY =====
-        # Only save actual conversation (user query + final answer)
+        # Save exactly what the user sees in UI: user's current input → bot's current output
         # Filter out "Allowed"/"Not allowed" messages - they're access checks, not conversation
         final_output_string = ""
         try:
+            # Check if there was a clarification process
+            # If original_query exists and differs from current question, user provided clarification answer
+            # In that case, save current question (clarification answer) → final response
+            # Otherwise, save current question (original query) → final response
+            original_query = clarification_result.get("original_query", "")
+            if original_query and original_query != question:
+                # There was clarification - save user's clarification answer → final response
+                user_msg_to_save = question  # User's clarification answer
+            else:
+                # No clarification - save user's original query → final response
+                user_msg_to_save = question  # User's original query
+            
             if route == "document":
                 bot_response = final_output_dict.get("db_results", "")
                 # Filter out access check messages
                 if bot_response and bot_response.strip().lower() not in ["allowed", "not allowed", "unclear intent"]:
-                    # Save to MongoDB (async)
+                    print(f"💾 Saving chat history to MongoDB: user_msg='{user_msg_to_save[:50]}...', bot_msg length={len(bot_response)}")
+                    # Save to MongoDB (async) - save what user sees: their input → bot's output
                     push_convo_pair(
                         email=email,
-                        user_msg=question,
+                        user_msg=user_msg_to_save,
                         bot_msg=bot_response
                     )
                     # Also add to current session state for immediate context
-                    add_session_turn(email, question, bot_response)
+                    add_session_turn(email, user_msg_to_save, bot_response)
+                else:
+                    print(f"⚠️ Skipping save: bot_response is empty or access check message")
                 final_output_string = bot_response
 
             elif route == "policy":
                 bot_response = final_output_dict.get("policy_answer", "")
                 # Filter out access check messages
                 if bot_response and bot_response.strip().lower() not in ["allowed", "not allowed", "unclear intent"]:
-                    # Save to MongoDB (async)
+                    print(f"💾 Saving chat history to MongoDB: user_msg='{user_msg_to_save[:50]}...', bot_msg length={len(bot_response)}")
+                    # Save to MongoDB (async) - save what user sees: their input → bot's output
                     push_convo_pair(
                         email=email,
-                        user_msg=question,
+                        user_msg=user_msg_to_save,
                         bot_msg=bot_response
                     )
                     # Also add to current session state for immediate context
-                    add_session_turn(email, question, bot_response)
+                    add_session_turn(email, user_msg_to_save, bot_response)
+                else:
+                    print(f"⚠️ Skipping save: bot_response is empty or access check message")
                 final_output_string = bot_response
 
         except Exception as e:
-            print("Failed to push conversation history:", e)
+            print(f"❌ Failed to push conversation history: {e}")
 
         return router_out_str, final_output_string
 
