@@ -125,24 +125,34 @@ def run_clarifying_agent(email: str, question: str, session_id: Optional[str] = 
     
     state = _clarification_state[session_id]
     
-    # Load chat history once per session (from MongoDB - previous sessions)
-    if not state["chat_history_loaded"]:
-        try:
-            state["chat_history_messages"] = get_chat_history_as_messages(email) or []
-        except Exception as e:
-            print(f"Warning: Failed to load chat history: {e}")
+    # Load chat history from MongoDB for each query (ensures we have latest data)
+    # This is important because previous queries might have saved new history asynchronously
+    try:
+        state["chat_history_messages"] = get_chat_history_as_messages(email) or []
+        if not state.get("chat_history_loaded", False):
+            # Mark as loaded on first successful load (for logging/debugging)
+            state["chat_history_loaded"] = True
+            print(f"✅ Loaded chat history from MongoDB: {len(state['chat_history_messages'])} messages")
+        else:
+            # Reloaded for subsequent queries
+            print(f"🔄 Reloaded chat history from MongoDB: {len(state['chat_history_messages'])} messages")
+    except Exception as e:
+        print(f"Warning: Failed to load chat history: {e}")
+        if "chat_history_messages" not in state:
             state["chat_history_messages"] = []
-        state["chat_history_loaded"] = True
+        state["chat_history_loaded"] = True  # Mark as attempted to avoid repeated errors
     
     # Fetch user profile (with retries)
     user_profile = fetch_user_profile(email)
     if user_profile is None:
+        # Return error response with appropriate route if needed
+        route = "document" if needs_routing else None
         return {
             "needs_clarification": False,
             "error": "Failed to fetch user profile. Please try again.",
             "final_clarified_query": question,
             "intent": "self",
-            "route": None
+            "route": route
         }
     
     # Get semantic processor
@@ -160,30 +170,44 @@ def run_clarifying_agent(email: str, question: str, session_id: Optional[str] = 
     )
     
     # Build chat history text from state
-    # Include: MongoDB history (previous sessions) + Current session turns (recent conversation)
+    # Include: MongoDB history (source of truth) + Current session turns (for immediate context)
+    # Deduplicate to avoid showing same turn twice
     chat_history_text = ""
     all_history_parts = []
+    seen_turns = set()  # Track seen turns to avoid duplicates
     
-    # Add MongoDB history from state (previous sessions)
+    # Add MongoDB history from state (source of truth - includes all saved turns)
     for msg_dict in state["chat_history_messages"]:
         user_msg = msg_dict.get("user", "").strip()
         bot_msg = msg_dict.get("assistant", "").strip()
         # Skip "Allowed" messages
         if bot_msg and bot_msg.lower() not in ["allowed", "not allowed", "unclear intent"]:
             if user_msg or bot_msg:
-                all_history_parts.append(f"User: {user_msg}\nAssistant: {bot_msg}")
+                # Create a unique key for this turn (user + assistant)
+                turn_key = (user_msg, bot_msg)
+                if turn_key not in seen_turns:
+                    seen_turns.add(turn_key)
+                    all_history_parts.append(f"User: {user_msg}\nAssistant: {bot_msg}")
     
-    # Add current session conversation turns (most recent context)
-    # This includes queries/answers from the current session that haven't been saved to MongoDB yet
+    # Add current session conversation turns (for immediate context - might include unsaved turns)
+    # This ensures we have the latest context even if async save hasn't completed yet
     for turn in state.get("current_session_turns", []):
         user_msg = turn.get("user", "").strip()
         bot_msg = turn.get("assistant", "").strip()
         # Skip "Allowed" messages
         if bot_msg and bot_msg.lower() not in ["allowed", "not allowed", "unclear intent"]:
             if user_msg or bot_msg:
-                all_history_parts.append(f"User: {user_msg}\nAssistant: {bot_msg}")
+                # Create a unique key for this turn (user + assistant)
+                turn_key = (user_msg, bot_msg)
+                if turn_key not in seen_turns:
+                    # This turn is not in MongoDB history yet (async save pending or failed)
+                    seen_turns.add(turn_key)
+                    all_history_parts.append(f"User: {user_msg}\nAssistant: {bot_msg}")
     
     if all_history_parts:
+        # Limit total history to last 10 turns to avoid token bloat
+        # (MongoDB already limits to 10, current_session_turns to 10, but deduplication might reduce this)
+        all_history_parts = all_history_parts[-10:]
         chat_history_text = "\n\n".join(all_history_parts)
     
     # Pass current clarification progress to clarifying agent

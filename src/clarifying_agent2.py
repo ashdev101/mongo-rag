@@ -1141,8 +1141,17 @@ Resolved Ambiguities: {resolved_count} term(s)
     except json.JSONDecodeError as e:
         print(f"ERROR: Error parsing JSON response: {e}")
         print(f"Response text: {response_text}")
-        # Return a fallback response with default intent
-        return {"status": "ready", "intent": "self"}
+        # Return a fallback response with default intent and user_query as final_clarified_query
+        return {
+            "status": "ready",
+            "intent": "self",
+            "final_clarified_query": user_query,  # Use original query as fallback
+            "clarification_progress": {
+                "original_query": user_query,
+                "pending_ambiguities": {},
+                "resolved_ambiguities": {}
+            }
+        }
 
 
 # -------------------------------
