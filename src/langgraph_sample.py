@@ -212,29 +212,7 @@ def input_node(state: AccessState):
     
     return {"question": last_msg, "intent": intent}
 
-# connect once (production: use a connection pool)
-client = MongoClient(MONGODB_URI)
-db = client["hr"]
-employees = db["base_report"]
-
-def fetch_role_node(state: AccessState):
-    email = state["email"]
-    record = employees.find_one({"primary email": email}, {"_id": 0, "employee code" : 1 , "designation": 1 , "region":1 , "department" : 1})
-    
-    if record and "designation" in record:
-        role = record["designation"].lower()
-        region = record["region"]
-        department = record["department"]
-        employees_code = record["employee code"]
-    else:
-        role = "unknown"
-        region = "unknown"
-        department = "unknown"
-        employees_code = 0
-    print(f"Fetched role for {email}: {role}")
-    return {"designation": role  , "employee_code" : employees_code, "region": region , "department" : department} 
-
-
+# fetch_role_node removed - user_profile is now passed from unified agent to avoid duplicate fetch
 # classify_query_node removed - now combined with query_clarifying_agent_node
 # Intent classification is now done in the combined LLM call in clarify_query
 
