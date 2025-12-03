@@ -283,7 +283,27 @@ CHAT HISTORY (Previous Conversation):
      * → ALL terms QUALIFIED → ALL RESOLVED → status="ready" (NO questions)
      * → Final query: Merge answers into original query structure
 
-3. **Context-Aware Term Resolution:**
+3. **Pronoun Resolution from Chat History (CRITICAL - CHECK MOST RECENT FIRST):**
+   - If current query uses pronouns (he, she, they, his, her, their, it, this, that):
+     * **MANDATORY**: Check chat history in REVERSE ORDER (most recent first) to find the IMMEDIATELY PRECEDING mention of a person/entity
+     * **PRIORITY RULE**: The most recent entity mentioned in chat history takes precedence over older mentions
+     * **RESOLUTION LOGIC**:
+       1. Look at the LAST Assistant message in chat history
+       2. Extract any person/entity name mentioned there (manager, reviewer, employee, etc.)
+       3. If found, resolve the pronoun to that entity
+       4. If not found, check the second-to-last message, and so on
+     * Example: 
+       - Last message: "Your manager's name is Pramatesh V. Kumar."
+       - Current query: "what is his email"
+       - Resolution: "his" = manager (from most recent message) → "what is my manager's email"
+     * Example: 
+       - Last message: "Your performance reviewer's name is Ashwin Shukla."
+       - Current query: "what is his email"
+       - Resolution: "his" = performance reviewer → "what is my performance reviewer's email"
+   - **NEVER ask "Whose email?" or "Who are you referring to?" if chat history provides the context**
+   - If chat history clearly identifies the entity, resolve the pronoun and enhance the query - NO clarification needed
+
+4. **Context-Aware Term Resolution:**
    - If previous conversation mentioned "goal setting" → "goal setting reviewer" is QUALIFIED and CLEAR
    - If previous conversation mentioned "performance" → "performance reviewer" is QUALIFIED and CLEAR
    - If previous conversation mentioned "offboarding" → "offboarding reviewer" is QUALIFIED and CLEAR
@@ -474,11 +494,25 @@ QUERY ENHANCEMENT (APPLY AFTER CLARIFICATION WHEN status="ready"):
      * Any specific values from previous query results
    - Use these entities to enhance the query
 
-**2. Pronoun Resolution:**
-   - If query uses pronouns (he, she, they, his, her, their, it):
-     * Resolve to specific entities from chat history
-     * Example: "his email" → "manager's email" (if previous query was about manager)
-     * Example: "Tell me his email_id" + History: "manager name is Abc Def" → "Tell me my manager's email_id. My manager name is Abc Def"
+**2. Pronoun Resolution (CRITICAL - ALWAYS RESOLVE FROM CHAT HISTORY - CHECK MOST RECENT FIRST):**
+   - If query uses pronouns (he, she, they, his, her, their, it, this, that):
+     * **MANDATORY**: Check chat history in REVERSE ORDER (most recent first) to resolve the pronoun
+     * **PRIORITY RULE**: The IMMEDIATELY PRECEDING conversation turn takes highest priority
+     * **RESOLUTION STEPS**:
+       1. Check the LAST Assistant message in chat history for any person/entity name
+       2. If found, resolve pronoun to that entity (e.g., "manager", "reviewer", "employee")
+       3. If not found, check the second-to-last message, and so on
+       4. Once resolved, enhance the query with the resolved entity
+     * Example: 
+       - Last message: "Your manager's name is Pramatesh V. Kumar."
+       - Current query: "what is his email"
+       - Resolution: "his" = manager (from most recent) → "what is my manager's email"
+     * Example: 
+       - Last message: "Your performance reviewer's name is Ashwin Shukla."
+       - Current query: "what is his email"
+       - Resolution: "his" = performance reviewer → "what is my performance reviewer's email"
+   - **NEVER ask "Whose email?" or "Who are you referring to?" if chat history provides the context**
+   - If chat history clearly identifies the entity, resolve the pronoun and enhance the query automatically
 
 **3. Context Addition:**
    - Build a self-contained query that includes:
@@ -494,12 +528,21 @@ QUERY ENHANCEMENT (APPLY AFTER CLARIFICATION WHEN status="ready"):
 **4. Example Enhancement:**
    - Input: "Tell me his email_id"
    - Chat History: "User: What is my manager name? Assistant: Your manager name is Abc Def"
-   - Enhanced: "Tell me my manager's email_id. My manager name is Abc Def. My employee code is 123"
+   - Enhanced: "Tell me my manager's email (requires lookup to base_report collection using manager name to get primary email field). My manager name is Abc Def. My employee code is 123"
+   - **IMPORTANT**: Only add lookup instructions when the user explicitly requests a field that requires lookup
+   - Do NOT retrieve all information upfront - only add context for what is explicitly asked
+   - Do NOT add lookup instructions for fields that are already available in the current collection
+   - Use generic patterns: determine target collection and join fields dynamically based on the field being requested (not hardcoded to specific fields)
    
-**5. Field Mapping Examples:**
-   - "manager name" → "manager name (field: reporting to in goal_setting_status collection)"
-   - "reviewer birthday" → "reviewer birthday (requires lookup to base_report collection using reviewer number to get date_of_birth field)"
-   - "manager name and reviewer birthday" → "manager name (field: reporting to) and reviewer birthday (requires lookup to base_report using reviewer number to get date_of_birth)"
+**5. Field Mapping Examples (generic patterns - apply to any field):**
+   - If field name differs: "field_name" → "field_name (field: actual_database_field_name)"
+   - If lookup needed: "field_name" → "field_name (requires lookup to target_collection using join_field to get target_field)"
+   - Multiple fields: "field1 and field2" → "field1 (field: actual_field1) and field2 (requires lookup to collection using join_field to get target_field)"
+   - **CRITICAL - Generic Lookup Pattern (apply to ANY field that needs lookup):**
+     * When a field requires data from another collection, add: "field_name (requires lookup to target_collection using join_field to get target_field)"
+     * Only add lookup instructions when the user explicitly requests that specific field - do not add them proactively
+     * Determine the target collection and join fields based on the field being requested and the collections available
+     * Use generic patterns: "entity_name's field_name (requires lookup to target_collection using entity_name to get target_field_name)"
 
 ═══════════════════════════════════════════════════════════════════════════════
 ROUTING (ONLY IF needs_routing=True):
@@ -579,6 +622,10 @@ NEVER ASK ABOUT:
   * "Which [qualified term]?" → NO (it's already qualified)
   * "Current or historical [qualified term]?" → NO (if user said "performance status", that's enough)
   * "Specific [qualified term] or all [qualified term]?" → NO (qualified = ready)
+- **CRITICAL - Pronoun Resolution:**
+  * "Whose email?" or "Who are you referring to?" → NO (if chat history provides context)
+  * "What is his email" + History: "manager name is Nitin Mittal" → Resolve "his" = manager → NO question needed
+  * Always check chat history FIRST before asking about pronouns
 
 ═══════════════════════════════════════════════════════════════════════════════
 WHEN TO ASK QUESTIONS:
@@ -706,6 +753,23 @@ Example 8: CONTINUATION SCENARIO (CRITICAL - FOLLOW THIS EXACTLY):
   → ALL terms are RESOLVED → NO questions needed
   → Status: "ready", questions: [], final_clarified_query: "My performance status, performance reviewer for current month, and current manager name"
   → **DO NOT** ask "What exact information about performance status?" or "Which performance reviewer?" → They're already qualified
+
+Example 9: PRONOUN RESOLUTION FROM CHAT HISTORY (CRITICAL - MOST RECENT TAKES PRIORITY):
+  Chat History (in order, most recent last):
+    - "User: performance reviewer's name?"
+    - "Assistant: Your performance reviewer's name is Ashwin Shukla."
+    - "User: my manager's name"
+    - "Assistant: Your manager's name is Pramatesh V. Kumar."  ← MOST RECENT MESSAGE
+  Current query: "what is his email"
+  → **STEP 1**: Check MOST RECENT message first: "Your manager's name is Pramatesh V. Kumar."
+  → **STEP 2**: Extract entity: "manager" (Pramatesh V. Kumar)
+  → **STEP 3**: Resolve pronoun: "his" = "manager" (from most recent message)
+  → Enhanced query: "what is my manager's email (requires lookup to base_report collection using manager name to get primary email field). My manager name is Pramatesh V. Kumar"
+  → Status: "ready" (NO question "Whose email?" needed - context is clear from most recent history)
+  → **DO NOT** ask "Whose email are you referring to?" → Chat history provides the context
+  → **IMPORTANT**: Do NOT resolve to "performance reviewer" even though it was mentioned earlier - most recent takes priority
+  → **NOTE**: Lookup instruction is added only because user explicitly asked for "email" - if user had asked for "manager name", no lookup would be needed
+  → **GENERIC PATTERN**: Apply this same logic to ANY field (not just email) - determine lookup requirements dynamically based on the field requested
 
 Example 9: CONTINUATION SCENARIO (WRONG vs CORRECT):
   Previous: "My status and reviewer"
@@ -854,8 +918,8 @@ If everything is clear (no clarification needed):
     Resolved: {{"department": "IT department", "status": "performance status", "reviewer": "performance reviewer"}}
     Final: "IT department of an hr email_id, performance status and performance reviewer" (preserves all parts)
   
-  - Original: "manager name and reviewer birthday"
-    Final: "manager name (field: reporting to in goal_setting_status collection) and reviewer birthday (requires lookup to base_report collection using reviewer number to get date_of_birth field)"
+  - Original: "field1 and field2"
+    Final: "field1 (field: actual_field1_name) and field2 (requires lookup to target_collection using join_field to get target_field)"
   
 - This query should be self-contained and ready to be passed to the MongoDB query generator.
 - **Include explicit field mappings and lookup instructions** so MongoDB agent can generate queries with all requested fields.
