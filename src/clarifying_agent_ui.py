@@ -3,12 +3,18 @@ Standalone Clarifying Agent for UI Level
 Handles multi-turn clarification before routing
 """
 import os
+import time
 from typing import Dict, Any, Optional
+from pymongo import MongoClient
+from dotenv import load_dotenv
 from SemanticDictionaryProcessor import SemanticDictionaryProcessor
 from CollectionRouter import CollectionRouterAgent
 from clarifying_agent2 import clarify_query
 from memory.memorymanager import get_chat_history_as_messages, push_clarification_turns_async
 from langchain_core.messages import HumanMessage, AIMessage
+
+load_dotenv()
+MONGODB_URI = os.getenv("MONGODB_URI")
 
 # Initialize SemanticDictionaryProcessor once (singleton pattern)
 _semantic_processor = None
@@ -23,15 +29,72 @@ def get_semantic_processor():
 # Session-level state storage (in-memory, per user session)
 _clarification_state = {}
 
-def run_clarifying_agent(email: str, question: str, session_id: Optional[str] = None) -> Dict[str, Any]:
+def fetch_user_profile(email: str, max_retries: int = 3, retry_delay: float = 0.5) -> Optional[Dict[str, Any]]:
     """
-    Standalone clarifying agent at UI level.
-    Handles multi-turn clarification with state management.
+    Fetch user profile from hr.base_report collection with retries.
+    
+    Args:
+        email: User email
+        max_retries: Maximum number of retry attempts (default: 3)
+        retry_delay: Delay between retries in seconds (default: 0.5)
+    
+    Returns:
+        Dictionary with user profile or None if fetch fails after retries
+    """
+    if not MONGODB_URI:
+        print("Error: MONGODB_URI not set")
+        return None
+    
+    for attempt in range(max_retries):
+        try:
+            client = MongoClient(MONGODB_URI)
+            db = client["hr"]
+            employees = db["base_report"]
+            
+            record = employees.find_one(
+                {"primary email": email},
+                {"_id": 0, "employee code": 1, "designation": 1, "region": 1, "department": 1}
+            )
+            
+            client.close()
+            
+            if record and "designation" in record:
+                return {
+                    "employee_code": record.get("employee code", 0),
+                    "designation": record.get("designation", "").lower(),
+                    "department": record.get("department", ""),
+                    "region": record.get("region", None)
+                }
+            else:
+                # User not found in database
+                print(f"Warning: User {email} not found in base_report")
+                return {
+                    "employee_code": 0,
+                    "designation": "unknown",
+                    "department": "unknown",
+                    "region": None
+                }
+        
+        except Exception as e:
+            print(f"Error fetching user profile (attempt {attempt + 1}/{max_retries}): {e}")
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
+            else:
+                print(f"Failed to fetch user profile after {max_retries} attempts")
+                return None
+    
+    return None
+
+def run_clarifying_agent(email: str, question: str, session_id: Optional[str] = None, needs_routing: bool = False) -> Dict[str, Any]:
+    """
+    Unified agent at UI level.
+    Handles clarification, enhancement, routing, and query modification.
     
     Args:
         email: User email
         question: User query or clarification response
         session_id: Optional session ID for state management (defaults to email)
+        needs_routing: Whether to perform routing (True for Combined tab, False for MQL Agent tab)
     
     Returns:
         {
@@ -39,6 +102,7 @@ def run_clarifying_agent(email: str, question: str, session_id: Optional[str] = 
             "questions": [...],  # if needs_clarification
             "final_clarified_query": "...",  # if ready
             "intent": "self" or "others",
+            "route": "document" | "policy",  # if needs_routing=True and ready
             "clarification_progress": {...}
         }
     """
@@ -63,8 +127,23 @@ def run_clarifying_agent(email: str, question: str, session_id: Optional[str] = 
     
     # Load chat history once per session (from MongoDB - previous sessions)
     if not state["chat_history_loaded"]:
-        state["chat_history_messages"] = get_chat_history_as_messages(email)
+        try:
+            state["chat_history_messages"] = get_chat_history_as_messages(email) or []
+        except Exception as e:
+            print(f"Warning: Failed to load chat history: {e}")
+            state["chat_history_messages"] = []
         state["chat_history_loaded"] = True
+    
+    # Fetch user profile (with retries)
+    user_profile = fetch_user_profile(email)
+    if user_profile is None:
+        return {
+            "needs_clarification": False,
+            "error": "Failed to fetch user profile. Please try again.",
+            "final_clarified_query": question,
+            "intent": "self",
+            "route": None
+        }
     
     # Get semantic processor
     processor = get_semantic_processor()
@@ -108,15 +187,21 @@ def run_clarifying_agent(email: str, question: str, session_id: Optional[str] = 
         chat_history_text = "\n\n".join(all_history_parts)
     
     # Pass current clarification progress to clarifying agent
+    # CRITICAL: Ensure original_query is preserved from state
     current_progress = state.get("clarification_progress", {})
+    if current_progress and current_progress.get("original_query"):
+        # Original query exists in state - preserve it
+        print(f"📌 Passing original_query from state: {current_progress['original_query']}")
     
-    # Call clarifying agent
+    # Call unified agent (clarification + enhancement + routing + modification)
     result = clarify_query(
         question,
         structure["collections"],
         structure["ambiguous_terms"],
         chat_history=chat_history_text,
-        clarification_progress=current_progress
+        clarification_progress=current_progress,
+        user_profile=user_profile,
+        needs_routing=needs_routing
     )
     
     # Extract results
@@ -126,9 +211,19 @@ def run_clarifying_agent(email: str, question: str, session_id: Optional[str] = 
     
     # Update session state with clarification progress
     if clarification_progress:
-        # If this is first clarification, store original query
+        # CRITICAL: Always preserve original_query from state if it exists (continuation scenario)
+        # Only set it if this is the first clarification (not in state yet)
         if not state["clarification_progress"].get("original_query"):
+            # First clarification - store original query
             state["clarification_progress"]["original_query"] = clarification_progress.get("original_query", question)
+            print(f"✅ Stored original_query in state: {state['clarification_progress']['original_query']}")
+        else:
+            # Continuation - preserve original_query from state, don't overwrite
+            # But update it if LLM provided a better one (shouldn't happen, but handle it)
+            llm_original = clarification_progress.get("original_query", "")
+            if llm_original and llm_original != state["clarification_progress"]["original_query"]:
+                # LLM provided different original - use state's version (it's the true original)
+                print(f"⚠️ LLM provided different original_query, preserving state version")
         
         # Update pending_ambiguities and resolved_ambiguities
         if "pending_ambiguities" in clarification_progress:
@@ -168,6 +263,7 @@ def run_clarifying_agent(email: str, question: str, session_id: Optional[str] = 
             "needs_clarification": True,
             "questions": questions,
             "intent": intent,
+            "route": None,  # No route yet, still clarifying
             "clarification_progress": state["clarification_progress"]
         }
     else:
@@ -178,6 +274,9 @@ def run_clarifying_agent(email: str, question: str, session_id: Optional[str] = 
         # Clarification questions were already saved when needs_clarification was True
         # Final response will be saved in app.py after query execution
         
+        # Extract original_query BEFORE resetting state (needed for saving final response)
+        original_query = state["clarification_progress"].get("original_query", question)
+        
         # Reset clarification progress for next query
         state["clarification_progress"] = {
             "original_query": "",
@@ -185,10 +284,15 @@ def run_clarifying_agent(email: str, question: str, session_id: Optional[str] = 
             "resolved_ambiguities": {}
         }
         
+        # Extract route if available (only when needs_routing=True and status="ready")
+        route = result.get("route", None)
+        
         return {
             "needs_clarification": False,
             "final_clarified_query": final_clarified_query,
             "intent": intent,
+            "route": route,  # "document" or "policy" (if needs_routing=True)
+            "original_query": original_query,  # Include original query for saving final response
             "clarification_progress": {}
         }
 

@@ -72,10 +72,16 @@ def push_convo_pair(email: str, user_msg: str = None, bot_msg: str = None, turns
                     })
             
             if not turns_to_save:
+                print(f"⚠️ No turns to save for {email} (all filtered out or empty)")
                 return  # Nothing to save
             
-            print(f"Updating History for {email} ({len(turns_to_save)} turn(s))")
-            collection.update_one(
+            print(f"💾 Updating History for {email} ({len(turns_to_save)} turn(s))")
+            for i, turn in enumerate(turns_to_save, 1):
+                user_preview = turn.get("user", "")[:50] + "..." if len(turn.get("user", "")) > 50 else turn.get("user", "")
+                bot_preview = turn.get("assistant", "")[:50] + "..." if len(turn.get("assistant", "")) > 50 else turn.get("assistant", "")
+                print(f"   Turn {i}: User='{user_preview}', Assistant='{bot_preview}'")
+            
+            result = collection.update_one(
                 {"email": email},
                 {
                     "$push": {
@@ -88,8 +94,16 @@ def push_convo_pair(email: str, user_msg: str = None, bot_msg: str = None, turns
                 },
                 upsert=True
             )
+            if result.upserted_id:
+                print(f"✅ Created new history document for {email}")
+            elif result.modified_count > 0:
+                print(f"✅ Updated history for {email} (modified {result.modified_count} document(s))")
+            else:
+                print(f"⚠️ No changes made to history for {email} (document may already exist with same data)")
         except Exception as e:
-            print(f"Failed to Update History for {email}, Error: {e}")
+            print(f"❌ Failed to Update History for {email}, Error: {e}")
+            import traceback
+            traceback.print_exc()
 
     # daemon=True ensures the thread dies automatically after finishing
     t = threading.Thread(target=_task, daemon=True)

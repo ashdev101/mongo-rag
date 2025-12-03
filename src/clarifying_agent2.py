@@ -1,4 +1,5 @@
 import json
+import re
 from langchain_openai import ChatOpenAI
 import os
 from SemanticDictionaryProcessor import SemanticDictionaryProcessor
@@ -182,13 +183,18 @@ def format_ambiguous_terms_toon(ambiguous_terms: list) -> str:
 # Use push_convo_pair() and get_chat_history() from memorymanager module
 
 
-def clarify_query(user_query: str , semantic_context: dict , ambiguous_terms: dict, chat_history: str = "", clarification_progress: dict = None):
+def clarify_query(user_query: str , semantic_context: dict , ambiguous_terms: dict, chat_history: str = "", clarification_progress: dict = None, user_profile: dict = None, needs_routing: bool = False):
     """
-    user_query: the question from the user
-    semantic_context: the semantic JSON document produced by build_summary_document()
-    ambiguous_terms: dictionary of ambiguous terms and their possible meanings
-    chat_history: formatted string of previous conversation (last 10 messages)
-    clarification_progress: current clarification progress from state (optional)
+    Unified agent: Clarification + Enhancement + Routing + Query Modification
+    
+    Args:
+        user_query: the question from the user
+        semantic_context: the semantic JSON document produced by build_summary_document()
+        ambiguous_terms: dictionary of ambiguous terms and their possible meanings
+        chat_history: formatted string of previous conversation (last 10 messages)
+        clarification_progress: current clarification progress from state (optional)
+        user_profile: dict with employee_code, designation, department, region (optional)
+        needs_routing: whether to perform routing (True for Combined tab, False for MQL Agent tab)
     """
     # Initialize clarification_progress if not provided
     if clarification_progress is None:
@@ -201,10 +207,28 @@ def clarify_query(user_query: str , semantic_context: dict , ambiguous_terms: di
     # Format clarification progress for prompt
     pending_count = len(clarification_progress.get("pending_ambiguities", {}))
     resolved_count = len(clarification_progress.get("resolved_ambiguities", {}))
-    original_query = clarification_progress.get("original_query", user_query) if clarification_progress.get("original_query") else "(first query)"
+    # Get original_query from clarification_progress, or indicate it's first query
+    original_query = clarification_progress.get("original_query", "") if clarification_progress else ""
+    if not original_query:
+        original_query = "(first query - will be stored as original_query)"
     
     pending_list = "\n".join([f"- {term}: {info.get('question', 'needs clarification')}" for term, info in clarification_progress.get("pending_ambiguities", {}).items()]) if clarification_progress.get("pending_ambiguities") else "None"
     resolved_list = "\n".join([f"- {term}: resolved to '{info.get('resolved_to', 'unknown')}'" for term, info in clarification_progress.get("resolved_ambiguities", {}).items()]) if clarification_progress.get("resolved_ambiguities") else "None"
+    
+    # Format user profile for prompt
+    if user_profile:
+        user_profile_text = f"""Employee Code: {user_profile.get('employee_code', 0)}
+Designation: {user_profile.get('designation', 'unknown')}
+Department: {user_profile.get('department', 'unknown')}
+Region: {user_profile.get('region', 'None')}"""
+    else:
+        user_profile_text = "Not available"
+    
+    # Format routing requirement
+    if needs_routing:
+        routing_text = "YES - You must classify the query as 'document' or 'policy' and return the route in your response."
+    else:
+        routing_text = "NO - Skip routing, this is for MQL Agent tab (always document queries)."
 
     # Build chat history section for prompt
     chat_history_section = ""
@@ -235,10 +259,29 @@ CHAT HISTORY (Previous Conversation):
      - **Do NOT ask follow-up questions about already-qualified terms**
      - Use the original_query from the first interaction (preserve it in clarification_progress)
      - Preserve the intent from the original query (if original had "my", intent is "self")
+   
+   **CRITICAL - MERGING ORIGINAL QUERY WITH ANSWERS:**
+   - When continuation detected, you MUST merge user's answers back into the original_query structure
+   - Map each answer to its corresponding ambiguous term in original_query
+   - Replace the ambiguous term with the resolved value
+   - Preserve all other parts of original query (connectors, order, context)
+   
+   **Example:**
+   - Original: "department, status and reviewer"
+   - Questions: ["Which department?", "Which status?", "Which reviewer?"]
+   - User answers: "IT department, performance status, performance reviewer"
+   - Mapping:
+     * "department" → "IT department"
+     * "status" → "performance status"
+     * "reviewer" → "performance reviewer"
+   - Final: "IT department, performance status and performance reviewer"
+   - **CRITICAL**: Preserve the "and" connector and structure from original
+   
    - **Example**: 
      * Previous: "Which status? Which reviewer? Which manager?"
      * Current: "1. Performance status, 2. performance reviewer, 3. current manager"
      * → ALL terms QUALIFIED → ALL RESOLVED → status="ready" (NO questions)
+     * → Final query: Merge answers into original query structure
 
 3. **Context-Aware Term Resolution:**
    - If previous conversation mentioned "goal setting" → "goal setting reviewer" is QUALIFIED and CLEAR
@@ -369,12 +412,146 @@ ABSOLUTE RULES (MUST FOLLOW - NO EXCEPTIONS):
    - **CRITICAL**: If user answers with qualified terms (e.g., "performance status", "performance reviewer"), those terms are RESOLVED
    - **CRITICAL**: Do NOT ask follow-up questions about already-qualified terms. Once qualified = ready to query
 
-**RULE 5: BUILD FINAL QUERY WHEN READY:**
-   - When all ambiguities are resolved (status="ready"), build a complete natural language query
-   - The final_clarified_query should be self-contained, unambiguous, and ready for the router agent
-   - Include all resolved terms in the final query (e.g., "Show me my employee status and offboarding reviewer information")
-   - If original query had "my" or similar self-reference, preserve it in final_clarified_query
-   - Make the final query natural and complete (e.g., "Show me my employee status" not just "employee status")
+**RULE 5: BUILD FINAL QUERY WHEN READY (CRITICAL - PRESERVE ORIGINAL STRUCTURE):**
+   - When all ambiguities are resolved (status="ready"), build final_clarified_query by:
+   
+   1. **Start with Original Query Structure:**
+      - Use the original_query from clarification_progress as the base
+      - Preserve the original word order, connectors ("and", "or", commas), and structure
+      - If original_query is not in clarification_progress, use current user_query as base
+   
+   2. **Replace Ambiguous Terms with Resolved Values:**
+      - For each term in resolved_ambiguities, replace it in the original query
+      - Example: Original "department, status and reviewer"
+        * resolved_ambiguities: {{"department": {{"resolved_to": "IT department"}}, "status": {{"resolved_to": "performance status"}}, "reviewer": {{"resolved_to": "performance reviewer"}}}}
+        * Final: "IT department, performance status and performance reviewer"
+   
+   3. **Preserve All Parts:**
+      - If original had 3 items, final must have 3 items
+      - If original had "my", preserve it: "my department, status and reviewer" → "my IT department, performance status and performance reviewer"
+      - Don't lose any parts of the original query
+      - Preserve connectors: "and", "or", commas
+   
+   4. **Examples:**
+      - Original: "department, status and reviewer"
+        Answers: "IT department, performance status, performance reviewer"
+        Final: "IT department, performance status and performance reviewer"
+      
+      - Original: "my status and reviewer"
+        Answers: "performance status, performance reviewer"
+        Final: "my performance status and performance reviewer"
+      
+      - Original: "department of an hr email_id, status and reviewer"
+        Answers: "IT department, performance status, performance reviewer"
+        Final: "IT department of an hr email_id, performance status and performance reviewer"
+
+**RULE 6: QUERY ENHANCEMENT (AFTER CLARIFICATION):**
+   - Extract entities from chat history (manager name, employee_id, department, region, etc.)
+   - Resolve pronouns (he/she/they/his/her/their) to specific entities from chat history
+   - Add context from previous queries to make query self-contained
+   - Example: "Tell me his email_id" + History: "manager name is Abc Def" → "Tell me my manager's email_id. My manager name is Abc Def"
+
+**RULE 7: ROUTING (ONLY IF needs_routing=True):**
+   - Classify query as "document" (factual lookup, employee records) or "policy" (HR rules, guidelines)
+   - "document": IDs, employee records, manager data, database queries
+   - "policy": HR rules, eligibility, guidelines, what-to-do questions
+   - Default to "document" if unclear
+
+**RULE 8: QUERY MODIFICATION:**
+   - Add employee_code for self queries: "My employee code is {{employee_code}}"
+   - For HR users with regions: Apply region constraints (see HR Region Rules below)
+   - Preserve natural language flow
+
+═══════════════════════════════════════════════════════════════════════════════
+QUERY ENHANCEMENT (APPLY AFTER CLARIFICATION WHEN status="ready"):
+═══════════════════════════════════════════════════════════════════════════════
+
+**1. Entity Extraction from Chat History:**
+   - Extract entities mentioned in previous queries/results:
+     * Manager name (e.g., "manager name is Abc Def")
+     * Employee IDs (e.g., "employee_id is 123")
+     * Departments, regions, designations
+     * Any specific values from previous query results
+   - Use these entities to enhance the query
+
+**2. Pronoun Resolution:**
+   - If query uses pronouns (he, she, they, his, her, their, it):
+     * Resolve to specific entities from chat history
+     * Example: "his email" → "manager's email" (if previous query was about manager)
+     * Example: "Tell me his email_id" + History: "manager name is Abc Def" → "Tell me my manager's email_id. My manager name is Abc Def"
+
+**3. Context Addition:**
+   - Build a self-contained query that includes:
+     * Original query intent
+     * Resolved pronouns/references
+     * Relevant entities from chat history
+     * User's employee_code (if self query)
+     * **Explicit field mappings and lookup instructions** (for MongoDB agent):
+       - If field name differs from natural language, specify: "(field: actual_field_name)"
+       - If data requires lookup to another collection, specify: "(requires lookup to collection_name using join_field to get target_field)"
+       - This helps MongoDB agent generate correct queries with all fields and proper $lookup operations
+
+**4. Example Enhancement:**
+   - Input: "Tell me his email_id"
+   - Chat History: "User: What is my manager name? Assistant: Your manager name is Abc Def"
+   - Enhanced: "Tell me my manager's email_id. My manager name is Abc Def. My employee code is 123"
+   
+**5. Field Mapping Examples:**
+   - "manager name" → "manager name (field: reporting to in goal_setting_status collection)"
+   - "reviewer birthday" → "reviewer birthday (requires lookup to base_report collection using reviewer number to get date_of_birth field)"
+   - "manager name and reviewer birthday" → "manager name (field: reporting to) and reviewer birthday (requires lookup to base_report using reviewer number to get date_of_birth)"
+
+═══════════════════════════════════════════════════════════════════════════════
+ROUTING (ONLY IF needs_routing=True):
+═══════════════════════════════════════════════════════════════════════════════
+
+**Route Classification:**
+   - "document": Factual lookup, IDs, employee records, manager data, database queries
+     * Examples: "What is my email?", "Show me employees", "List managers"
+   - "policy": HR rules, eligibility, guidelines, what-to-do questions
+     * Examples: "What is the leave policy?", "How to apply for leave?", "Eligibility for promotion"
+   
+**Rules:**
+   - If query asks for rules/eligibility/what-to-do → "policy"
+   - If query asks for records/IDs/data → "document"
+   - Default to "document" if unclear
+   - Only perform routing when needs_routing=True (Combined tab)
+
+═══════════════════════════════════════════════════════════════════════════════
+QUERY MODIFICATION (APPLY WHEN status="ready"):
+═══════════════════════════════════════════════════════════════════════════════
+
+**1. Employee Code Addition:**
+   - For self queries (intent="self"): Add "My employee code is {{employee_code}}" (use the actual employee_code from user profile)
+   - Example: "my performance status" → "my performance status. My employee code is 123"
+
+**2. HR Region Constraints (ONLY for HR users with regions):**
+   - If user is HR (department="Human Resources") AND has region(s):
+     
+     **Self Queries (intent="self"):**
+     - If query refers to HR themselves ("I", "my", "me") → Do NOT append region
+     - Only add employee_code
+     
+     **Other Queries (intent="others"):**
+     - If user has SINGLE region:
+       * Append "in [Region Name] region" to query
+       * Example: "Show employees" → "Show employees in Mumbai region"
+     
+     - If user has MULTIPLE regions:
+       * If query mentions NO region → Append "in all allowed regions"
+       * If query mentions region AND it's allowed → Replace with "[Region Name] region"
+       * If query mentions region AND it's NOT allowed → Override to "in all allowed regions"
+       * Always append word "region" after region name(s)
+     
+     **Examples:**
+     - HR with region="Mumbai", query="Show employees" → "Show employees in Mumbai region"
+     - HR with regions=["Mumbai", "Delhi"], query="Show employees in Pune" → "Show employees in all allowed regions" (Pune not allowed)
+     - HR with region="Mumbai", query="What is my manager name?" → "What is my manager name? My employee code is 123" (self query, no region)
+
+**3. Natural Language Preservation:**
+   - Keep query natural and readable
+   - Don't make it too verbose
+   - Preserve original query structure
 
 ═══════════════════════════════════════════════════════════════════════════════
 VALIDATION CHECKLIST (DO THIS BEFORE ASKING ANY QUESTION):
@@ -609,6 +786,10 @@ If clarification is needed (MUST return ALL questions at once):
 }}
 **CRITICAL**: 
 - The "questions" array MUST contain ALL necessary questions. If there are 2 ambiguities, return 2 questions. If there are 5, return 5. NEVER return just one question when multiple are needed.
+- **ORIGINAL QUERY STORAGE (MANDATORY):**
+  * If this is the FIRST clarification (no original_query in clarification_progress), you MUST set original_query to the current user_query
+  * Store it in clarification_progress.original_query
+  * This is CRITICAL for building the final query later
 - **CONTINUATION DETECTION (MOST IMPORTANT):**
   * If chat history shows you asked questions (e.g., "Which status?", "Which reviewer?")
   * And current query contains qualified answers (e.g., "performance status", "performance reviewer", "current manager")
@@ -618,15 +799,17 @@ If clarification is needed (MUST return ALL questions at once):
 - If this is a continuation (user answering previous questions), update clarification_progress:
   * Move answered terms from pending_ambiguities to resolved_ambiguities (e.g., "status" → resolved with "performance status")
   * Remove answered terms from pending_ambiguities
-  * Keep original_query from the first interaction
+  * Keep original_query from the first interaction (DO NOT overwrite it)
   * **If ALL pending_ambiguities are now resolved → status="ready", questions=[]**
+  * **CRITICAL**: Build final_clarified_query by merging original_query with resolved values (preserve structure)
 - If this is the first clarification, set original_query to current user_query and add all ambiguous terms to pending_ambiguities
 
 If everything is clear (no clarification needed):
 {{
   "status": "ready",
   "intent": "self" or "others",
-  "final_clarified_query": "<natural language query with all ambiguities resolved, ready for router>",
+  "route": "document" or "policy" (ONLY if needs_routing=True, otherwise omit),
+  "final_clarified_query": "<natural language query with all ambiguities resolved, enhanced with context, modified with employee_code/region if needed>",
   "clarification_progress": {{
     "original_query": "<original user query>",
     "pending_ambiguities": {{}},  # Empty when ready
@@ -644,12 +827,40 @@ If everything is clear (no clarification needed):
     }}
   }}
 }}
-**IMPORTANT**: 
+**IMPORTANT - FINAL QUERY BUILDING (CRITICAL):**
 - When status is "ready", you MUST provide a "final_clarified_query" that is a complete, unambiguous natural language query.
-- This query should be self-contained and ready to be passed to the router agent.
-- Preserve the original intent (e.g., if original had "my", include it: "Show me my employee status" not just "employee status").
-- Make it natural and complete: "Show me my employee status and offboarding reviewer information" not just "employee status offboarding reviewer".
-- Example: If original was "my status" and user answered "employee status", the final_clarified_query should be "Show me my employee status information" or "my employee status".
+- **MANDATORY STEPS:**
+  1. Get original_query from clarification_progress (the first query from user)
+  2. Get resolved_ambiguities (terms that were clarified)
+  3. Replace each ambiguous term in original_query with its resolved value
+  4. Preserve the original structure (order, connectors, context)
+  5. Include ALL parts from original query (don't lose any items)
+  6. **ADD EXPLICIT FIELD INSTRUCTIONS** (for MongoDB agent to generate correct queries):
+     * For fields that need lookup to another collection: Add explicit instruction in parentheses
+     * For fields where field name differs from natural language: Mention the actual field name
+     * Format: "(field: actual_field_name)" or "(requires lookup to collection_name using join_field to get target_field)"
+     * This helps MongoDB agent include ALL requested fields and use proper $lookup operations
+  
+- **Examples:**
+  - Original: "department, status and reviewer"
+    Resolved: {{"department": "IT department", "status": "performance status", "reviewer": "performance reviewer"}}
+    Final: "IT department, performance status and performance reviewer" (preserves "and" connector)
+  
+  - Original: "my status and reviewer"
+    Resolved: {{"status": "performance status", "reviewer": "performance reviewer"}}
+    Final: "my performance status and performance reviewer" (preserves "my" and "and")
+  
+  - Original: "department of an hr email_id, status and reviewer"
+    Resolved: {{"department": "IT department", "status": "performance status", "reviewer": "performance reviewer"}}
+    Final: "IT department of an hr email_id, performance status and performance reviewer" (preserves all parts)
+  
+  - Original: "manager name and reviewer birthday"
+    Final: "manager name (field: reporting to in goal_setting_status collection) and reviewer birthday (requires lookup to base_report collection using reviewer number to get date_of_birth field)"
+  
+- This query should be self-contained and ready to be passed to the MongoDB query generator.
+- **Include explicit field mappings and lookup instructions** so MongoDB agent can generate queries with all requested fields.
+- Preserve the original intent (e.g., if original had "my", include it).
+- Make it natural and complete, preserving the original query structure.
 
 ═══════════════════════════════════════════════════════════════════════════════
 INTENT CLASSIFICATION:
@@ -671,6 +882,16 @@ Examples:
 - "John's leaves" → "others" (explicit subject)
 
 User Query: "{user_query}"
+
+═══════════════════════════════════════════════════════════════════════════════
+USER PROFILE:
+═══════════════════════════════════════════════════════════════════════════════
+{user_profile_text}
+
+═══════════════════════════════════════════════════════════════════════════════
+ROUTING REQUIREMENT:
+═══════════════════════════════════════════════════════════════════════════════
+{routing_text}
 
 ═══════════════════════════════════════════════════════════════════════════════
 CURRENT CLARIFICATION PROGRESS:
@@ -749,10 +970,28 @@ Resolved Ambiguities: {resolved_count} term(s)
                 result["intent"] = "unknown"
                 print(f"WARNING: Unrecognized intent: {intent}, setting to 'unknown'")
         
+        # Validate route if present (only when needs_routing=True and status="ready")
+        if result.get("status") == "ready" and needs_routing:
+            if "route" not in result:
+                # Default to "document" if route not provided
+                result["route"] = "document"
+                print("WARNING: Route not in LLM response, defaulting to 'document'")
+            else:
+                # Sanitize route
+                route = result["route"].lower()
+                if route in ["document", "policy"]:
+                    result["route"] = route
+                else:
+                    result["route"] = "document"
+                    print(f"WARNING: Invalid route '{route}', defaulting to 'document'")
+        elif result.get("status") == "ready" and not needs_routing:
+            # MQL Agent tab - no routing needed, but set route to "document" for consistency
+            result["route"] = "document"
+        
         # Ensure clarification_progress is present with new structure
         if "clarification_progress" not in result:
             result["clarification_progress"] = {
-                "original_query": user_query,
+                "original_query": "",
                 "pending_ambiguities": {},
                 "resolved_ambiguities": {}
             }
@@ -762,6 +1001,17 @@ Resolved Ambiguities: {resolved_count} term(s)
             result["clarification_progress"]["pending_ambiguities"] = {}
         if "resolved_ambiguities" not in result["clarification_progress"]:
             result["clarification_progress"]["resolved_ambiguities"] = {}
+        
+        # CRITICAL: Always ensure original_query is set on first clarification
+        if result.get("status") == "needs_clarification":
+            # If original_query is not set, this is the first clarification - store current query
+            if not result["clarification_progress"].get("original_query"):
+                result["clarification_progress"]["original_query"] = user_query
+                print(f"✅ Stored original_query: {user_query}")
+            # Also check if we have original_query from previous state (continuation scenario)
+            elif clarification_progress and clarification_progress.get("original_query"):
+                # Preserve original_query from state (don't overwrite)
+                result["clarification_progress"]["original_query"] = clarification_progress["original_query"]
         
         # If needs_clarification, ensure pending_ambiguities are set
         if result.get("status") == "needs_clarification":
@@ -786,17 +1036,35 @@ Resolved Ambiguities: {resolved_count} term(s)
         if result.get("status") == "ready":
             if "final_clarified_query" not in result or not result.get("final_clarified_query"):
                 # Build final query from original + resolved ambiguities
-                original = result["clarification_progress"].get("original_query", user_query)
+                original = result["clarification_progress"].get("original_query", "")
                 resolved = result["clarification_progress"].get("resolved_ambiguities", {})
                 
-                # If we have resolved ambiguities, try to build a better query
-                if resolved:
-                    # Simple fallback: use original query (it should already be merged by input_node)
-                    result["final_clarified_query"] = user_query
+                # If we have original_query and resolved ambiguities, merge them
+                if original and resolved:
+                    # Merge: replace ambiguous terms in original with resolved values
+                    final_query = original
+                    for term, info in resolved.items():
+                        if isinstance(info, dict):
+                            resolved_value = info.get("resolved_to", term)
+                        else:
+                            resolved_value = str(info)
+                        
+                        # Replace term in original query with resolved value
+                        # Use word boundaries to avoid partial matches
+                        # Replace whole word matches (case-insensitive)
+                        pattern = r'\b' + re.escape(term) + r'\b'
+                        final_query = re.sub(pattern, resolved_value, final_query, flags=re.IGNORECASE)
+                    
+                    result["final_clarified_query"] = final_query
+                    print(f"✅ Built final query from original: '{original}' → '{final_query}'")
+                elif original:
+                    # Have original but no resolved (shouldn't happen, but handle it)
+                    result["final_clarified_query"] = original
+                    print(f"WARNING: No resolved ambiguities, using original_query: {original}")
                 else:
-                    # No clarification happened, use user_query as-is
+                    # No original_query, use current user_query
                     result["final_clarified_query"] = user_query
-                print(f"WARNING: LLM didn't provide final_clarified_query, using: {result['final_clarified_query']}")
+                    print(f"WARNING: No original_query found, using user_query: {user_query}")
             
             # Ensure pending_ambiguities is empty when ready
             if "pending_ambiguities" not in result["clarification_progress"]:
