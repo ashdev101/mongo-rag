@@ -6,6 +6,18 @@ from query_router import router as query_router
 from memory.memorymanager import push_convo_pair
 from clarifying_agent_ui import add_session_turn
 from clarifying_agent_ui import run_clarifying_agent
+# Import is_hr_department helper (defined in langgraph_sample.py)
+# Note: We import it here to avoid circular imports
+def is_hr_department(department: str) -> bool:
+    """
+    Check if department is HR (case-insensitive, handles variations).
+    Handles: "Human Resources", "HR", "hr", "human resources", etc.
+    """
+    if not department:
+        return False
+    dept_lower = department.lower().strip()
+    hr_variations = ["human resources", "hr", "human resource"]
+    return dept_lower in hr_variations
 
 # =====================================================================
 # Existing processor
@@ -13,16 +25,21 @@ from clarifying_agent_ui import run_clarifying_agent
 processor = QueryProcessor()
 
 
-def run_query(email, question):
+def run_query(email, question, user_profile=None):
     """
     Wrapper for running the main processor.
+    
+    Args:
+        email: User email
+        question: Query to process
+        user_profile: Optional user profile dict (to avoid duplicate fetch)
     """
     try:
         # Validate email is provided
         if not email or not email.strip():
             return "Error", "Please provide a valid email address", None, "Email is required to fetch your employee information and process the query."
         
-        output = processor.process(email.strip(), question.strip())
+        output = processor.process(email.strip(), question.strip(), user_profile=user_profile)
         
         status = output["status"]
         agent_output = output["agent_output"]
@@ -128,9 +145,31 @@ def mql_execute(email, question):
             })
             return "Needs Clarification", clarification_json, None, clarification_text
         
-        # ===== STEP 2: EXECUTE MQL QUERY DIRECTLY =====
+        # ===== STEP 2: APPLY RBAC (if HR user) =====
         final_clarified_query = clarification_result.get("final_clarified_query", question)
-        status, agent_out_str, mql, db_results, agg_pipeline = run_query(email, final_clarified_query)
+        user_profile = clarification_result.get("user_profile", {})
+        rbac_permissions = clarification_result.get("rbac_permissions")
+        
+        # Apply RBAC if HR user has permissions
+        if (user_profile and 
+            is_hr_department(user_profile.get("department", "")) and 
+            rbac_permissions and 
+            rbac_permissions.get("allowed_regions")):
+            from rbac_tool import apply_rbac
+            try:
+                rbac_result = apply_rbac.invoke({
+                    "question": final_clarified_query,
+                    "allowed_regions": rbac_permissions["allowed_regions"],
+                    "allowed_grades": rbac_permissions["allowed_grades"],
+                    "department_exceptions": rbac_permissions["department_exceptions"]
+                })
+                final_clarified_query = rbac_result["final_query"]
+                print(f"✅ Applied RBAC constraints to query")
+            except Exception as e:
+                print(f"⚠️ Error applying RBAC: {e}, using original query")
+        
+        # ===== STEP 3: EXECUTE MQL QUERY =====
+        status, agent_out_str, mql, db_results, agg_pipeline = run_query(email, final_clarified_query, user_profile=user_profile)
         
         # ===== AUTO-SAVE CHAT HISTORY =====
         # Save exactly what the user sees in UI: user's current input → bot's current output
@@ -207,25 +246,45 @@ def combined_execute(email, question):
                 "status": "needs_clarification",
                 "questions": questions
             })
-            return clarification_json, clarification_text
+            return clarification_json, "No MQL query (clarification needed)", clarification_text
         
         # ===== STEP 2: USE ROUTE FROM UNIFIED AGENT =====
         final_clarified_query = clarification_result.get("final_clarified_query", question)
         route = clarification_result.get("route", "document")  # Default to document if not provided
+        user_profile = clarification_result.get("user_profile", {})
+        rbac_permissions = clarification_result.get("rbac_permissions")
+        
+        # Apply RBAC if HR user has permissions
+        query = final_clarified_query
+        if (user_profile and 
+            user_profile.get("department", "").lower() in ["human resources", "hr", "human resource"] and 
+            rbac_permissions and 
+            rbac_permissions.get("allowed_regions")):
+            from rbac_tool import apply_rbac
+            try:
+                rbac_result = apply_rbac.invoke({
+                    "question": final_clarified_query,
+                    "allowed_regions": rbac_permissions["allowed_regions"],
+                    "allowed_grades": rbac_permissions["allowed_grades"],
+                    "department_exceptions": rbac_permissions["department_exceptions"]
+                })
+                query = rbac_result["final_query"]
+                print(f"✅ Applied RBAC constraints to query")
+            except Exception as e:
+                print(f"⚠️ Error applying RBAC: {e}, using original query")
         
         # Create router output format (for UI display)
         route_result = {
             "route": route,
             "confidence": 1.0,
-            "query": final_clarified_query
+            "query": query  # Use RBAC-applied query
         }
         router_out_str = safe_json(route_result)
-        
-        query = final_clarified_query
 
         # ===== STEP 3: EXECUTE TARGET ENGINE =====
+        mql = None  # Initialize mql variable
         if route == "document":
-            status, agent_out_str, mql, db_results, agg_pipeline = run_query(email, query)
+            status, agent_out_str, mql, db_results, agg_pipeline = run_query(email, query, user_profile=user_profile)
             final_output_dict = {
                 "status": status,
                 "mql": mql,
@@ -238,10 +297,12 @@ def combined_execute(email, question):
             policy_ans = run_policy_query(query)
             final_output_dict = {"policy_answer": policy_ans}
             final_output = safe_json(final_output_dict)
+            mql = None  # No MQL for policy queries
 
         else:
             final_output_dict = {"error": "Router returned invalid route"}
             final_output = safe_json(final_output_dict)
+            mql = None
 
         # ===== AUTO-SAVE CHAT HISTORY =====
         # Save exactly what the user sees in UI: user's current input → bot's current output
@@ -297,11 +358,13 @@ def combined_execute(email, question):
         except Exception as e:
             print(f"❌ Failed to push conversation history: {e}")
 
-        return router_out_str, final_output_string
+        # Return router output, MQL query, and final output
+        mql_output = mql if mql else "No MQL query generated (policy query or error)"
+        return router_out_str, mql_output, final_output_string
 
     except Exception as e:
         err = safe_json({"error": str(e)})
-        return err, err
+        return err, "Error", err
 
 
 # =====================================================================
@@ -374,12 +437,13 @@ with gr.Blocks(title="MQL Access Agent UI (robust)") as demo:
             combined_btn = gr.Button("Run Combined Router")
 
             router_output = gr.Textbox(label="Router Output (JSON)", lines=6)
+            mql_output = gr.Textbox(label="Generated MQL Query", lines=6)
             final_output = gr.Textbox(label="Final Result (Executed Output)", lines=6)
 
             combined_btn.click(
                 combined_execute,
                 inputs=[combined_email, combined_question],
-                outputs=[router_output, final_output]
+                outputs=[router_output, mql_output, final_output]
             )
 
 

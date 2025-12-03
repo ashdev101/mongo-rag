@@ -89,6 +89,10 @@ Database Context:
     - Always check if the field exists in current collection first - if found, use it directly
     - If not found in current collection, use $lookup to the specified collection
     - Always include ALL requested fields in the final $project stage
+    - **CRITICAL - Manager Email Lookup:**
+      * When looking up manager email, use "manager number" (or "manager code") as the join field, NOT "manager name"
+      * Example: If current collection has "manager number" field, lookup base_report where "employee code" = "manager number" to get "primary email"
+      * Pattern: {{"$lookup": {{"from": "base_report", "localField": "manager number", "foreignField": "employee code", "as": "manager_info"}}}}
     - Example $lookup structure (generic pattern):
       {{"$lookup": {{
         "from": "target_collection",

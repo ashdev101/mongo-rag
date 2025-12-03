@@ -3,6 +3,7 @@ Standalone Clarifying Agent for UI Level
 Handles multi-turn clarification before routing
 """
 import os
+import json
 import time
 from typing import Dict, Any, Optional
 from pymongo import MongoClient
@@ -85,6 +86,35 @@ def fetch_user_profile(email: str, max_retries: int = 3, retry_delay: float = 0.
     
     return None
 
+def fetch_rbac_permissions(employee_code: int) -> Optional[Dict[str, Any]]:
+    """
+    Fetch RBAC permissions from access_record.json based on employee_code.
+    Returns None if not found or employee_code is 0.
+    
+    Returns:
+        Dictionary with keys: allowed_regions, allowed_grades, department_exceptions
+        or None if not found
+    """
+    if employee_code == 0:
+        return None
+    
+    try:
+        json_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "access_record.json")
+        with open(json_path, 'r', encoding='utf-8') as f:
+            records = json.load(f)
+        
+        for record in records:
+            if record.get("Emp Code") == employee_code:
+                return {
+                    "allowed_regions": record.get("Region", []),
+                    "allowed_grades": record.get("Grade", []),
+                    "department_exceptions": record.get("Department_exception", [])
+                }
+        return None
+    except Exception as e:
+        print(f"Error fetching RBAC permissions: {e}")
+        return None
+
 def run_clarifying_agent(email: str, question: str, session_id: Optional[str] = None, needs_routing: bool = False) -> Dict[str, Any]:
     """
     Unified agent at UI level.
@@ -152,8 +182,13 @@ def run_clarifying_agent(email: str, question: str, session_id: Optional[str] = 
             "error": "Failed to fetch user profile. Please try again.",
             "final_clarified_query": question,
             "intent": "self",
-            "route": route
+            "route": route,
+            "user_profile": None,
+            "rbac_permissions": None
         }
+    
+    # Fetch RBAC permissions using employee_code
+    rbac_permissions = fetch_rbac_permissions(user_profile.get("employee_code", 0))
     
     # Get semantic processor
     processor = get_semantic_processor()
@@ -288,7 +323,9 @@ def run_clarifying_agent(email: str, question: str, session_id: Optional[str] = 
             "questions": questions,
             "intent": intent,
             "route": None,  # No route yet, still clarifying
-            "clarification_progress": state["clarification_progress"]
+            "clarification_progress": state["clarification_progress"],
+            "user_profile": user_profile,
+            "rbac_permissions": rbac_permissions
         }
     else:
         # All clarified - get final query
@@ -317,7 +354,9 @@ def run_clarifying_agent(email: str, question: str, session_id: Optional[str] = 
             "intent": intent,
             "route": route,  # "document" or "policy" (if needs_routing=True)
             "original_query": original_query,  # Include original query for saving final response
-            "clarification_progress": {}
+            "clarification_progress": {},
+            "user_profile": user_profile,
+            "rbac_permissions": rbac_permissions
         }
 
 def add_session_turn(email: str, user_query: str, bot_response: str, session_id: Optional[str] = None):

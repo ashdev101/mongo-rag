@@ -63,21 +63,39 @@ class QueryProcessor:
     def __init__(self):
         self.converter = None  # Will be initialized per query with the actual user query
 
-    def process(self, email: str, nl_query: str):
+    def process(self, email: str, nl_query: str, user_profile: dict = None):
         """
         Runs the access agent, checks permission,
         and converts the natural language query into MQL.
         Returns a dict with status, agent_output, generated_mql and db_results (string).
+        
+        Args:
+            email: User email
+            nl_query: Natural language query (already clarified and enhanced)
+            user_profile: Optional user profile dict (to avoid duplicate fetch)
         """
+        # Use user_profile if provided, otherwise set defaults (access_agent will fetch if needed)
+        if user_profile:
+            employee_code = user_profile.get("employee_code", 0)
+            designation = user_profile.get("designation", "")
+            department = user_profile.get("department", "")
+            region = user_profile.get("region", "")
+        else:
+            # Fallback: set defaults (access_agent's input_node will try to extract from messages)
+            employee_code = 0
+            designation = ""
+            department = ""
+            region = ""
+        
         # Query is already clarified at UI level, so we skip clarification here
         state = {
             "needs_clarification": False,
             "clarification_question": "",
             "email": email,
-            "employee_code": 0,
-            "designation": "",
-            "department": "",
-            "region": "",
+            "employee_code": employee_code,
+            "designation": designation,
+            "department": department,
+            "region": region,
             "question": nl_query,  # Set question directly (already clarified)
             "intent": "",  # Will be set by modify_query or check_access if needed
             "decision": "",

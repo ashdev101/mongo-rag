@@ -479,7 +479,7 @@ ABSOLUTE RULES (MUST FOLLOW - NO EXCEPTIONS):
 
 **RULE 8: QUERY MODIFICATION:**
    - Add employee_code for self queries: "My employee code is {{employee_code}}"
-   - For HR users with regions: Apply region constraints (see HR Region Rules below)
+   - **NOTE**: RBAC constraints (region/grade/department) are handled separately by rbac_tool in app.py
    - Preserve natural language flow
 
 ═══════════════════════════════════════════════════════════════════════════════
@@ -528,7 +528,7 @@ QUERY ENHANCEMENT (APPLY AFTER CLARIFICATION WHEN status="ready"):
 **4. Example Enhancement:**
    - Input: "Tell me his email_id"
    - Chat History: "User: What is my manager name? Assistant: Your manager name is Abc Def"
-   - Enhanced: "Tell me my manager's email (requires lookup to base_report collection using manager name to get primary email field). My manager name is Abc Def. My employee code is 123"
+   - Enhanced: "Tell me my manager's email (requires lookup to base_report collection using manager number/employee code to get primary email field). My manager name is Abc Def. My employee code is 123"
    - **IMPORTANT**: Only add lookup instructions when the user explicitly requests a field that requires lookup
    - Do NOT retrieve all information upfront - only add context for what is explicitly asked
    - Do NOT add lookup instructions for fields that are already available in the current collection
@@ -543,6 +543,10 @@ QUERY ENHANCEMENT (APPLY AFTER CLARIFICATION WHEN status="ready"):
      * Only add lookup instructions when the user explicitly requests that specific field - do not add them proactively
      * Determine the target collection and join fields based on the field being requested and the collections available
      * Use generic patterns: "entity_name's field_name (requires lookup to target_collection using entity_name to get target_field_name)"
+     * **IMPORTANT - Manager Email Lookup:**
+       - For manager email, use "manager number" or "manager code" (employee code) as the join field, NOT "manager name"
+       - Example: "manager's email (requires lookup to base_report collection using manager number/employee code to get primary email field)"
+       - The join should match: current_collection.manager_number = base_report.employee_code
 
 ═══════════════════════════════════════════════════════════════════════════════
 ROUTING (ONLY IF needs_routing=True):
@@ -568,28 +572,10 @@ QUERY MODIFICATION (APPLY WHEN status="ready"):
    - For self queries (intent="self"): Add "My employee code is {{employee_code}}" (use the actual employee_code from user profile)
    - Example: "my performance status" → "my performance status. My employee code is 123"
 
-**2. HR Region Constraints (ONLY for HR users with regions):**
-   - If user is HR (department="Human Resources") AND has region(s):
-     
-     **Self Queries (intent="self"):**
-     - If query refers to HR themselves ("I", "my", "me") → Do NOT append region
-     - Only add employee_code
-     
-     **Other Queries (intent="others"):**
-     - If user has SINGLE region:
-       * Append "in [Region Name] region" to query
-       * Example: "Show employees" → "Show employees in Mumbai region"
-     
-     - If user has MULTIPLE regions:
-       * If query mentions NO region → Append "in all allowed regions"
-       * If query mentions region AND it's allowed → Replace with "[Region Name] region"
-       * If query mentions region AND it's NOT allowed → Override to "in all allowed regions"
-       * Always append word "region" after region name(s)
-     
-     **Examples:**
-     - HR with region="Mumbai", query="Show employees" → "Show employees in Mumbai region"
-     - HR with regions=["Mumbai", "Delhi"], query="Show employees in Pune" → "Show employees in all allowed regions" (Pune not allowed)
-     - HR with region="Mumbai", query="What is my manager name?" → "What is my manager name? My employee code is 123" (self query, no region)
+**2. RBAC Constraints:**
+   - **NOTE**: RBAC constraints (region/grade/department) are NOT handled here
+   - RBAC is applied separately by rbac_tool.apply_rbac() in app.py after clarification
+   - This unified agent only adds employee_code for self queries
 
 **3. Natural Language Preservation:**
    - Keep query natural and readable
@@ -764,7 +750,7 @@ Example 9: PRONOUN RESOLUTION FROM CHAT HISTORY (CRITICAL - MOST RECENT TAKES PR
   → **STEP 1**: Check MOST RECENT message first: "Your manager's name is Pramatesh V. Kumar."
   → **STEP 2**: Extract entity: "manager" (Pramatesh V. Kumar)
   → **STEP 3**: Resolve pronoun: "his" = "manager" (from most recent message)
-  → Enhanced query: "what is my manager's email (requires lookup to base_report collection using manager name to get primary email field). My manager name is Pramatesh V. Kumar"
+  → Enhanced query: "what is my manager's email (requires lookup to base_report collection using manager number/employee code to get primary email field). My manager name is Pramatesh V. Kumar"
   → Status: "ready" (NO question "Whose email?" needed - context is clear from most recent history)
   → **DO NOT** ask "Whose email are you referring to?" → Chat history provides the context
   → **IMPORTANT**: Do NOT resolve to "performance reviewer" even though it was mentioned earlier - most recent takes priority

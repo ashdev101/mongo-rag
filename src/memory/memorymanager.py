@@ -124,6 +124,8 @@ def get_chat_history(email: str):
             return ""
 
         history = doc["history"]
+        # Return last 10 messages (same as get_chat_history_as_messages)
+        history = history[-10:]
 
         formatted_lines = []
 
