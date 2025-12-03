@@ -46,10 +46,6 @@ Example Query Format:
 # ```
 
 Database Context:
-  -Some documents may use Employee Code or Primary Email to uniquely identify an employee.
-  -Other documents may contain these identifiers in different forms, such as Person ID, Employee Email Address, or similar variations.
-  -In certain documents, either the Employee Code or Primary Email may be missing.
-  -Therefore, always use both fields together—in all their possible variations—with an OR condition to reliably identify an employee.
   
   - Collection Name: base_report
     - This collection contains employee details such as employee code, name, email, designation,grade , department, region, date of joining, managers info and other personal information.

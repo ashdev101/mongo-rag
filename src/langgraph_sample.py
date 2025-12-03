@@ -202,12 +202,12 @@ def input_node(state: AccessState):
 
 # connect once (production: use a connection pool)
 client = MongoClient(MONGODB_URI)
-db = client["hr"]
+db = client["hr-cleaned"]
 employees = db["base_report"]
 
 def fetch_role_node(state: AccessState):
     email = state["email"]
-    record = employees.find_one({"primary email": email}, {"_id": 0, "employee code" : 1 , "designation": 1 , "region":1 , "department" : 1})
+    record = employees.find_one({"email": email , "assignment status type": "ACTIVE"}, {"_id": 0, "employee code" : 1 , "designation": 1 , "region":1 , "department" : 1})
     
     if record and "designation" in record:
         role = record["designation"].lower()
