@@ -13,7 +13,7 @@ from clarifying_agent2 import clarify_query
 from rbac_tool import run_query
 import json
 import databse_dsitcint_values
-from memorymanager import get_chat_history, push_convo_pair
+from memory.memorymanager import get_chat_history
 # Load environment variables from .env file
 from dotenv import load_dotenv
 app_dir = os.path.join(os.getcwd())

@@ -96,7 +96,7 @@ class QueryProcessor:
 
         # Save conversation to chat history for future context
         try:
-            from memorymanager import push_convo_pair
+            #from memorymanager import push_convo_pair
             # Get the conversation messages
             messages = result.get("messages", [])
             if messages:
@@ -110,9 +110,9 @@ class QueryProcessor:
                         if not assistant_msg:
                             assistant_msg = msg.content
                 
-                if user_msg:
-                    # Use memorymanager's push_convo_pair function
-                    push_convo_pair(email, user_msg, assistant_msg or clarification_question or "")
+                # if user_msg:
+                #     # Use memorymanager's push_convo_pair function
+                #     #push_convo_pair(email, user_msg, assistant_msg or clarification_question or "")
         except Exception as e:
             print(f"Warning: Could not save chat history: {e}")
 

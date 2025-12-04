@@ -16,7 +16,6 @@ llm = ChatOpenAI(model="gpt-4o")  # or "gpt-4o-mini" etc.
 
 # Chat history is now managed by memorymanager.py
 # Import functions from memorymanager instead of managing MongoDB directly
-from memorymanager import get_chat_history, push_convo_pair
 
 
 # You are a MongoDB Query Clarification Agent. 

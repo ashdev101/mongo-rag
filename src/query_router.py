@@ -88,6 +88,7 @@ def router(query, email):
     - Modified query must stay close to original except for inserting resolved references.
     - If history is irrelevant or empty, return the original query unchanged.
     - The modified query should be self sufficient to answer and need not refer to history explicitly
+
     - Always output JSON only:
       {"route":"policy"|"document", "confidence":<0-1 float>, "query":<modified query with reference of history if required>}
       value Constraints:

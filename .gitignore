@@ -5,7 +5,7 @@ build/
 dist/
 wheels/
 *.egg-info
-
+chroma_store
 # Virtual environments
 .venv
 
@@ -17,7 +17,8 @@ output_file/
 Reports/
 Harsh_Router_gpt.py
 *.md
-
+middleware.py
+Ddata/
 # debugging scripts
 test.py
 test.txt
