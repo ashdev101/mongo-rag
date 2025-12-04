@@ -16,7 +16,7 @@ app_dir = os.path.join(os.getcwd())
 load_dotenv(os.path.join(app_dir, ".env"))
 
 MONGODB_URI = os.getenv('MONGODB_URI')
-DB_NAME = 'hr'
+DB_NAME = 'hr-cleaned'
 # NATURAL_LANGUAGE_QUERY = 'how many people have joined the organisation and resigned at the same year'
 # NATURAL_LANGUAGE_QUERY = 'Give me the list of 10  people who have resigned involuntary in the year 2022 from the west region and  return there employee code , first name , last name and email address only'
 # NATURAL_LANGUAGE_QUERY = 'what is the designation of Vikram Kaushik and is he currently with the company?'

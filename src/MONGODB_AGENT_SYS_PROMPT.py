@@ -59,11 +59,50 @@ Database Context:
   - Collection Name: goal_setting_status
     - This collection contains information about employees' performance goal setting status .
     - This contains information about whether employees have set their goals for the review period or not , and who is the reviewer assigned to them.
-    - The goal setting status can be "Approved" or "CANCELLED".
+    - The goal setting "status" can be  'APPROVED','CANCELLED','DRAFT','Pending with Employee','Pending with Manager','Pending with Reviewer','REJECTED'.
 
   - Collection Name: permormance_rating_report_year_2025_2026
     - This collection contains performance ratings for employees for the year 2025-2026.
-    - It has got feild "final status" as "Submitted" , "Completed" , "In progress" , etc
+    - Performance rating "final status" can be 'Approved', 'Completed', 'In progress', 'Submitted'
+
+  - Collection Name: pip_transaction_report
+    - This collection contains performance improvement plan (PIP) details for employees.
+    - Performance Improvement Plan (PIP) "task status" can be 'ASSIGNED', 'COMPLETE', 'INITIAL'
+  
+  - Collection Name: pms_task_status_report_all
+    - This collection contains performance management system (PMS) task status for employees. Performance Form Completion Status for each employee.
+    - It contains fields like
+      - "employee evaluation status" which can be 'COMPLETED', 'READY'
+      - "manager evaluation status" which can be 'COMPLETED', 'NOT COMPLETED', 'READY'
+      - "initiate approval status" which can be 'COMPLETED', 'INPROGESS', 'NOT COMPLETED', 'READY'
+      - "share document status " which can be 'COMPLETED', 'NOT COMPLETED', 'READY'
+      - "final status" which can be   'DOCUMENT APPROVED','PENDING WITH EMPLOYEE','PENDING WITH MANAGER','PENDING WITH REVIWER'
+
+  - Collection Name: pms_q2_25_26_rating_report_all
+    - This collection contains performance management system (PMS) Annual/Quarterly Reports with Ratings for employees for the year 2025-2026.
+    - It contains fields like
+      - "performance document name" which is the name of the performance document
+      - "overall manager rating" which is the overall rating given by the manager to the employee
+      - "overall employee rating" which is the overall rating given by the employee to themselves
+      - "performance document status" which can be 'Approved', 'Completed', 'In progress', 'Submitted'
+
+  - Collection Name: performance_360_degree_feedback_participants_status_all
+    - This collection contains Status of 360 feedback form completion
+    - It contains fields like
+      - "participation status" which can be 'Awaiting Reply', 'Completed', 'In progress', 'Not Started'
+
+  - Collection Name: historical_ratings_and-other_information
+    - This collection contains Last 5 year performance ratings, Educational Qualification, No. of Years spent, Work Experience  .
+    - The last three years are : 20-21 , 21-22 , 22-23 , 23-24 , 24-25
+    - It contains fields like
+      - "experience prior to tata play" which is the work experience prior to joining tata play
+      - "tata play experience" which is the work experience in tata play
+      - "previous company" which is the previous company of the employee
+ 
+  - Collection Name: goal_detail_report
+    - It contains detailed information about Individual Development Plan - Employee wise details
+    - It contains fields like
+      - "development goal status" which can be 'COMPLETED', 'IN_PROGRESS', 'NA', 'NOT_STARTED'
 
 Output Rules : 
   - Return only the final answer in a clean, human-readable format.
