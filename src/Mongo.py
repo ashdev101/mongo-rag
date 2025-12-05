@@ -122,8 +122,12 @@ class NaturalLanguageToMQL:
         masked_query, _ = self.pii_masker.mask({"query": query})
         masked_text = masked_query["query"]
 
+        # Increase recursion limit to handle complex queries
+        config = {"recursion_limit": 50}
+        
         events = self.agent.stream(
             {"messages": [("user", masked_text)]},
+            config=config,
             stream_mode="values",
         )
 
@@ -153,7 +157,16 @@ class NaturalLanguageToMQL:
         print("Type of agg_pipeline",type(agg_pipeline))
         print("===="*20)
 
-        agg_pipeline.append(unmasked_output)
+        # Handle agg_pipeline: ensure format compatible with lander.py
+        # Expected format: [pipeline_stages..., collection_name, output_text]
+        if agg_pipeline is not None:
+            # Query succeeded: append output text to existing pipeline
+            agg_pipeline.append(unmasked_output)
+        else:
+            # Query failed: create minimal structure to preserve format
+            # [None, None, error_message] - compatible with lander.py format expectations
+            agg_pipeline = [None, None, unmasked_output]
+        
         if return_output:
             return {"unmasked_output": unmasked_output, "agg_pipeline": agg_pipeline}
 

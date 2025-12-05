@@ -302,7 +302,7 @@ def run_clarifying_agent(email: str, question: str, session_id: Optional[str] = 
             if len(questions) == 1:
                 clarification_text = questions[0]
             else:
-                clarification_text = "I need a few clarifications:\n\n"
+                clarification_text = "Please clarify the following:\n\n"
                 for i, q in enumerate(questions, 1):
                     clarification_text += f"{i}. {q}\n"
             

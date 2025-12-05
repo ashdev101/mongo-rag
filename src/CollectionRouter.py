@@ -85,10 +85,10 @@ if __name__ == "__main__":
     ]
 
     # for q in queries:
-    collection = router.route_query("My weights?")
-    # print(f"Routed Collection: {collection}\n")
-    result = processor.get_clarification_agent_structure(
-        allowed_collections=collection
-    )
+    collection = router.route_query("My leaves?")
+    print(f"Routed Collection: {collection}\n")
+    # result = processor.get_clarification_agent_structure(
+    #     allowed_collections=collection
+    # )
 
-    print(json.dumps(result, indent=2))
+    # print(json.dumps(result, indent=2))

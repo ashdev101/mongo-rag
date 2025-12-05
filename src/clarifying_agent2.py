@@ -24,6 +24,41 @@ from memory.memorymanager import get_chat_history, push_convo_pair
 # TOON Format Converter
 # -------------------------------
 
+def format_semantic_context_toon(semantic_context: dict) -> str:
+    """
+    Convert semantic_context dict to TOON format for token reduction.
+    Reduces tokens by 50-60% compared to JSON.
+    """
+    if not semantic_context or not isinstance(semantic_context, dict):
+        return "None"
+    
+    lines = []
+    collections = semantic_context.get("collections", {})
+    
+    for entity_name, entity_data in collections.items():
+        if not isinstance(entity_data, dict):
+            continue
+        
+        for sub_entity, sub_data in entity_data.items():
+            if not isinstance(sub_data, dict):
+                continue
+            
+            collection = sub_data.get("collection", "")
+            key_fields = sub_data.get("key_fields", [])
+            routing_keywords = sub_data.get("routing_keywords", [])
+            
+            # Format: entity[sub_entity]{collection,key_fields,routing_keywords}
+            key_fields_str = ",".join(key_fields) if key_fields else ""
+            keywords_str = ",".join(routing_keywords) if routing_keywords else ""
+            
+            lines.append(f"{entity_name}[{sub_entity}]{{collection,key_fields,routing_keywords}}:")
+            lines.append(f"  {collection}")
+            lines.append(f"  {key_fields_str}")
+            lines.append(f"  {keywords_str}")
+            lines.append("")  # Empty line between entities
+    
+    return "\n".join(lines).strip()
+
 def format_ambiguous_terms_toon(ambiguous_terms: list) -> str:
     """
     Convert ambiguous_terms list to TOON (Token-Oriented Object Notation) format.
@@ -183,6 +218,53 @@ def format_ambiguous_terms_toon(ambiguous_terms: list) -> str:
 # Use push_convo_pair() and get_chat_history() from memorymanager module
 
 
+def validate_clarification_progress(result: dict, user_query: str, clarification_progress: dict) -> dict:
+    """
+    Validate and fix clarification_progress structure.
+    Light validation: Only fix structure, don't try to infer missing logic.
+    If LLM fails to set fields, we can't programmatically fix the logic,
+    but we can ensure the structure is valid to prevent crashes.
+    """
+    # Ensure clarification_progress exists
+    if "clarification_progress" not in result:
+        result["clarification_progress"] = {
+            "original_query": "",
+            "pending_ambiguities": {},
+            "resolved_ambiguities": {}
+        }
+    
+    cp = result["clarification_progress"]
+    
+    # Structure validation only (not logic validation)
+    if not isinstance(cp, dict):
+        cp = {}
+        result["clarification_progress"] = cp
+    
+    # Ensure required keys exist with correct types
+    if "original_query" not in cp or not isinstance(cp.get("original_query"), str):
+        cp["original_query"] = clarification_progress.get("original_query", "") if clarification_progress else "" or user_query
+    
+    if "pending_ambiguities" not in cp or not isinstance(cp.get("pending_ambiguities"), dict):
+        cp["pending_ambiguities"] = {}
+    
+    if "resolved_ambiguities" not in cp or not isinstance(cp.get("resolved_ambiguities"), dict):
+        cp["resolved_ambiguities"] = {}
+    
+    # If LLM failed to set pending_ambiguities but asked questions, log warning
+    if result.get("status") == "needs_clarification" and result.get("questions") and not cp.get("pending_ambiguities"):
+        print("⚠️ WARNING: LLM asked questions but didn't set pending_ambiguities - structure fixed but logic may be incomplete")
+        # We can't programmatically infer which terms are pending, so we leave it empty
+        # The next turn will handle it (user will answer, we'll detect continuation)
+    
+    # If status="ready" but pending_ambiguities is not empty, clear it
+    if result.get("status") == "ready" and cp.get("pending_ambiguities"):
+        cp["pending_ambiguities"] = {}
+        print("⚠️ WARNING: LLM returned status='ready' but pending_ambiguities was not empty - cleared it")
+    
+    result["clarification_progress"] = cp
+    return result
+
+
 def clarify_query(user_query: str , semantic_context: dict , ambiguous_terms: dict, chat_history: str = "", clarification_progress: dict = None, user_profile: dict = None, needs_routing: bool = False):
     """
     Unified agent: Clarification + Enhancement + Routing + Query Modification
@@ -241,6 +323,25 @@ CHAT HISTORY (Previous Conversation):
 {chat_history}
 
 **IMPORTANT - CHAT HISTORY ANALYSIS (CRITICAL - CHECK THIS FIRST):**
+
+**STEP 1: PRONOUN RESOLUTION (MANDATORY - DO THIS FIRST BEFORE ANYTHING ELSE):**
+   - **CRITICAL**: Check if current query has pronouns (he, she, they, his, her, their, it, this, that)
+   - **VALIDATION CHECK**: 
+     * If query already has resolved pronouns (e.g., "my manager's email", "my reviewer's number") → Pronouns are already resolved, proceed to intent detection
+     * If query still has pronouns (e.g., "his email", "her number") → Resolve them from chat history
+   - **MANDATORY PROCESS (ONLY IF PRONOUNS EXIST):**
+     1. Check chat history in REVERSE ORDER (most recent first) to find the IMMEDIATELY PRECEDING mention of a person/entity
+     2. Extract the entity type from the last Assistant message (manager, reviewer, employee, etc.)
+     3. Resolve the pronoun to that entity
+     4. Update the query mentally (e.g., "his email" → "my manager's email")
+   - **Examples:**
+     * Last message: "Your manager's name is [Manager Name]."
+     * Current query: "what is his email"
+     * Resolution: "his" = manager → resolved query: "what is my manager's email"
+     * Current query: "what is my manager's email" (already resolved) → Skip resolution, proceed to intent detection
+   - **NEVER** determine intent or check access until pronouns are resolved (or confirmed already resolved)
+   - After resolving pronouns (or validating they're already resolved), use the RESOLVED query for all subsequent steps (intent detection, access control, clarification)
+
 1. **Context from Previous Queries:**
    - If chat history shows a previous query about a specific topic (e.g., "goal setting status information")
    - And the current query references the same topic (e.g., "My goal setting reviewer")
@@ -248,15 +349,18 @@ CHAT HISTORY (Previous Conversation):
    - Example: If previous query was about "goal setting status", then "goal setting reviewer" is CLEAR from context → NO question needed
 
 2. **Continuation Detection (CRITICAL - MOST IMPORTANT):**
+   - **MANDATORY**: ALWAYS check chat history FIRST, even if clarification_progress is empty or reset
    - If you see a previous Assistant message with clarification questions (e.g., "Which status?", "Which reviewer?")
    - And the current user query contains answers to those questions (e.g., "performance status", "performance reviewer", "current manager")
    - Then this is a CONTINUATION - the user is answering your previous questions
    - **CRITICAL RULES FOR CONTINUATION:**
      - If user answers with QUALIFIED terms (e.g., "performance status", "current manager") → Those terms are FULLY RESOLVED
+     - **If user provides "performance status and reviewer" → Apply contextual inference: infer "performance reviewer" → Both terms resolved**
      - Mark ALL answered terms as clarified in clarification_progress
      - Remove ALL answered terms from pending_ambiguities
      - **If ALL questions are answered with qualified terms → return status="ready" IMMEDIATELY**
      - **Do NOT ask follow-up questions about already-qualified terms**
+     - **If clarification_progress is empty but chat history shows previous questions, reconstruct original_query from chat history**
      - Use the original_query from the first interaction (preserve it in clarification_progress)
      - Preserve the intent from the original query (if original had "my", intent is "self")
    
@@ -283,25 +387,10 @@ CHAT HISTORY (Previous Conversation):
      * → ALL terms QUALIFIED → ALL RESOLVED → status="ready" (NO questions)
      * → Final query: Merge answers into original query structure
 
-3. **Pronoun Resolution from Chat History (CRITICAL - CHECK MOST RECENT FIRST):**
-   - If current query uses pronouns (he, she, they, his, her, their, it, this, that):
-     * **MANDATORY**: Check chat history in REVERSE ORDER (most recent first) to find the IMMEDIATELY PRECEDING mention of a person/entity
-     * **PRIORITY RULE**: The most recent entity mentioned in chat history takes precedence over older mentions
-     * **RESOLUTION LOGIC**:
-       1. Look at the LAST Assistant message in chat history
-       2. Extract any person/entity name mentioned there (manager, reviewer, employee, etc.)
-       3. If found, resolve the pronoun to that entity
-       4. If not found, check the second-to-last message, and so on
-     * Example: 
-       - Last message: "Your manager's name is Pramatesh V. Kumar."
-       - Current query: "what is his email"
-       - Resolution: "his" = manager (from most recent message) → "what is my manager's email"
-     * Example: 
-       - Last message: "Your performance reviewer's name is Ashwin Shukla."
-       - Current query: "what is his email"
-       - Resolution: "his" = performance reviewer → "what is my performance reviewer's email"
+3. **Additional Pronoun Resolution Notes:**
+   - The pronoun resolution process is described in STEP 1 above (must be done FIRST)
+   - After resolving pronouns, use the resolved query for all subsequent processing
    - **NEVER ask "Whose email?" or "Who are you referring to?" if chat history provides the context**
-   - If chat history clearly identifies the entity, resolve the pronoun and enhance the query - NO clarification needed
 
 4. **Context-Aware Term Resolution:**
    - If previous conversation mentioned "goal setting" → "goal setting reviewer" is QUALIFIED and CLEAR
@@ -317,86 +406,73 @@ CHAT HISTORY (Previous Conversation):
    - "Current manager" = qualified, complete, ready → NO questions
    - Do NOT ask for "exact information", "specific details", or "which type" about qualified terms
 
-# ============================================================================
-# OLD PROMPT SECTIONS (COMMENTED OUT - FOR REFERENCE/REVERT IF NEEDED)
-# ============================================================================
-# **CRITICAL - CHAT HISTORY ANALYSIS (MUST CHECK BEFORE ASKING QUESTIONS):**
-# 
-# **MANDATORY CHAT HISTORY ANALYSIS (DO THIS FIRST):**
-# 
-# 1. **Extract Previous Clarification Questions:**
-#    - Look for Assistant messages in chat history that contain clarification questions
-#    - Identify what questions were asked (e.g., "Which status?", "Which reviewer?")
-# 
-# 2. **Extract User's Answers from Current Query:**
-#    - Check if current query contains answers to previous questions
-#    - Map each answer to its corresponding question:
-#      * If previous question: "Which status?" → Look for answer in current query (e.g., "employee status", "performance status", "goal-setting status")
-#      * If previous question: "Which reviewer?" → Look for answer in current query (e.g., "offboarding reviewer", "performance reviewer", "goal-setting reviewer")
-#      * If previous question: "Do you want pending leaves or total leaves?" → Look for answer (e.g., "pending", "total")
-# 
-# 3. **Continuation Detection:**
-#    - If chat history shows:
-#      * Previous query: "my status and reviewer"
-#      * Previous clarification: "Which status? Which reviewer?"
-#      * Current query: "employee status and offboarding reviewer"
-#    - Then this is a CONTINUATION. The user is ANSWERING previous questions.
-#    - Extract answers: "employee status" (answers "Which status?") and "offboarding reviewer" (answers "Which reviewer?")
-#    - Merge with original: "my employee status and offboarding reviewer"
-#    - Return status: "ready" (all ambiguities resolved)
-#    - Intent: Use intent from ORIGINAL query (if original had "my", intent is "self")
-# 
-# 4. **Resolve Ambiguities from History:**
-#    - If user previously said "performance status" → treat "status" in current query as "performance status"
-#    - If user previously said "goal-setting reviewer" → treat "reviewer" as "goal-setting reviewer"
-#    - Apply previous answers to current query automatically
-# 
-# 5. **Only Ask About NEW Ambiguities:**
-#    - If ALL previous questions are answered → return status: "ready" (no questions needed)
-#    - If SOME questions answered → ask ONLY about unanswered ones
-#    - NEVER ask questions that were already answered in chat history
-# 
-# 6. **Context Merging:**
-#    - If current query is a continuation (e.g., user answering clarification), merge it with the original query from history
-#    - Example: History shows "my status" → User says "performance status" → Treat as "my performance status"
-# 
-# **CRITICAL - QUALIFIED TERMS ARE NOT AMBIGUOUS (HIGHEST PRIORITY - CHECK THIS FIRST):**
-# 
-# Before checking if a term is ambiguous, FIRST check if it's QUALIFIED:
-# 
-# **QUALIFIED TERMS (NOT ambiguous - DO NOT ASK QUESTIONS):**
-# - "performance status" → QUALIFIED → NOT ambiguous → NO question
-# - "offboarding reviewer" → QUALIFIED → NOT ambiguous → NO question
-# - "goal-setting reviewer" → QUALIFIED → NOT ambiguous → NO question
-# - "performance reviewer" → QUALIFIED → NOT ambiguous → NO question
-# - "employee status" → QUALIFIED → NOT ambiguous → NO question
-# - "pending leaves" → QUALIFIED → NOT ambiguous → NO question
-# - "total leaves" → QUALIFIED → NOT ambiguous → NO question
-# 
-# **UNQUALIFIED TERMS (ambiguous - ASK QUESTIONS):**
-# - "status" → UNQUALIFIED → ambiguous → ASK question
-# - "reviewer" → UNQUALIFIED → ambiguous → ASK question
-# - "leaves" → UNQUALIFIED → ambiguous → ASK question
-# 
-# **RULE (MANDATORY):**
-# 1. If you see a QUALIFIED term (has a prefix like "performance", "offboarding", "goal-setting", "employee", "pending", "total"), 
-#    DO NOT ask about it. Treat it as SPECIFIC and RESOLVED.
-# 
-# 2. Check for qualified terms BEFORE checking ambiguous_terms dictionary.
-# 
-# 3. Examples:
-#    - Query: "my performance status" → "performance status" is QUALIFIED → NOT ambiguous → NO question → status: "ready"
-#    - Query: "offboarding reviewer" → "offboarding reviewer" is QUALIFIED → NOT ambiguous → NO question → status: "ready"
-#    - Query: "my status" → "status" is UNQUALIFIED → ambiguous → ASK question
-#    - Query: "my reviewer" → "reviewer" is UNQUALIFIED → ambiguous → ASK question
-# ============================================================================
 
 """
     
     prompt = f"""
-You are a MongoDB Query Clarification Agent. Your job is to ask ALL necessary clarifying questions in ONE response when the database query cannot be constructed without them.
+You are a professional MongoDB Query Clarification Agent for an HR system. Your role is to identify ambiguities and request necessary clarifications in a single response when the database query cannot be constructed without them.
 
 {chat_history_section}
+
+═══════════════════════════════════════════════════════════════════════════════
+ACCESS CONTROL CHECK (MANDATORY - DO THIS AFTER PRONOUN RESOLUTION):
+═══════════════════════════════════════════════════════════════════════════════
+
+**CRITICAL**: Access control check must happen AFTER pronoun resolution (STEP 1 above).
+Use the RESOLVED query (with pronouns replaced) for intent detection and access checking.
+
+1. **Determine Intent (AFTER Pronoun Resolution):**
+   - **CRITICAL RULE**: Queries about manager/reviewer information = "self" intent
+     * Pattern: If query mentions "manager" or "reviewer" followed by fields like name, email, code, number, etc. → intent = "self"
+     * Examples: "manager name", "manager email", "reviewer name", "manager_code", "reviewer_email" → ALL = "self" intent
+     * Reason: These are YOUR manager/reviewer, not someone else's information
+   - **Only queries about OTHER people's information (not your manager/reviewer) = "others" intent**
+     * Examples: "John's email", "employee 123's salary", "someone else's manager" → "others" intent
+   - If query contains "my", "I", "me" → intent = "self"
+   - If query contains explicit other person's name/identifier → intent = "others"
+
+2. **Check User Department (CRITICAL - CHECK THIS FIRST):**
+   - **IF department is HR (or variations: "human resources", "hr", "human resource"):**
+     * → **ACCESS ALLOWED IMMEDIATELY** (skip steps 3 and 4, proceed directly to clarification)
+     * HR users can access ANY information (self OR others, sensitive OR non-sensitive)
+     * **DO NOT** check intent or sensitive information for HR users
+   - **IF department is NOT HR:** → continue to step 3
+
+3. **Check Access Based on Intent (ONLY FOR NON-HR USERS):**
+   - If intent = "others" (querying about someone else's information, NOT your manager/reviewer) → ACCESS DENIED immediately
+   - If intent = "self" (querying own information, including manager/reviewer info) → continue to step 4
+
+4. **Check Query Content for Sensitive Information (ONLY FOR NON-HR USERS):**
+   - **CRITICAL**: This step ONLY applies to NON-HR users. HR users already have access (from step 2).
+   - Sensitive fields include: date of birth (DOB), birthday, work anniversary, anniversary, salary, compensation, pay, SSN, Aadhaar, PAN
+   - **CRITICAL - PATTERN RECOGNITION**: Queries asking "when should I wish", "when to wish", "when can I wish" are IMPLICITLY requesting birthday/anniversary information → ACCESS DENIED
+   - If query explicitly mentions birthday, anniversary, DOB, or any sensitive personal information → ACCESS DENIED
+   - If query is about manager's/reviewer's/colleague's birthday, anniversary, DOB, or any sensitive personal information → ACCESS DENIED
+   - If query is about own sensitive information (DOB, salary, etc.) → ACCESS DENIED
+   - Non-sensitive self queries (name, email, manager name/email/code, reviewer name/email, status, leaves) → ACCESS ALLOWED, proceed to clarification
+
+**ACCESS DENIED Response Format:**
+If access is denied, return immediately:
+{{
+  "status": "access_denied",
+  "decision": "ACCESS_DENIED: [specific reason based on department/intent/query]",
+  "intent": "[detected intent]",
+  "clarification_progress": {{"original_query": "", "pending_ambiguities": {{}}, "resolved_ambiguities": {{}}}}
+}}
+
+**DO NOT** ask clarification questions if access is denied. Return immediately.
+
+**IMPORTANT EXAMPLES:**
+- HR user + "when should I wish my manager" → ACCESS ALLOWED (HR can access sensitive info)
+- HR user + "John's salary" → ACCESS ALLOWED (HR can access others' info)
+- Non-HR user + "when should I wish my manager" → ACCESS DENIED (implicitly requests birthday/anniversary - sensitive info)
+- Non-HR user + "when to wish him" → ACCESS DENIED (implicitly requests birthday/anniversary - sensitive info)
+- Non-HR user + "my manager's birthday" → ACCESS DENIED (explicitly requests sensitive info)
+- Non-HR user + "my manager's email" → ACCESS ALLOWED (non-sensitive, self intent)
+- Non-HR user + "John's email" → ACCESS DENIED (others intent, non-HR)
+
+**ACCESS ALLOWED:**
+Only if access is allowed, proceed to the clarification logic below.
 
 ═══════════════════════════════════════════════════════════════════════════════
 ABSOLUTE RULES (MUST FOLLOW - NO EXCEPTIONS):
@@ -408,15 +484,28 @@ ABSOLUTE RULES (MUST FOLLOW - NO EXCEPTIONS):
    - Examples: "leaves" → self, "total leaves" → self, "offboarding reviewer" → self, "reviewer" → self
    - Only ask about subject if query explicitly mentions another person/entity (e.g., "John's leaves")
 
-**RULE 2: QUALIFIED TERMS ARE NOT AMBIGUOUS (CHECK FIRST - CRITICAL):**
+**RULE 2: AMBIGUOUS TERMS CHECK (MANDATORY - FOLLOW EXACTLY):**
+   - **CRITICAL**: Only consider ambiguous_terms that are provided to you (they are already filtered to only include terms present in the user query)
+   - **STEP 1**: Check if ambiguous_terms list is empty → If empty → status="ready", NO questions
+   - **STEP 2**: If ambiguous_terms list has terms, check if those terms are qualified in the query context:
+     * "manager name" → "manager" is qualified by "name" → NOT ambiguous → status="ready"
+     * "reviewer name" → "reviewer" is qualified by "name" → NOT ambiguous → status="ready"
+     * "status" alone → unqualified → ambiguous → ask question
+     * "reviewer" alone → unqualified → ambiguous → ask question
+   - **STEP 3**: Only ask questions for unqualified ambiguous terms that appear in the query
+   - **DO NOT** consider ambiguous_terms that are NOT in the provided list (they're already filtered)
+   - **DO NOT** ask about "reviewer" if query is about "manager" (they're different terms)
+
+**RULE 2.5: QUALIFIED TERMS ARE NOT AMBIGUOUS (CHECK AFTER RULE 2):**
    - If term has a qualifier prefix → it's FULLY RESOLVED, DO NOT ask ANY questions about it
    - Qualified terms are COMPLETE and READY for query - no further clarification needed
-   - Qualified: "performance status", "offboarding reviewer", "total leaves", "pending leaves", "employee status", "goal-setting reviewer", "current manager"
-   - Unqualified: "status", "reviewer", "leaves", "manager" → these ARE ambiguous
-   - Check qualified terms BEFORE checking ambiguous_terms dictionary
-   - **CRITICAL**: Once a term is qualified (e.g., "performance status"), it's DONE. Do NOT ask for:
+   - Qualified: "performance status", "offboarding reviewer", "total leaves", "pending leaves", "employee status", "goal-setting reviewer", "current manager", "manager name", "manager email", "reviewer name"
+   - Unqualified: "status", "reviewer", "leaves", "manager" → these ARE ambiguous (only if they appear in ambiguous_terms)
+   - Check qualified terms BEFORE asking questions
+   - **CRITICAL**: Once a term is qualified (e.g., "performance status", "manager name"), it's DONE. Do NOT ask for:
      * "What exact information do you need about performance status?" → NO, it's already clear
      * "Which performance status?" → NO, "performance status" is already specific
+     * "Which reviewer?" for "manager name" → NO, query is about manager, not reviewer
      * "Current or historical?" → NO, if user said "performance status", that's enough
 
 **RULE 3: ASK ALL QUESTIONS AT ONCE:**
@@ -431,6 +520,19 @@ ABSOLUTE RULES (MUST FOLLOW - NO EXCEPTIONS):
    - When continuation detected: mark previously pending terms as clarified in clarification_progress
    - **CRITICAL**: If user answers with qualified terms (e.g., "performance status", "performance reviewer"), those terms are RESOLVED
    - **CRITICAL**: Do NOT ask follow-up questions about already-qualified terms. Once qualified = ready to query
+
+**RULE 4.5: CONTEXTUAL TERM INFERENCE (CRITICAL - APPLY BEFORE ASKING QUESTIONS):**
+   - **MANDATORY**: If user query contains a qualified term (e.g., "performance status") alongside an unqualified term (e.g., "reviewer"), you MUST infer the qualified version of the unqualified term from context
+   - Pattern: If a qualified term is mentioned alongside an unqualified term, infer the qualified version based on the context
+   - **CRITICAL EXAMPLES (APPLY THESE PATTERNS):**
+     * "performance status and reviewer" → MUST infer "performance reviewer" (reviewer is in performance context) → status="ready", NO questions
+     * "employee status and reviewer" → MUST infer "offboarding reviewer" (reviewer is in employee/offboarding context) → status="ready", NO questions
+     * "goal-setting status and reviewer" → MUST infer "goal-setting reviewer" (reviewer is in goal-setting context) → status="ready", NO questions
+     * "performance status and performance reviewer" → Both already qualified → status="ready", NO questions
+   - **This inference MUST happen BEFORE asking clarification questions**
+   - **If context provides clear inference, you MUST use it and proceed with status="ready" - DO NOT ask questions**
+   - Only ask questions if the context is truly ambiguous (e.g., just "status and reviewer" without any qualifier like "performance", "goal-setting", "employee", "offboarding")
+   - **When you infer a term, add it to resolved_ambiguities and remove it from pending_ambiguities (if present)**
 
 **RULE 5: BUILD FINAL QUERY WHEN READY (CRITICAL - PRESERVE ORIGINAL STRUCTURE):**
    - When all ambiguities are resolved (status="ready"), build final_clarified_query by:
@@ -469,7 +571,8 @@ ABSOLUTE RULES (MUST FOLLOW - NO EXCEPTIONS):
    - Extract entities from chat history (manager name, employee_id, department, region, etc.)
    - Resolve pronouns (he/she/they/his/her/their) to specific entities from chat history
    - Add context from previous queries to make query self-contained
-   - Example: "Tell me his email_id" + History: "manager name is Abc Def" → "Tell me my manager's email_id. My manager name is Abc Def"
+   - Example: "Tell me his email_id" + History: "manager name is [Manager Name]" → "Tell me my manager's email_id. My manager name is [Manager Name]"
+   - **GENERIC**: This pattern works for ANY entity (manager, reviewer, employee, etc.) - extract entity type from history
 
 **RULE 7: ROUTING (ONLY IF needs_routing=True):**
    - Classify query as "document" (factual lookup, employee records) or "policy" (HR rules, guidelines)
@@ -488,7 +591,8 @@ QUERY ENHANCEMENT (APPLY AFTER CLARIFICATION WHEN status="ready"):
 
 **1. Entity Extraction from Chat History:**
    - Extract entities mentioned in previous queries/results:
-     * Manager name (e.g., "manager name is Abc Def")
+     * Manager name (e.g., "manager name is [Manager Name]")
+     * **GENERIC**: Extract ANY entity mentioned (manager, reviewer, employee, etc.) - not just specific examples
      * Employee IDs (e.g., "employee_id is 123")
      * Departments, regions, designations
      * Any specific values from previous query results
@@ -503,12 +607,13 @@ QUERY ENHANCEMENT (APPLY AFTER CLARIFICATION WHEN status="ready"):
        2. If found, resolve pronoun to that entity (e.g., "manager", "reviewer", "employee")
        3. If not found, check the second-to-last message, and so on
        4. Once resolved, enhance the query with the resolved entity
+     * **GENERIC PATTERN**: This applies to ANY entity type (manager, reviewer, employee, colleague, etc.) - extract the entity TYPE from chat history, not specific names
      * Example: 
-       - Last message: "Your manager's name is Pramatesh V. Kumar."
+       - Last message: "Your manager's name is [Manager Name]."
        - Current query: "what is his email"
        - Resolution: "his" = manager (from most recent) → "what is my manager's email"
      * Example: 
-       - Last message: "Your performance reviewer's name is Ashwin Shukla."
+       - Last message: "Your performance reviewer's name is [Reviewer Name]."
        - Current query: "what is his email"
        - Resolution: "his" = performance reviewer → "what is my performance reviewer's email"
    - **NEVER ask "Whose email?" or "Who are you referring to?" if chat history provides the context**
@@ -520,33 +625,28 @@ QUERY ENHANCEMENT (APPLY AFTER CLARIFICATION WHEN status="ready"):
      * Resolved pronouns/references
      * Relevant entities from chat history
      * User's employee_code (if self query)
-     * **Explicit field mappings and lookup instructions** (for MongoDB agent):
+     * **Field name mappings** (only if field name differs from natural language):
        - If field name differs from natural language, specify: "(field: actual_field_name)"
-       - If data requires lookup to another collection, specify: "(requires lookup to collection_name using join_field to get target_field)"
-       - This helps MongoDB agent generate correct queries with all fields and proper $lookup operations
+       - **DO NOT add lookup instructions** - the MongoDB agent will automatically detect if a field needs lookup and handle it
+       - The MongoDB agent checks if fields exist in the current collection and performs lookups automatically when needed
 
 **4. Example Enhancement:**
    - Input: "Tell me his email_id"
-   - Chat History: "User: What is my manager name? Assistant: Your manager name is Abc Def"
-   - Enhanced: "Tell me my manager's email (requires lookup to base_report collection using manager number/employee code to get primary email field). My manager name is Abc Def. My employee code is 123"
-   - **IMPORTANT**: Only add lookup instructions when the user explicitly requests a field that requires lookup
+   - Chat History: "User: What is my manager name? Assistant: Your manager name is [Manager Name]"
+   - Enhanced: "Tell me my manager's email. My manager name is [Manager Name]. My employee code is 123"
+   - **GENERIC PATTERN**: This enhancement works for ANY entity (manager, reviewer, employee, etc.) - extract entity type and value from chat history
+   - **IMPORTANT**: Do NOT add lookup instructions - the MongoDB agent will automatically detect if a field needs lookup
    - Do NOT retrieve all information upfront - only add context for what is explicitly asked
-   - Do NOT add lookup instructions for fields that are already available in the current collection
-   - Use generic patterns: determine target collection and join fields dynamically based on the field being requested (not hardcoded to specific fields)
+   - The MongoDB agent checks if fields exist in the current collection and performs lookups automatically
    
-**5. Field Mapping Examples (generic patterns - apply to any field):**
-   - If field name differs: "field_name" → "field_name (field: actual_database_field_name)"
-   - If lookup needed: "field_name" → "field_name (requires lookup to target_collection using join_field to get target_field)"
-   - Multiple fields: "field1 and field2" → "field1 (field: actual_field1) and field2 (requires lookup to collection using join_field to get target_field)"
-   - **CRITICAL - Generic Lookup Pattern (apply to ANY field that needs lookup):**
-     * When a field requires data from another collection, add: "field_name (requires lookup to target_collection using join_field to get target_field)"
-     * Only add lookup instructions when the user explicitly requests that specific field - do not add them proactively
-     * Determine the target collection and join fields based on the field being requested and the collections available
-     * Use generic patterns: "entity_name's field_name (requires lookup to target_collection using entity_name to get target_field_name)"
-     * **IMPORTANT - Manager Email Lookup:**
-       - For manager email, use "manager number" or "manager code" (employee code) as the join field, NOT "manager name"
-       - Example: "manager's email (requires lookup to base_report collection using manager number/employee code to get primary email field)"
-       - The join should match: current_collection.manager_number = base_report.employee_code
+**5. Field Mapping Examples (only for field name differences):**
+   - If field name differs from natural language: "field_name" → "field_name (field: actual_database_field_name)"
+   - Example: "employee ID" → "employee ID (field: employee_code)" if the database field is "employee_code"
+   - **DO NOT add lookup instructions** - the MongoDB agent automatically:
+     * Checks if fields exist in the current collection
+     * Performs $lookup operations when fields are not found
+     * Uses correct join fields (e.g., manager number for manager email lookup)
+   - The MongoDB agent has built-in logic to handle all cross-collection lookups
 
 ═══════════════════════════════════════════════════════════════════════════════
 ROUTING (ONLY IF needs_routing=True):
@@ -587,8 +687,10 @@ VALIDATION CHECKLIST (DO THIS BEFORE ASKING ANY QUESTION):
 ═══════════════════════════════════════════════════════════════════════════════
 
 Before asking, verify:
+- **CRITICAL CHECK**: Is ambiguous_terms list empty? → If yes → status="ready", NO questions
+- **CRITICAL CHECK**: Do ambiguous_terms contain terms that are NOT in the query? → They shouldn't (already filtered), but if you see this, ignore them
 - Subject clear? → If no explicit subject, assume self (DO NOT ask about subject)
-- Term qualified? → If qualified (e.g., "performance status", "current manager"), it's FULLY resolved (DO NOT ask ANY questions)
+- Term qualified? → If qualified (e.g., "performance status", "current manager", "manager name", "reviewer email"), it's FULLY resolved (DO NOT ask ANY questions)
 - Already answered? → Check chat history, if answered → use that answer, mark as clarified
 - All ambiguities identified? → List ALL, not just one
 - **CRITICAL CHECK**: If ALL terms in current query are qualified → status="ready", NO questions
@@ -618,9 +720,16 @@ WHEN TO ASK QUESTIONS:
 ═══════════════════════════════════════════════════════════════════════════════
 
 Ask ONLY when:
-- Unqualified ambiguous term exists (e.g., "status", "reviewer", "leaves")
+- **CRITICAL**: ambiguous_terms list is NOT empty (terms are already filtered to only include terms in query)
+- Unqualified ambiguous term exists in the query (e.g., "status", "reviewer", "leaves")
+- Term is NOT qualified (e.g., "status" alone is ambiguous, but "performance status" is qualified)
 - Required component missing AND exists in semantic_context
 - Multiple ambiguities → ask ALL at once
+
+**DO NOT ask when:**
+- ambiguous_terms list is empty → status="ready", NO questions
+- Term is qualified (e.g., "manager name", "reviewer email", "performance status") → status="ready", NO questions
+- Query doesn't contain any ambiguous_terms → status="ready", NO questions
 
 ═══════════════════════════════════════════════════════════════════════════════
 KEY EXAMPLES:
@@ -643,8 +752,8 @@ DATABASE CONSTRAINTS:
 - For leaves: time period is usually optional (can query all-time leaves)
 
 You are given:
-1) semantic_context (database concepts and collections)
-{json.dumps(semantic_context, indent=2)}
+1) semantic_context (database concepts and collections - TOON format):
+{format_semantic_context_toon(semantic_context)}
 
 2) ambiguous_terms (terms with multiple database meanings - TOON format):
 {format_ambiguous_terms_toon(ambiguous_terms)}
@@ -743,19 +852,19 @@ Example 8: CONTINUATION SCENARIO (CRITICAL - FOLLOW THIS EXACTLY):
 Example 9: PRONOUN RESOLUTION FROM CHAT HISTORY (CRITICAL - MOST RECENT TAKES PRIORITY):
   Chat History (in order, most recent last):
     - "User: performance reviewer's name?"
-    - "Assistant: Your performance reviewer's name is Ashwin Shukla."
+    - "Assistant: Your performance reviewer's name is [Reviewer Name]."
     - "User: my manager's name"
-    - "Assistant: Your manager's name is Pramatesh V. Kumar."  ← MOST RECENT MESSAGE
+    - "Assistant: Your manager's name is [Manager Name]."  ← MOST RECENT MESSAGE
   Current query: "what is his email"
-  → **STEP 1**: Check MOST RECENT message first: "Your manager's name is Pramatesh V. Kumar."
-  → **STEP 2**: Extract entity: "manager" (Pramatesh V. Kumar)
+  → **STEP 1**: Check MOST RECENT message first: "Your manager's name is [Manager Name]."
+  → **STEP 2**: Extract entity: "manager" (from the message context)
   → **STEP 3**: Resolve pronoun: "his" = "manager" (from most recent message)
-  → Enhanced query: "what is my manager's email (requires lookup to base_report collection using manager number/employee code to get primary email field). My manager name is Pramatesh V. Kumar"
+  → Enhanced query: "what is my manager's email. My manager name is [Manager Name]"
+  → **GENERIC PATTERN**: This applies to ANY entity mentioned in chat history - extract entity type, not specific names
   → Status: "ready" (NO question "Whose email?" needed - context is clear from most recent history)
   → **DO NOT** ask "Whose email are you referring to?" → Chat history provides the context
   → **IMPORTANT**: Do NOT resolve to "performance reviewer" even though it was mentioned earlier - most recent takes priority
-  → **NOTE**: Lookup instruction is added only because user explicitly asked for "email" - if user had asked for "manager name", no lookup would be needed
-  → **GENERIC PATTERN**: Apply this same logic to ANY field (not just email) - determine lookup requirements dynamically based on the field requested
+  → **NOTE**: The MongoDB agent will automatically detect if "manager's email" needs a lookup and handle it - no explicit instructions needed
 
 Example 9: CONTINUATION SCENARIO (WRONG vs CORRECT):
   Previous: "My status and reviewer"
@@ -840,19 +949,91 @@ If clarification is needed (MUST return ALL questions at once):
   * If this is the FIRST clarification (no original_query in clarification_progress), you MUST set original_query to the current user_query
   * Store it in clarification_progress.original_query
   * This is CRITICAL for building the final query later
-- **CONTINUATION DETECTION (MOST IMPORTANT):**
-  * If chat history shows you asked questions (e.g., "Which status?", "Which reviewer?")
-  * And current query contains qualified answers (e.g., "performance status", "performance reviewer", "current manager")
-  * Then this is a CONTINUATION - user is answering your questions
-  * **ACTION**: Move answered terms from pending_ambiguities to resolved_ambiguities, and if ALL are answered → return status="ready" with NO questions
-  * **DO NOT** ask follow-up questions about already-qualified terms
-- If this is a continuation (user answering previous questions), update clarification_progress:
-  * Move answered terms from pending_ambiguities to resolved_ambiguities (e.g., "status" → resolved with "performance status")
-  * Remove answered terms from pending_ambiguities
-  * Keep original_query from the first interaction (DO NOT overwrite it)
-  * **If ALL pending_ambiguities are now resolved → status="ready", questions=[]**
-  * **CRITICAL**: Build final_clarified_query by merging original_query with resolved values (preserve structure)
-- If this is the first clarification, set original_query to current user_query and add all ambiguous terms to pending_ambiguities
+- **PROCESSING ORDER (CRITICAL - FOLLOW THIS EXACT SEQUENCE):**
+  1. **PRONOUN RESOLUTION** (if pronouns exist in query) - See STEP 1 in CHAT HISTORY section
+  2. **CONTINUATION vs NEW QUERY DETECTION** (BALANCED DECISION TREE - see below)
+  3. **ACCESS CONTROL** - Check permissions
+  4. **CLARIFICATION LOGIC** - Ask questions if needed
+
+- **CONTINUATION vs NEW QUERY DETECTION (BALANCED DECISION TREE - FOLLOW EXACTLY):**
+  
+  **STEP 1: Check if there are pending ambiguities**
+  * **IF** clarification_progress has NO pending_ambiguities (empty or all resolved):
+    - **IF** clarification_progress is empty → NEW QUERY (first query) → SKIP to STEP 3
+    - **IF** clarification_progress has original_query (previous query completed):
+      - Check if current query is semantically DIFFERENT from original_query
+      - **IF DIFFERENT topics/entities** → NEW QUERY (reset everything) → SKIP to STEP 3
+      - **IF SAME topic/entity** → This is a FOLLOW-UP question (e.g., "what about his email?" after getting manager name)
+        → Process as NEW QUERY but preserve context (pronoun resolution will use chat history)
+        → SKIP to STEP 3 (NEW QUERY handling - but LLM will use chat history for context)
+  
+  * **IF** clarification_progress HAS pending_ambiguities (questions were asked):
+    - **PROCEED to STEP 2** (check if current query answers those questions)
+  
+  **STEP 2: Check if current query answers pending questions (CONTINUATION CHECK)**
+  * **Check chat history**: Does the last Assistant message contain clarification questions?
+  * **Check current query**: Does it contain qualified answers that match the pending ambiguities?
+    - Examples of ANSWERS (CONTINUATION):
+      * Pending: "info" about manager → Current: "my manager name" or "my manager email" → ANSWERS the question → CONTINUATION
+      * Pending: "status" and "reviewer" → Current: "performance status and performance reviewer" → ANSWERS both → CONTINUATION
+      * Pending: "status" → Current: "performance status" → ANSWERS → CONTINUATION
+    - Examples of NOT ANSWERS (NEW QUERY):
+      * Pending: "info" about manager → Current: "my status and reviewer" → Does NOT answer, completely different topic → NEW QUERY
+      * Pending: "status" and "reviewer" → Current: "my manager name" → Does NOT answer, different topic → NEW QUERY
+  
+  * **DECISION LOGIC:**
+    - **IF** current query clearly ANSWERS pending questions (even if topics are slightly different, but it's clearly an answer):
+      → **CONTINUATION** - User is answering your questions
+      → **ACTION**: 
+        - Move answered terms from pending_ambiguities to resolved_ambiguities
+        - If ALL pending_ambiguities are answered → return status="ready" with NO questions
+        - Build final_clarified_query by merging original_query with resolved values
+        - Preserve original_query and intent
+      → **SKIP to ACCESS CONTROL** (don't check for new query)
+    
+    - **IF** current query does NOT answer pending questions AND topics are COMPLETELY DIFFERENT:
+      → **NEW QUERY** - User is asking something completely different
+      → **PROCEED to STEP 3** (NEW QUERY handling)
+    
+    - **IF** current query does NOT answer pending questions BUT topics are SIMILAR:
+      → **AMBIGUOUS** - Could be rephrase or partial answer
+      → **TREAT AS CONTINUATION** (ask for clarification on what they meant, don't reset)
+  
+  **STEP 3: NEW QUERY HANDLING**
+  * **RESET clarification_progress completely**: 
+    - Set original_query to current query
+    - Clear pending_ambiguities: {{}}
+    - Clear resolved_ambiguities: {{}}
+  * Process the new query from scratch (don't reuse old context)
+  * Don't ask questions about the old query's ambiguities
+  * Treat this as a fresh start
+
+- **QUICK EXAMPLES:**
+  **CONTINUATION** (pending_ambiguities exist):
+  * "my status and reviewer" → "performance status and performance reviewer" → ANSWERS → CONTINUATION ✓
+  * "tell me info about my manager" → "my manager name" → ANSWERS → CONTINUATION ✓
+  
+  **NEW QUERY** (no pending_ambiguities OR different topic):
+  * "my manager name" (completed) → "my status and reviewer" → Different topic → NEW QUERY ✓
+  * "tell me info about my manager" (pending: "info") → "my status and reviewer" → Different topic → NEW QUERY ✓
+  
+  **FOLLOW-UP** (no pending_ambiguities, same topic):
+  * "my manager name" (completed) → "what about his email?" → Same topic (manager), follow-up → NEW QUERY (pronoun resolved from history) ✓
+
+- If this is the first clarification (no original_query in clarification_progress), set original_query to current user_query and add all ambiguous terms to pending_ambiguities
+
+- **VALIDATION REQUIREMENTS (CRITICAL - MUST FOLLOW):**
+  * If status="needs_clarification", you MUST:
+    - Set original_query (use current query if first time, preserve from state if continuation)
+    - Set pending_ambiguities with ALL ambiguous terms that need clarification (as a dict, not list)
+    - Ensure pending_ambiguities matches the questions you're asking
+    - Each pending_ambiguity entry should be: {{"term": "<term>", "question": "<question>", "possible_meanings": [...]}}
+  * If status="ready", you MUST:
+    - Clear pending_ambiguities (set to empty dict {{}}, not empty list)
+    - Populate resolved_ambiguities with all terms that were clarified (as a dict)
+    - Ensure final_clarified_query contains all resolved terms
+  * If you fail to set these correctly, the system will not work properly
+  * **CRITICAL**: clarification_progress must always be a dict with keys: original_query (string), pending_ambiguities (dict), resolved_ambiguities (dict)
 
 If everything is clear (no clarification needed):
 {{
@@ -885,11 +1066,21 @@ If everything is clear (no clarification needed):
   3. Replace each ambiguous term in original_query with its resolved value
   4. Preserve the original structure (order, connectors, context)
   5. Include ALL parts from original query (don't lose any items)
-  6. **ADD EXPLICIT FIELD INSTRUCTIONS** (for MongoDB agent to generate correct queries):
-     * For fields that need lookup to another collection: Add explicit instruction in parentheses
+  6. **ADD FIELD NAME MAPPINGS** (only if field name differs from natural language):
      * For fields where field name differs from natural language: Mention the actual field name
-     * Format: "(field: actual_field_name)" or "(requires lookup to collection_name using join_field to get target_field)"
-     * This helps MongoDB agent include ALL requested fields and use proper $lookup operations
+     * Format: "(field: actual_field_name)" 
+     * Example: "employee ID (field: employee_code)" if database uses "employee_code"
+     * **DO NOT add lookup instructions** - MongoDB agent automatically detects and handles lookups
+  7. **ADD EMPLOYEE CODE** (only for self queries, if not already present):
+     * Format: "My employee code is {{employee_code}}"
+     * Add this at the end, separated by a period
+     * Example: "my performance status. My employee code is 123"
+  
+- **CRITICAL - DO NOT ADD EXTRA PHRASES:**
+  * **DO NOT** add phrases like "for my role", "for my position", "related to my", etc.
+  * **DO NOT** add explanatory text or context that wasn't in the original query
+  * **ONLY** replace ambiguous terms with resolved values and add employee_code if needed
+  * Keep the query minimal and focused - only what's needed for MongoDB query generation
   
 - **Examples:**
   - Original: "department, status and reviewer"
@@ -898,19 +1089,21 @@ If everything is clear (no clarification needed):
   
   - Original: "my status and reviewer"
     Resolved: {{"status": "performance status", "reviewer": "performance reviewer"}}
-    Final: "my performance status and performance reviewer" (preserves "my" and "and")
+    Final: "my performance status and performance reviewer. My employee code is 1045" (preserves "my" and "and", adds employee_code)
+    **WRONG**: "performance status and performance reviewer for my role. My employee code is 1045" (DO NOT add "for my role")
   
   - Original: "department of an hr email_id, status and reviewer"
     Resolved: {{"department": "IT department", "status": "performance status", "reviewer": "performance reviewer"}}
     Final: "IT department of an hr email_id, performance status and performance reviewer" (preserves all parts)
   
-  - Original: "field1 and field2"
-    Final: "field1 (field: actual_field1_name) and field2 (requires lookup to target_collection using join_field to get target_field)"
+  - Original: "employee ID and manager email"
+    Final: "employee ID (field: employee_code) and manager email"
+    Note: MongoDB agent will automatically detect if "manager email" needs lookup and handle it
   
 - This query should be self-contained and ready to be passed to the MongoDB query generator.
-- **Include explicit field mappings and lookup instructions** so MongoDB agent can generate queries with all requested fields.
+- **Include field name mappings only if field names differ** - MongoDB agent automatically handles lookups.
 - Preserve the original intent (e.g., if original had "my", include it).
-- Make it natural and complete, preserving the original query structure.
+- **Keep it minimal** - only replace terms and add employee_code, do NOT add extra phrases or explanations.
 
 ═══════════════════════════════════════════════════════════════════════════════
 INTENT CLASSIFICATION:
@@ -1115,13 +1308,9 @@ Resolved Ambiguities: {resolved_count} term(s)
                     # No original_query, use current user_query
                     result["final_clarified_query"] = user_query
                     print(f"WARNING: No original_query found, using user_query: {user_query}")
-            
-            # Ensure pending_ambiguities is empty when ready
-            if "pending_ambiguities" not in result["clarification_progress"]:
-                result["clarification_progress"]["pending_ambiguities"] = {}
-            # Ensure resolved_ambiguities is populated
-            if "resolved_ambiguities" not in result["clarification_progress"]:
-                result["clarification_progress"]["resolved_ambiguities"] = {}
+        
+        # Validate and fix clarification_progress structure (hybrid validation)
+        result = validate_clarification_progress(result, user_query, clarification_progress)
         
         return result
     except json.JSONDecodeError as e:

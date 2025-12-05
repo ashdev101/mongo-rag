@@ -3,9 +3,14 @@ import json
 from QueryProcessor import QueryProcessor
 from rag.queryengine import query_main_store
 from query_router import router as query_router
-from memory.memorymanager import push_convo_pair
-from clarifying_agent_ui import add_session_turn
-from clarifying_agent_ui import run_clarifying_agent
+from langgraph_sample import update_chat_history
+
+def save_conversation_turn(email: str, user_msg: str, bot_msg: str):
+    """Helper to save conversation turn with error handling."""
+    try:
+        update_chat_history(email, user_msg, bot_msg)
+    except Exception as e:
+        print(f"❌ Failed to update chat history: {e}")
 # Import is_hr_department helper (defined in langgraph_sample.py)
 # Note: We import it here to avoid circular imports
 def is_hr_department(department: str) -> bool:
@@ -25,7 +30,7 @@ def is_hr_department(department: str) -> bool:
 processor = QueryProcessor()
 
 
-def run_query(email, question, user_profile=None):
+def run_query(email, question, user_profile=None, needs_routing=False):
     """
     Wrapper for running the main processor.
     
@@ -33,22 +38,24 @@ def run_query(email, question, user_profile=None):
         email: User email
         question: Query to process
         user_profile: Optional user profile dict (to avoid duplicate fetch)
+        needs_routing: Whether routing is needed (True for Combined tab, False for MQL Agent tab)
     """
     try:
         # Validate email is provided
         if not email or not email.strip():
-            return "Error", "Please provide a valid email address", None, "Email is required to fetch your employee information and process the query."
+            return "Error", "Please provide a valid email address", None, "Email is required to fetch your employee information and process the query.", None, []
         
-        output = processor.process(email.strip(), question.strip(), user_profile=user_profile)
+        output = processor.process(email.strip(), question.strip(), user_profile=user_profile, needs_routing=needs_routing)
         
         status = output["status"]
         agent_output = output["agent_output"]
         mql = output["mql"]
         db_results = output["db_results"]
         agg_pipeline = output.get("agg_pipeline")
+        questions = output.get("questions", [])  # Get questions as separate field
 
         print("===="*10,"app.py","===="*10)
-        print("User Question:",agent_output["question"])
+        print("User Question:",agent_output.get("question", ""))
         print("Generated Output:",output["db_results"])
 
         try:
@@ -56,10 +63,10 @@ def run_query(email, question, user_profile=None):
         except Exception:
             agent_out_str = str(agent_output)
 
-        return status, agent_out_str, mql, db_results, agg_pipeline
+        return status, agent_out_str, mql, db_results, agg_pipeline, questions
 
     except Exception as e:
-        return "Error", str(e), None, None, None
+        return "Error", str(e), None, None, None, []
 
 
 # =====================================================================
@@ -91,7 +98,7 @@ def router(question):
             return f"[ROUTED TO POLICY ENGINE]\n\n{result}"
 
         else:
-            status, agent_out_str, mql, db_results, agg_pipeline = run_query("combined@auto", question)
+            status, agent_out_str, mql, db_results, agg_pipeline, questions = run_query("combined@auto", question)
 
             return (
                 "[ROUTED TO MQL AGENT]\n\n"
@@ -123,84 +130,27 @@ def mql_execute(email, question):
             return str(v)
     
     try:
-        # ===== STEP 1: UNIFIED AGENT (FIRST) =====
+        # ===== UNIFIED AGENT IS NOW IN LANGGRAPH =====
+        # QueryProcessor will use LangGraph workflow with unified_agent node
         # needs_routing=False for MQL Agent tab (always document queries)
-        clarification_result = run_clarifying_agent(email, question, needs_routing=False)
+        status, agent_out_str, mql, db_results, agg_pipeline, questions = run_query(email, question, user_profile=None, needs_routing=False)
         
-        # If clarification needed, return questions to UI
-        if clarification_result.get("needs_clarification", False):
-            questions = clarification_result.get("questions", [])
-            if len(questions) == 1:
-                clarification_text = questions[0]
-            else:
-                clarification_text = "I need a few clarifications:\n\n"
-                for i, q in enumerate(questions, 1):
-                    clarification_text += f"{i}. {q}\n"
+        # Check if clarification is needed (returned from QueryProcessor)
+        if status == "Needs Clarification":
+            # Save: Original query → Clarification questions
+            save_conversation_turn(email, question, db_results)
             
-            # Return format compatible with MQL Agent UI
-            # For MQL Agent tab, we'll show clarification in the db_out field
+            # Return clarification questions to UI (use questions array from QueryProcessor)
             clarification_json = safe_json({
                 "status": "needs_clarification",
-                "questions": questions
+                "questions": questions if questions else []
             })
-            return "Needs Clarification", clarification_json, None, clarification_text
+            return "Needs Clarification", clarification_json, None, db_results
         
-        # ===== STEP 2: APPLY RBAC (if HR user) =====
-        final_clarified_query = clarification_result.get("final_clarified_query", question)
-        user_profile = clarification_result.get("user_profile", {})
-        rbac_permissions = clarification_result.get("rbac_permissions")
-        
-        # Apply RBAC if HR user has permissions
-        if (user_profile and 
-            is_hr_department(user_profile.get("department", "")) and 
-            rbac_permissions and 
-            rbac_permissions.get("allowed_regions")):
-            from rbac_tool import apply_rbac
-            try:
-                rbac_result = apply_rbac.invoke({
-                    "question": final_clarified_query,
-                    "allowed_regions": rbac_permissions["allowed_regions"],
-                    "allowed_grades": rbac_permissions["allowed_grades"],
-                    "department_exceptions": rbac_permissions["department_exceptions"]
-                })
-                final_clarified_query = rbac_result["final_query"]
-                print(f"✅ Applied RBAC constraints to query")
-            except Exception as e:
-                print(f"⚠️ Error applying RBAC: {e}, using original query")
-        
-        # ===== STEP 3: EXECUTE MQL QUERY =====
-        status, agent_out_str, mql, db_results, agg_pipeline = run_query(email, final_clarified_query, user_profile=user_profile)
-        
-        # ===== AUTO-SAVE CHAT HISTORY =====
-        # Save exactly what the user sees in UI: user's current input → bot's current output
-        # Filter out "Allowed"/"Not allowed" messages
-        try:
-            # Check if there was a clarification process
-            # If original_query exists and differs from current question, user provided clarification answer
-            # In that case, save current question (clarification answer) → final response
-            # Otherwise, save current question (original query) → final response
-            original_query = clarification_result.get("original_query", "")
-            if original_query and original_query != question:
-                # There was clarification - save user's clarification answer → final response
-                user_msg_to_save = question  # User's clarification answer
-            else:
-                # No clarification - save user's original query → final response
-                user_msg_to_save = question  # User's original query
-            
-            if db_results and db_results.strip().lower() not in ["allowed", "not allowed", "unclear intent"]:
-                print(f"💾 Saving chat history to MongoDB: user_msg='{user_msg_to_save[:50]}...', bot_msg length={len(db_results)}")
-                # Save to MongoDB (async) - save what user sees: their input → bot's output
-                push_convo_pair(
-                    email=email,
-                    user_msg=user_msg_to_save,
-                    bot_msg=db_results
-                )
-                # Also add to current session state for immediate context
-                add_session_turn(email, user_msg_to_save, db_results)
-            else:
-                print(f"⚠️ Skipping save: db_results is empty or access check message")
-        except Exception as e:
-            print(f"❌ Failed to push conversation history: {e}")
+        # ===== SAVE FINAL RESPONSE =====
+        # Save: Final query → Results
+        if db_results:
+            save_conversation_turn(email, question, db_results)
         
         return status, agent_out_str, mql, db_results
     
@@ -227,140 +177,62 @@ def combined_execute(email, question):
             return str(v)
 
     try:
-        # ===== STEP 1: UNIFIED AGENT (FIRST) =====
+        # ===== UNIFIED AGENT IS NOW IN LANGGRAPH =====
+        # QueryProcessor will use LangGraph workflow with unified_agent node
         # needs_routing=True for Combined tab (routes to document/policy)
-        clarification_result = run_clarifying_agent(email, question, needs_routing=True)
+        status, agent_out_str, mql, db_results, agg_pipeline, questions = run_query(email, question, user_profile=None, needs_routing=True)
         
-        # If clarification needed, return questions to UI
-        if clarification_result.get("needs_clarification", False):
-            questions = clarification_result.get("questions", [])
-            if len(questions) == 1:
-                clarification_text = questions[0]
-            else:
-                clarification_text = "I need a few clarifications:\n\n"
-                for i, q in enumerate(questions, 1):
-                    clarification_text += f"{i}. {q}\n"
+        # Check if clarification is needed
+        if status == "Needs Clarification":
+            # Save: Original query → Clarification questions
+            save_conversation_turn(email, question, db_results)
             
-            # Return format compatible with UI (two string outputs)
+            # Return clarification questions to UI (use questions array from QueryProcessor)
             clarification_json = safe_json({
                 "status": "needs_clarification",
-                "questions": questions
+                "questions": questions if questions else []
             })
-            return clarification_json, "No MQL query (clarification needed)", clarification_text
+            return clarification_json, "No MQL query (clarification needed)", db_results
         
-        # ===== STEP 2: USE ROUTE FROM UNIFIED AGENT =====
-        final_clarified_query = clarification_result.get("final_clarified_query", question)
-        route = clarification_result.get("route", "document")  # Default to document if not provided
-        user_profile = clarification_result.get("user_profile", {})
-        rbac_permissions = clarification_result.get("rbac_permissions")
-        
-        # Apply RBAC if HR user has permissions
-        query = final_clarified_query
-        if (user_profile and 
-            user_profile.get("department", "").lower() in ["human resources", "hr", "human resource"] and 
-            rbac_permissions and 
-            rbac_permissions.get("allowed_regions")):
-            from rbac_tool import apply_rbac
-            try:
-                rbac_result = apply_rbac.invoke({
-                    "question": final_clarified_query,
-                    "allowed_regions": rbac_permissions["allowed_regions"],
-                    "allowed_grades": rbac_permissions["allowed_grades"],
-                    "department_exceptions": rbac_permissions["department_exceptions"]
-                })
-                query = rbac_result["final_query"]
-                print(f"✅ Applied RBAC constraints to query")
-            except Exception as e:
-                print(f"⚠️ Error applying RBAC: {e}, using original query")
+        # Extract route from agent_output (set by unified_agent_node)
+        route = "document"  # Default
+        try:
+            agent_output = json.loads(agent_out_str) if isinstance(agent_out_str, str) else agent_out_str
+            route = agent_output.get("route", "document")
+        except:
+            pass
         
         # Create router output format (for UI display)
         route_result = {
             "route": route,
             "confidence": 1.0,
-            "query": query  # Use RBAC-applied query
+            "query": question
         }
         router_out_str = safe_json(route_result)
 
-        # ===== STEP 3: EXECUTE TARGET ENGINE =====
-        mql = None  # Initialize mql variable
-        if route == "document":
-            status, agent_out_str, mql, db_results, agg_pipeline = run_query(email, query, user_profile=user_profile)
-            final_output_dict = {
-                "status": status,
-                "mql": mql,
-                "db_results": db_results,
-                "agent_output": agent_out_str
-            }
-            final_output = safe_json(final_output_dict)
-
-        elif route == "policy":
-            policy_ans = run_policy_query(query)
-            final_output_dict = {"policy_answer": policy_ans}
-            final_output = safe_json(final_output_dict)
+        # ===== EXECUTE TARGET ENGINE =====
+        # For document route, results are already in db_results from run_query
+        # For policy route, we need to call policy engine separately
+        if route == "policy":
+            # Policy queries - call policy engine with clarified query
+            # The query should already be clarified by unified agent
+            policy_ans = run_policy_query(question)
+            final_output = policy_ans
             mql = None  # No MQL for policy queries
-
         else:
-            final_output_dict = {"error": "Router returned invalid route"}
-            final_output = safe_json(final_output_dict)
-            mql = None
+            # Document route - results already in db_results
+            final_output = db_results if db_results else "No results"
+            mql = mql if mql else "No MQL query generated"
 
-        # ===== AUTO-SAVE CHAT HISTORY =====
-        # Save exactly what the user sees in UI: user's current input → bot's current output
-        # Filter out "Allowed"/"Not allowed" messages - they're access checks, not conversation
-        final_output_string = ""
-        try:
-            # Check if there was a clarification process
-            # If original_query exists and differs from current question, user provided clarification answer
-            # In that case, save current question (clarification answer) → final response
-            # Otherwise, save current question (original query) → final response
-            original_query = clarification_result.get("original_query", "")
-            if original_query and original_query != question:
-                # There was clarification - save user's clarification answer → final response
-                user_msg_to_save = question  # User's clarification answer
-            else:
-                # No clarification - save user's original query → final response
-                user_msg_to_save = question  # User's original query
-            
-            if route == "document":
-                bot_response = final_output_dict.get("db_results", "")
-                # Filter out access check messages
-                if bot_response and bot_response.strip().lower() not in ["allowed", "not allowed", "unclear intent"]:
-                    print(f"💾 Saving chat history to MongoDB: user_msg='{user_msg_to_save[:50]}...', bot_msg length={len(bot_response)}")
-                    # Save to MongoDB (async) - save what user sees: their input → bot's output
-                    push_convo_pair(
-                        email=email,
-                        user_msg=user_msg_to_save,
-                        bot_msg=bot_response
-                    )
-                    # Also add to current session state for immediate context
-                    add_session_turn(email, user_msg_to_save, bot_response)
-                else:
-                    print(f"⚠️ Skipping save: bot_response is empty or access check message")
-                final_output_string = bot_response
-
-            elif route == "policy":
-                bot_response = final_output_dict.get("policy_answer", "")
-                # Filter out access check messages
-                if bot_response and bot_response.strip().lower() not in ["allowed", "not allowed", "unclear intent"]:
-                    print(f"💾 Saving chat history to MongoDB: user_msg='{user_msg_to_save[:50]}...', bot_msg length={len(bot_response)}")
-                    # Save to MongoDB (async) - save what user sees: their input → bot's output
-                    push_convo_pair(
-                        email=email,
-                        user_msg=user_msg_to_save,
-                        bot_msg=bot_response
-                    )
-                    # Also add to current session state for immediate context
-                    add_session_turn(email, user_msg_to_save, bot_response)
-                else:
-                    print(f"⚠️ Skipping save: bot_response is empty or access check message")
-                final_output_string = bot_response
-
-        except Exception as e:
-            print(f"❌ Failed to push conversation history: {e}")
-
+        # ===== SAVE FINAL RESPONSE =====
+        # Save: Final query → Results
+        bot_response = final_output if isinstance(final_output, str) else str(final_output)
+        if bot_response:
+            save_conversation_turn(email, question, bot_response)
+        
         # Return router output, MQL query, and final output
         mql_output = mql if mql else "No MQL query generated (policy query or error)"
-        return router_out_str, mql_output, final_output_string
+        return router_out_str, mql_output, bot_response
 
     except Exception as e:
         err = safe_json({"error": str(e)})
