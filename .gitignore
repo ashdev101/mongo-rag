@@ -5,7 +5,7 @@ build/
 dist/
 wheels/
 *.egg-info
-
+/src/chroma_store
 # Virtual environments
 .venv
 
@@ -17,11 +17,13 @@ output_file/
 Reports/
 Harsh_Router_gpt.py
 *.md
+Ddata/
 
 # debugging scripts
 test.py
 test.txt
 test.ipynb
 tex.py
+middleware.py
 # UV package manager files
 .uv.*.exe
