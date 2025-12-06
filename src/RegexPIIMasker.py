@@ -17,6 +17,10 @@ PII_KEYWORDS = [
 # Exact matches (for strict masking)
 PII_FIELDS = [
     "employee code",
+    "manager employee code",
+    "reviewer employee code",
+    "reporting to",
+    "email",
     "employee id",
     "first name",
     "last name",
@@ -24,11 +28,18 @@ PII_FIELDS = [
     "emp name",
     "reviewer name",
     "reporting manager",
-    "reporting to",
     "primary email",
     "employee email address",
     "name",
     "manager email",
+    "rhr name"
+    "rhr employee code"
+    "rhr email",
+    "reviewer email",
+    "assigned to",
+    "personal email",
+    "poc email",
+
 ]
 
 class FieldBasedPIIMasker:
