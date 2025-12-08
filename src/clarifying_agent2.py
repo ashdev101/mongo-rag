@@ -2,7 +2,7 @@ import json
 from langchain_openai import ChatOpenAI
 import os
 from SemanticDictionaryProcessor import SemanticDictionaryProcessor
-from CollectionRouter import CollectionRouterAgent
+from CollectionRouterRuleBased import CollectionRouterRuleBased
 # -------------------------------
 # 1. CONFIG
 # -------------------------------
@@ -496,10 +496,10 @@ User Query: "{user_query}"
 # -------------------------------
 
 if __name__ == "__main__":
-    processor = SemanticDictionaryProcessor("database_summary.json")
+    processor = SemanticDictionaryProcessor("./json_repo/database_summary.json")
     collections = processor.get_collection_routing_list()
     defualt_collections = processor.get_default_collections()
-    router = CollectionRouterAgent(collections , defualt_collections)
+    router = CollectionRouterRuleBased(collections , defualt_collections)
 
     queries = [
         "Show me my performance rating for this year",

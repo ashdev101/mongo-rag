@@ -1,6 +1,6 @@
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
-from schema_generator import extract_db_schema
+from MongoSchemaInferer import extract_db_schema
 import json
 
 ONTOLOGY_GENERATOR_PROMPT = """

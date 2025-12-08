@@ -8,7 +8,7 @@ from langgraph.graph import StateGraph, END
 from pymongo import MongoClient
 from langchain_openai import ChatOpenAI
 from SemanticDictionaryProcessor import SemanticDictionaryProcessor
-from CollectionRouter import CollectionRouterAgent
+from CollectionRouterRuleBased import CollectionRouterRuleBased
 from clarifying_agent2 import clarify_query
 from rbac_tool import run_query
 import json
@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 app_dir = os.path.join(os.getcwd())
 load_dotenv(os.path.join(app_dir, ".env"))
 
-access_record = json.load(open("access_record.json", "r"))
+access_record = json.load(open("./json_repo/access_record.json", "r"))
 
 MONGODB_URI = os.getenv('MONGODB_URI')
 
@@ -30,7 +30,7 @@ def get_semantic_processor():
     global _semantic_processor
     if _semantic_processor is None:
         # Construct path relative to project root (where database_summary.json is located)
-        json_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "database_summary.json")
+        json_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "./json_repo/database_summary.json")
         _semantic_processor = SemanticDictionaryProcessor(json_path)
     return _semantic_processor
 
@@ -295,7 +295,7 @@ def query_clarifying_agent_node(state: AccessState):
             "question": ""
         }
 
-    router = CollectionRouterAgent(collections, default_collections)
+    router = CollectionRouterRuleBased(collections, default_collections)
     collection = router.route_query(current_question)
 
     structure = processor.get_clarification_agent_structure(

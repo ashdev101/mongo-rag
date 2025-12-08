@@ -129,10 +129,11 @@ class SemanticDictionaryProcessor:
 # ==========================
 
 if __name__ == "__main__":
-    processor = SemanticDictionaryProcessor("database_summary.json")
-    collections = processor.get_clarification_agent_structure(
-        allowed_collections=["performance_rating_report_year_2025_2026"]
-    )
+    processor = SemanticDictionaryProcessor("./json_repo/database_summary.json")
+    # collections = processor.get_clarification_agent_structure(
+    #     allowed_collections=["performance_rating_report_year_2025_2026"]
+    # )
+    collections = processor.get_collection_routing_list()
     print("Synonym to Collection Mapping:" , json.dumps(collections, indent=2))    
 
     # # 1. Save synonym -> collection mapping

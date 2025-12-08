@@ -1,94 +1,44 @@
-import json
-import re
+from CollectionRouterRuleBased import CollectionRouterRuleBased
+from CollectionRouterVectorBased import CollectionRouterVectorBased
 from SemanticDictionaryProcessor import SemanticDictionaryProcessor
 
 class CollectionRouterAgent:
-    def __init__(self, json_file: dict , default_collections: list = []):
-        """
-        Initialize the agent with the JSON file containing:
-        [
-            {
-                "collection_name": "...",
-                "routing_keywords": ["keyword1", "keyword2", ...]
-            },
-            ...
-        ]
-        """
-        self.collection_synonyms = json_file
-        self.default_collections = default_collections
-
-        # For multi-match routing:
-        # { "reviewer": ["performance", "goals", "offboarding"] }
-        self.keywords_collections = {}
-
-        for item in self.collection_synonyms:
-            collection_name = item["collection_name"]
-
-            for keyword in item["routing_keywords"]:
-                keyword = keyword.lower()
-                if keyword not in self.keywords_collections:
-                    self.keywords_collections[keyword] = []
-                self.keywords_collections[keyword].append(collection_name)
-
-    def normalize_text(self, text: str) -> str:
-        return re.sub(r"[^\w\s]", "", text.lower())
-
+    def __init__(self , collectionRouterRuleBased : CollectionRouterRuleBased , collectionRouterVector : CollectionRouterVectorBased  ) :
+        self.collectionRouterRuleBased = collectionRouterRuleBased
+        self.collectionRouterVector = collectionRouterVector
+    
     def route_query(self, user_query: str, include_default_collection: bool = True):
         """
         Returns ALL collections that match the user query based on routing keywords.
 
         If include_default_collection=True:
             Appends the default collection list from the schema.
-        
         Output:
             ["collection1", "collection2", ...]
         """
+        # First use rule-based routing
+        matched_collections = self.collectionRouterRuleBased.route_query(user_query, include_default_collection)
 
-        query_norm = self.normalize_text(user_query)
-        matched_collections = set()
+        # If collections matched size is 1, use vector-based routing as fallback
+        if not matched_collections or len(matched_collections) == 1:
+            print("Using vector-based routing as fallback...")
+            vector_match = self.collectionRouterVector.top_k_collections(user_query)
+            if vector_match:
+                for match in vector_match:
+                    if match["collection_name"] not in matched_collections:
+                        matched_collections.append(match["collection_name"])
 
-        # Match keywords → list of collections
-        for keyword, collection_list in self.keywords_collections.items():
-            if keyword in query_norm:
-                for col in collection_list:
-                    matched_collections.add(col)
-
-        # If default list is not requested → return early
-        if not include_default_collection:
-            return list(matched_collections)
-
-        # Include default collections from schema
-        default_list = getattr(self, "default_collections", [])
-
-        # Union matched + default
-        final_set = matched_collections.union(default_list)
-
-        return sorted(list(final_set))
-
-
-
-
-# ================================
-# Example Usage
-# ================================
-
-if __name__ == "__main__":
-    processor = SemanticDictionaryProcessor("database_summary.json")
-    collections = processor.get_collection_routing_list()
+        return matched_collections
+    
+def get_collection(query : str):
+    processor = SemanticDictionaryProcessor("./json_repo/database_summary.json")
     defualt_collections = processor.get_default_collections()
-    router = CollectionRouterAgent(collections , defualt_collections)
-
-    queries = [
-        "Show me my performance rating for this year",
-        "I want the list of employees in IT",
-        "Get my appraisal score"
-    ]
-
-    # for q in queries:
-    collection = router.route_query("My weights?")
-    # print(f"Routed Collection: {collection}\n")
-    result = processor.get_clarification_agent_structure(
-        allowed_collections=collection
-    )
-
-    print(json.dumps(result, indent=2))
+    collections = processor.get_collection_routing_list()
+    collectionRouterRuleBased = CollectionRouterRuleBased(collections , defualt_collections)
+    collectionRouterVectorBased = CollectionRouterVectorBased()
+    router = CollectionRouterAgent(collectionRouterRuleBased , collectionRouterVectorBased)
+    return router.route_query(query)
+    
+if __name__ == "__main__":
+    matches = get_collection("Show me my performance rating for this year")
+    print(matches)

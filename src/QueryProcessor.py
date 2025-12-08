@@ -3,6 +3,7 @@ import contextlib
 from Mongo import NaturalLanguageToMQL
 from langchain_core.messages import HumanMessage, AIMessage
 from langgraph_sample import access_agent
+from CollectionRouter import get_collection
 
 # =====================================================================
 # Helper: safely get results from converter.print_results()
@@ -134,8 +135,11 @@ class QueryProcessor:
         # Convert to MQL + Execute
         nl_for_converter = modified_query if modified_query else result.get("question")
 
+        # know which collections to use to resolve the query
+        collections = get_collection(nl_for_converter)
+        print("Collections to use for query:", collections)
         # Initialize converter with current query to generate relevant example
-        self.converter = NaturalLanguageToMQL(user_query=nl_for_converter)
+        self.converter = NaturalLanguageToMQL(user_query=nl_for_converter, include_collections = collections)
 
         # Some converter implementations expect convert_to_mql_and_execute_query to accept None or empty strings:
         try:
@@ -207,8 +211,8 @@ class QueryProcessor:
         print("Final Output:" , output)
         return output
     
+if __name__ == "__main__":
+    querProcessor = QueryProcessor()
 
-# querProcessor = QueryProcessor()
-
-# ans = querProcessor.process("ashwinit@tatasky.com" , "what is the dob of vikram kaushik")
-# print(ans)
+    ans = querProcessor.process("Subhash.Deokar@tataplay.com" , "My goal status")
+    print(ans)

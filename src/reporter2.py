@@ -8,7 +8,7 @@ import os
 from dotenv import load_dotenv
 app_dir = os.path.join(os.getcwd())
 load_dotenv(os.path.join(app_dir, ".env"))
-from schema_generator import extract_db_schema
+from MongoSchemaInferer import extract_db_schema
 
 MONGO_URI = os.getenv('MONGODB_URI')
 DB_NAME = 'hr'

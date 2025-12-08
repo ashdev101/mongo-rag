@@ -8,7 +8,7 @@ import os
 from dotenv import load_dotenv
 app_dir = os.path.join(os.getcwd())
 load_dotenv(os.path.join(app_dir, ".env"))
-from schema_generator import extract_db_schema
+from MongoSchemaInferer import extract_db_schema
 from  SemanticDictionaryProcessor import SemanticDictionaryProcessor
 
 MONGO_URI = os.getenv('MONGODB_URI')
@@ -52,7 +52,7 @@ User Query: "{user_query}"
 
 
 
-processor = SemanticDictionaryProcessor("database_summary.json")
+processor = SemanticDictionaryProcessor("./json_repo/database_summary.json")
 collections = processor.get_collection_routing_list()
 # print("Collections for routing:")
 # print(json.dumps(collections, indent=2))

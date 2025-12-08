@@ -7,8 +7,9 @@ from langchain_mongodb.agent_toolkit import (
     MongoDBDatabaseToolkit,
 )
 from MONGODB_AGENT_SYS_PROMPT import MONGODB_AGENT_SYSTEM_PROMPT
-from MogoDBDatabaseToolkitPii import MongoDBDatabasePIIToolkit
+from MongoDbDatabseLocalContextAndPiiMasking import MongoDBDatabasePIIToolkit
 from RegexPIIMasker import FieldBasedPIIMasker
+from pathlib import Path
 
 # Load environment variables from .env file
 from dotenv import load_dotenv
@@ -17,12 +18,12 @@ load_dotenv(os.path.join(app_dir, ".env"))
 
 MONGODB_URI = os.getenv('MONGODB_URI')
 DB_NAME = 'hr-cleaned'
-# NATURAL_LANGUAGE_QUERY = 'how many people have joined the organisation and resigned at the same year'
+NATURAL_LANGUAGE_QUERY = 'how many people have joined the organisation and resigned at the same year'
 # NATURAL_LANGUAGE_QUERY = 'Give me the list of 10  people who have resigned involuntary in the year 2022 from the west region and  return there employee code , first name , last name and email address only'
 # NATURAL_LANGUAGE_QUERY = 'what is the designation of Vikram Kaushik and is he currently with the company?'
 # NATURAL_LANGUAGE_QUERY = 'who replaced Vikram Kaushik ?'
 # NATURAL_LANGUAGE_QUERY = 'which all departments checklist i need to follow for offboarding process ?'
-NATURAL_LANGUAGE_QUERY = "what are the list of things that are needed to be done for offboarding process from IT department ?"
+# NATURAL_LANGUAGE_QUERY = "what are the list of things that are needed to be done for offboarding process from IT department ?"
 # NATURAL_LANGUAGE_QUERY = "are sap ids disabled for emp id 245?"
 # NATURAL_LANGUAGE_QUERY = "what is the status of the Donthamsetti Venkata Subbarao on his sap id , is it active or disabled?"
 # NATURAL_LANGUAGE_QUERY = "how many people are pending for offboarding from IT department ?"
@@ -37,18 +38,21 @@ NATURAL_LANGUAGE_QUERY = "what are the list of things that are needed to be done
 
 
 class NaturalLanguageToMQL:
-    def __init__(self, user_query: str = None):
+    def __init__(self, user_query: str = None , include_collections: list = None):
         # self.llm = ChatOpenAI(model="gpt-5")
         # self.llm = ChatOpenAI(model="gpt-4-turbo")
-        self.llm = ChatOpenAI(model="gpt-4o")
+        self.llm = ChatOpenAI(model="gpt-4o-mini")
         example = oneshot_example(query=user_query) if user_query else ""
         print("+++++++++Similar Search Result: ",example,"+++++++++++++++++++++")
+        print("========Inside Mongo.py for execution========")
         self.system_message = MONGODB_AGENT_SYSTEM_PROMPT.format(top_k=50, example=example)
         self.pii_masker = FieldBasedPIIMasker()
         self.db_wrapper = MongoDBDatabasePIIToolkit.from_connection_string(
             MONGODB_URI,
             database=DB_NAME,
+            schema= "./json_repo/mongo_schema_report.json",
             pii_masker=self.pii_masker,
+            include_collections= include_collections
         )
         self.toolkit = MongoDBDatabaseToolkit(db=self.db_wrapper, llm=self.llm)
 
@@ -160,7 +164,7 @@ class NaturalLanguageToMQL:
         # default behaviour: print unmasked output
         
 
-
-# converter = NaturalLanguageToMQL()
-# converter.convert_to_mql_and_execute_query(NATURAL_LANGUAGE_QUERY)
-# converter.print_results()
+if __name__ == "__main__":
+    converter = NaturalLanguageToMQL()
+    converter.convert_to_mql_and_execute_query(NATURAL_LANGUAGE_QUERY)
+    converter.print_results()
