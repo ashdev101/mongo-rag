@@ -2,7 +2,7 @@ import io
 import contextlib
 from Mongo import NaturalLanguageToMQL
 from langchain_core.messages import HumanMessage, AIMessage
-from langgraph_sample import access_agent, get_session_state, update_session_state
+from langgraph_sample import access_agent, get_session_state, update_session_state, summarization_agent_node
 
 # =====================================================================
 # Helper: safely get results from converter.print_results()
@@ -146,6 +146,7 @@ class QueryProcessor:
             "department": department,
             "region": region,
             "question": nl_query,
+            "original_query": nl_query,  # Preserve original query for summarization agent
             "intent": "",
             "decision": "",
             "messages": [HumanMessage(content=nl_query)],
@@ -284,79 +285,100 @@ class QueryProcessor:
         else:
             nl_for_converter = query_for_converter
 
-        # Convert to MQL + Execute
-
-        # Initialize converter with current query to generate relevant example
-        self.converter = NaturalLanguageToMQL(user_query=nl_for_converter)
-
-        # Some converter implementations expect convert_to_mql_and_execute_query to accept None or empty strings:
-        try:
-            self.converter.convert_to_mql_and_execute_query(nl_for_converter)
-        # except TypeError:
-        #     # fallback - try calling with no args (if library differs)
-        #     try:
-        #         self.converter.convert_to_mql_and_execute_query()
-        #     except Exception as e:
-        #         return {
-        #             "status": "Error",
-        #             "agent_output": result,
-        #             "mql": nl_for_converter,
-        #             "db_results": f"Converter execution failed: {e}"
-        #         }
-        except Exception as e:
-            return {
-                "status": "Error",
+        # Update state with final query (after RBAC and employee_code addition)
+        # Preserve original_query for summarization agent
+        result["final_clarified_query"] = nl_for_converter
+        result["original_query"] = result.get("original_query") or nl_query  # Ensure original_query is set
+        
+        # Check if this is a formatting request (skip MongoDB Agent)
+        skip_mongo_agent = result.get("skip_mongo_agent", False)
+        
+        if skip_mongo_agent:
+            # Formatting request detected - workflow already handled summarization
+            # db_results is already reformatted by summarization_agent_node in workflow
+            # Just return the result as-is (no need to call summarization again)
+            print(f"⏭️ Formatting request - workflow already handled summarization, returning result")
+            
+            # Read results from workflow (already summarized)
+            db_results = result.get("db_results", "")
+            is_summarized = result.get("is_summarized", False)
+            
+            output = {
+                "status": "Allowed",
                 "agent_output": result,
                 "mql": nl_for_converter,
-                "db_results": f"Converter execution failed: {e}",
-                "questions": []  # No questions for errors
+                "db_results": db_results,  # Already reformatted by workflow
+                "agg_pipeline": None,  # No MongoDB query for formatting requests
+                "questions": [],
+                "is_summarized": is_summarized
             }
-
-        # obtain results robustly
-        db_output = get_converter_results(self.converter)
-
-        # Debug info: show what we received and whether the db wrapper holds a pipeline
-        # author: saptarshi-> can delete the following used to debug
-        # try:
-        #     print("DEBUG: get_converter_results returned type:", type(db_output))
-        #     if isinstance(db_output, dict):
-        #         print("DEBUG: db_output keys:", list(db_output.keys()))
-        #         print("DEBUG: db_output['agg_pipeline']:", db_output.get("agg_pipeline"))
-        #     else:
-        #         print("DEBUG: db_output (string preview):", str(db_output)[:200])
-        # except Exception as e:
-        #     print("DEBUG: error while printing db_output info:", e)
-
-        # try:
-        #     last_pipe = getattr(self.converter.db_wrapper, "last_agg_pipeline", None)
-        #     print("DEBUG: converter.db_wrapper.last_agg_pipeline:", last_pipe)
-        # except Exception as e:
-        #     print("DEBUG: error getting converter.db_wrapper.last_agg_pipeline:", e)
-
-        # default agg pipeline
-        agg_pipeline = None
-
-        # If converter returned structured data, extract fields
-        if isinstance(db_output, dict):
-            # unmasked_output may be present
-            db_results = db_output.get("unmasked_output") or db_output
-            agg_pipeline = db_output.get("agg_pipeline")
+            print("Final Output (formatting request):", output)
+            return output
         else:
-            # fallback: string result
-            db_results = db_output
-            # try to get pipeline directly from converter's db wrapper if available
+            # Execute MongoDB Agent with updated query (after RBAC/employee_code)
+            print(f"🔄 Executing MongoDB Agent with query: {nl_for_converter[:100]}...")
+            
+            # Initialize converter with current query to generate relevant example
+            self.converter = NaturalLanguageToMQL(user_query=nl_for_converter)
+
+            # Some converter implementations expect convert_to_mql_and_execute_query to accept None or empty strings:
             try:
-                agg_pipeline = getattr(self.converter.db_wrapper, "last_agg_pipeline", None)
-            except Exception:
-                agg_pipeline = None
+                self.converter.convert_to_mql_and_execute_query(nl_for_converter)
+            except Exception as e:
+                return {
+                    "status": "Error",
+                    "agent_output": result,
+                    "mql": nl_for_converter,
+                    "db_results": f"Converter execution failed: {e}",
+                    "questions": []  # No questions for errors
+                }
+
+            # obtain results robustly
+            db_output = get_converter_results(self.converter)
+
+            # default agg pipeline
+            agg_pipeline = None
+
+            # If converter returned structured data, extract fields
+            if isinstance(db_output, dict):
+                # unmasked_output may be present
+                db_results = db_output.get("unmasked_output") or db_output
+                agg_pipeline = db_output.get("agg_pipeline")
+            else:
+                # fallback: string result
+                db_results = db_output
+                # try to get pipeline directly from converter's db wrapper if available
+                try:
+                    agg_pipeline = getattr(self.converter.db_wrapper, "last_agg_pipeline", None)
+                except Exception:
+                    agg_pipeline = None
+            
+            # Update result with MongoDB results
+            result["db_results"] = db_results
+            result["agg_pipeline"] = agg_pipeline
+        
+        # Execute Summarization Agent (for both formatting requests and normal queries)
+        print(f"🔄 Executing Summarization Agent...")
+        summarization_state = {**result, "original_query": result.get("original_query") or nl_query}
+        summarization_result = summarization_agent_node(summarization_state)
+        result.update(summarization_result)
+        
+        print("Final Result (after MongoDB/Summarization):" , result)
+
+        # Read results from state (MongoDB Agent and Summarization Agent have executed)
+        db_results = result.get("db_results", "")
+        is_summarized = result.get("is_summarized", False)
+        # For formatting requests, there's no agg_pipeline (no MongoDB query was executed)
+        agg_pipeline = None if skip_mongo_agent else result.get("agg_pipeline")
 
         output = {
             "status": "Allowed",
             "agent_output": result,
             "mql": nl_for_converter,
-            "db_results": db_results,
-            "agg_pipeline": agg_pipeline,
-            "questions": []  # No questions for successful queries
+            "db_results": db_results,  # This is the FINAL result from Summarization Agent (summarized or unchanged)
+            "agg_pipeline": agg_pipeline,  # From state memory (None for formatting requests)
+            "questions": [],  # No questions for successful queries
+            "is_summarized": is_summarized  # NEW: Indicates if summarization was applied
         }
         print("Final Output:" , output)
         return output

@@ -265,18 +265,27 @@ def validate_clarification_progress(result: dict, user_query: str, clarification
     return result
 
 
-def clarify_query(user_query: str , semantic_context: dict , ambiguous_terms: dict, chat_history: str = "", clarification_progress: dict = None, user_profile: dict = None, needs_routing: bool = False):
+def clarify_query(user_query: str , semantic_context: dict , ambiguous_terms: dict, chat_history: str = "", clarification_progress: dict = None, user_profile: dict = None, needs_routing: bool = False, rule_based_results: dict = None):
     """
     Unified agent: Clarification + Enhancement + Routing + Query Modification
     
     Args:
-        user_query: the question from the user
+        user_query: the question from the user (may be rule-based resolved query)
         semantic_context: the semantic JSON document produced by build_summary_document()
         ambiguous_terms: dictionary of ambiguous terms and their possible meanings
         chat_history: formatted string of previous conversation (last 10 messages)
         clarification_progress: current clarification progress from state (optional)
         user_profile: dict with employee_code, designation, department, region (optional)
         needs_routing: whether to perform routing (True for Combined tab, False for MQL Agent tab)
+        rule_based_results: dict with rule-based processing results for validation (optional)
+            {
+                "original_query": str,  # Original user query before rule-based processing
+                "continuation_detected": bool,  # Whether continuation was detected
+                "continuation_resolved": str,  # Resolved continuation query (if detected)
+                "continuation_confident": bool,  # Whether continuation detection was confident
+                "pronoun_resolved": str,  # Resolved pronoun query (if resolved)
+                "pronoun_confident": bool,  # Whether pronoun resolution was confident
+            }
     """
     # ===== EDGE CASE VALIDATION =====
     # Validate user_query
@@ -352,6 +361,20 @@ def clarify_query(user_query: str , semantic_context: dict , ambiguous_terms: di
     if user_profile is not None and not isinstance(user_profile, dict):
         user_profile = None
     
+    # Validate rule_based_results
+    if rule_based_results is None:
+        rule_based_results = {}
+    if not isinstance(rule_based_results, dict):
+        rule_based_results = {}
+    
+    # Extract rule-based results for prompt
+    original_query_rb = rule_based_results.get("original_query", user_query)
+    continuation_detected = rule_based_results.get("continuation_detected", False)
+    continuation_resolved = rule_based_results.get("continuation_resolved", "")
+    continuation_confident = rule_based_results.get("continuation_confident", False)
+    pronoun_resolved = rule_based_results.get("pronoun_resolved", "")
+    pronoun_confident = rule_based_results.get("pronoun_confident", False)
+    
     # Initialize clarification_progress if not provided
     if clarification_progress is None:
         clarification_progress = {
@@ -420,41 +443,97 @@ CHAT HISTORY:
 
 """
     
+    # Extract rule-based intent results
+    intent_detected = rule_based_results.get("intent_detected") if rule_based_results else None
+    intent_confident = rule_based_results.get("intent_confident", False) if rule_based_results else False
+    
+    # Build rule-based results section for validation (only if results exist)
+    rule_based_section = ""
+    has_pronoun = pronoun_resolved and pronoun_resolved.strip() and pronoun_resolved != user_query
+    has_rule_based_results = rule_based_results and (continuation_detected or has_pronoun or intent_confident)
+    
+    if has_rule_based_results:
+        # Only show relevant information
+        continuation_info = f"Continuation: '{continuation_resolved}' (confident: {continuation_confident})" if continuation_detected else ""
+        pronoun_info = f"Pronoun: '{pronoun_resolved}' (confident: {pronoun_confident})" if has_pronoun else ""
+        intent_info = f"Intent: '{intent_detected}' (confident: {intent_confident})" if intent_confident else ""
+        
+        rule_based_section = f"""
+
+═══════════════════════════════════════════════════════════════════════════════
+RULE-BASED PROCESSING (VALIDATE):
+═══════════════════════════════════════════════════════════════════════════════
+Original: "{original_query_rb}" → Current: "{user_query}"
+{continuation_info}
+{pronoun_info}
+{intent_info}
+
+**Validate:** If CORRECT → use it. If INCORRECT → override. If NOT confident → re-process.
+
+"""
+    
     prompt = f"""
 You are a MongoDB Query Clarification Agent for an HR system. Identify ambiguities and request clarifications when the database query cannot be constructed without them.
 
+{rule_based_section}
+
 {chat_history_section}
+
+═══════════════════════════════════════════════════════════════════════════════
+SENSITIVE INFO PATTERNS (REFERENCE):
+═══════════════════════════════════════════════════════════════════════════════
+**Explicit sensitive info:** birthday, DOB, date of birth, salary, age, compensation, pay, earnings, SSN
+**Implicit sensitive info patterns:**
+- Birthday/DOB: "when should I wish [X]", "when to wish [X]", "what gift for [X]", "when to celebrate [X]"
+- Salary: "how much does [X] earn", "what is [X] paid", "compensation of [X]"
+- Age: "how old is [X]", "what age is [X]"
+**Allowed info for manager/reviewer/others:** name, email, code, number, employee_id, employee_code
 
 ═══════════════════════════════════════════════════════════════════════════════
 PROCESSING PIPELINE (Execute in order):
 ═══════════════════════════════════════════════════════════════════════════════
 
-**STEP 1: PRONOUN RESOLUTION** (if pronouns exist: he/she/they/his/her/their/it/this/that)
-- If already resolved (e.g., "my manager's email") → skip
-- If unresolved (e.g., "his email") → resolve from chat history (most recent first)
-- Extract entity type from last Assistant message → update query
-- Use RESOLVED query for all subsequent steps
-
-**STEP 2: CONTINUATION DETECTION**
-- IF pending_ambiguities exist:
+**STEP 1: CONTINUATION DETECTION** (FIRST - before pronoun resolution)
+- **IF rule-based detected continuation:** Validate against chat history (use if correct, override if incorrect)
+- **IF pending_ambiguities exist:**
   * Check if current query answers them (qualified terms match) → CONTINUATION
   * Move answered terms to resolved_ambiguities
   * If ALL answered → status="ready", merge into original_query
-- IF no pending_ambiguities:
-  * Check if semantically different from original_query → NEW QUERY (reset state)
+  * Use merged query for subsequent steps
+- **IF no pending_ambiguities and no rule-based continuation:**
+  * Check if current query is a continuation of previous query (even without pronouns)
+  * Examples of continuation WITHOUT pronouns:
+    * "my manager name" → "email" → Resolve to "my manager email"
+    * "employees in IT" → "count" → Resolve to "count of employees in IT"
+    * "my status" → "reviewer" → Resolve to "my reviewer"
+  * If continuation detected → Merge with previous context from chat history
+  * If semantically different from original_query → NEW QUERY (reset clarification_progress)
   * IF same topic → FOLLOW-UP (preserve context, use chat history)
 
-**STEP 3: ACCESS CONTROL** (use RESOLVED query)
-1. Determine Intent: Manager/reviewer info OR "my"/"I"/"me" → "self", Explicit other person → "others", Default → "self"
-2. IF HR → ACCESS ALLOWED (skip 3-4)
-3. IF NON-HR + "self":
-   - Own sensitive info (salary, DOB, birthday) → ALLOWED
-   - Manager's/reviewer's sensitive info (birthday, DOB, salary) → DENIED
-   - Manager's/reviewer's non-sensitive (name, email, code) → ALLOWED
-   - "when should I wish my manager" → DENIED (implicit birthday request)
-4. IF NON-HR + "others":
-   - Allowed: name, email, code, number, employee_id, employee_code → ALLOWED
-   - Other info (including sensitive) → DENIED
+**STEP 2: PRONOUN RESOLUTION** (if pronouns exist: he/she/they/his/her/their/it/this/that)
+- **IF rule-based resolved pronouns:** Validate against chat history (use if correct, override if incorrect)
+- **IF pronouns not resolved by rule-based:**
+  * If already resolved (e.g., "my manager's email", "my manager email") → validate and use
+  * If unresolved (e.g., "his email") → resolve from chat history (most recent first)
+  * Extract entity type from last Assistant message → update query
+  * Handle continuation without pronouns (e.g., "email" after "my manager name")
+- **Use RESOLVED query for all subsequent steps**
+
+**STEP 3: ACCESS CONTROL** (use RESOLVED query from STEP 2)
+
+1. **INTENT CLASSIFICATION (VALIDATE RULE-BASED IF PROVIDED):**
+   - **IF rule-based intent provided:** Validate it (use if correct, override if incorrect)
+   - **IF no rule-based intent or not confident:**
+     a) Identify requested info (explicit or implicit - see SENSITIVE INFO PATTERNS above)
+     b) If query about manager/reviewer + sensitive info → intent="others"
+     c) If query about manager/reviewer + ONLY allowed info (name/email/code/number/id) → intent="self"
+     d) If own info → intent="self"
+     e) If other person → intent="others"
+   
+2. **ACCESS DECISION:**
+   - IF HR → ACCESS ALLOWED
+   - IF NON-HR + "self": ALL own info → ALLOWED | Manager/reviewer: ONLY name/email/code/number/id → ALLOWED
+   - IF NON-HR + "others": ONLY name/email/code/number/id → ALLOWED | All other info → DENIED
 
 **If ACCESS DENIED, return immediately:**
 {{
@@ -537,16 +616,24 @@ KEY EXAMPLES:
 - "total leaves" → NO question (qualified term, assume self) → status="ready"
 - "offboarding reviewer" → NO question (qualified term, assume self) → status="ready"
 
-**Pronoun Resolution:**
+**Pronoun Resolution & Continuation:**
 - "give his email" + History: "manager name is [Name]" → Resolve "his" = manager → "my manager's email" → status="ready"
+- "my manager name" → "email" → Continuation detected → "my manager email" → status="ready"
+- "employees in IT" → "count" → Continuation detected → "count of employees in IT" → status="ready"
 
 **Access Control:**
-- "tell me my salary" → ALLOWED (self, own sensitive)
-- "my manager's dob" → DENIED (self, manager's sensitive)
-- "when should I wish my manager" → DENIED (self, implicit birthday)
-- "my manager's email" → ALLOWED (self, manager's non-sensitive)
+- "tell me my salary" → ALLOWED (self, own info)
+- "my manager's dob" → DENIED (self, manager's sensitive - only name/email/code allowed)
+- "my manager's birthday" → DENIED (self, manager's sensitive - only name/email/code allowed)
+- "my manager's salary" → DENIED (self, manager's sensitive - only name/email/code allowed)
+- "when should I wish my manager" → DENIED (self, implicit birthday request - only name/email/code allowed)
+- "how much does my manager earn" → DENIED (self, implicit salary request - only name/email/code allowed)
+- "how old is my manager" → DENIED (self, implicit age request - only name/email/code allowed)
+- "my manager's email" → ALLOWED (self, manager's allowed: name/email/code only)
+- "my manager's name" → ALLOWED (self, manager's allowed: name/email/code only)
 - "John's email" → ALLOWED (others, email allowed)
-- "John's salary" → DENIED (others, sensitive not allowed)
+- "John's salary" → DENIED (others, deny all except name/email/code/number)
+- "John's birthday" → DENIED (others, deny all except name/email/code/number)
 
 **Clarification:**
 - "my leaves" → Ask: "Do you want pending leaves or total leaves?" (1 question)
@@ -652,9 +739,9 @@ If everything is clear (no clarification needed):
 1. Start with original_query from clarification_progress
 2. Replace ambiguous terms with resolved values from resolved_ambiguities
 3. Preserve structure (order, connectors "and"/"or", "my"/"I" pronouns)
-4. Add employee_code for self queries: "My employee code is {{employee_code}}"
+4. Add entity context from chat history if pronouns were resolved
 5. Add field mappings if needed: "employee ID (field: employee_code)"
-6. Add entity context from chat history if pronouns were resolved
+6. NOTE: employee_code is already added in RULE 5 (Query Enhancement) - DO NOT add again
 7. DO NOT add extra phrases like "for my role" or explanatory text
 
 **Examples:**
@@ -709,7 +796,7 @@ Resolved Ambiguities: {resolved_count} term(s)
                     "4. Once a term is qualified, it's COMPLETE and READY for query - no further clarification needed. "
                     "5. Ask ALL necessary questions at once in the questions array. "
                     "6. If ALL terms in current query are qualified → return status='ready' immediately. "
-                    "7. ACCESS CONTROL: Self queries (intent='self') are ALWAYS ALLOWED, including sensitive info like salary/DOB. Only deny when intent='others' AND asking for info other than name/email/code/number. "
+                    "7. ACCESS CONTROL: If rule-based intent provided, validate it. Otherwise, classify intent based on requested info (see SENSITIVE INFO PATTERNS). For 'others' intent, ONLY allow name/email/code/number/id, DENY everything else. "
                     "Your response MUST be only valid JSON. No markdown, no comments, no backticks."
                 )
             },
