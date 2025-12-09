@@ -30,7 +30,7 @@ class RoutingEmbeddingBuilder:
 
 
 if __name__ == "__main__":
-    processor = SemanticDictionaryProcessor("database_summary.json")
+    processor = SemanticDictionaryProcessor("./json_repo/database_summary.json")
     routing_data = processor.get_collection_routing_list()
 
     builder = RoutingEmbeddingBuilder()

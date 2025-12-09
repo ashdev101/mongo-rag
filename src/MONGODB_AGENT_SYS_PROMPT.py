@@ -91,9 +91,9 @@ Database Context:
     - It contains fields like
       - "participation status" which can be 'Awaiting Reply', 'Completed', 'In progress', 'Not Started'
 
-  - Collection Name: historical_ratings_and-other_information
+  - Collection Name: historical_ratings_and_other_information
     - This collection contains Last 5 year performance ratings, Educational Qualification, No. of Years spent, Work Experience  .
-    - The last three years are : 20-21 , 21-22 , 22-23 , 23-24 , 24-25
+    - The last three years are (cy means current year , and -1 means previous year , so cy-1 means current year minus 1 i.e previous year) : cy-1, cy-2, cy-3
     - It contains fields like
       - "experience prior to tata play" which is the work experience prior to joining tata play
       - "tata play experience" which is the work experience in tata play

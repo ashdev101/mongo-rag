@@ -40,7 +40,6 @@ class MongoSchemaReport:
 
     def build_collection_report(self, collection_name: str):
         raw_schema = self.mongoSchemaInferer.extract_schema(collection_name)  # returns {collection: schema}
-        print("raw_schema:" , raw_schema)
         schema = raw_schema[collection_name]             # ← extract only inner dict
 
         samples = self.get_sample_documents(collection_name)
@@ -63,6 +62,12 @@ class MongoSchemaReport:
         report = {}
         for name in self.get_collections():
             report[name] = self.build_collection_report(name)
+        return report
+    
+    def build_full_fields_report(self):
+        report = {}
+        for name in self.get_collections():
+            report[name] = self.build_collection_report(name)["fields"]
         return report
 
 if __name__ == "__main__":

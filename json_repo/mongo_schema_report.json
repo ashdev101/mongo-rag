@@ -1,122 +1,4 @@
 {
-  "historical_ratings_and_other_information": {
-    "fields": {
-      "_id": "ObjectId",
-      "employee code": "Number",
-      "first name": "String",
-      "last name": "String",
-      "grade": "Timestamp",
-      "grade level": "String",
-      "designation": "String",
-      "department": "String",
-      "sub department": "String",
-      "location": "String",
-      "office": "String",
-      "region": "String",
-      "date of joining": "Timestamp",
-      "assignment status type": "String",
-      "final rating 20-21": "Number",
-      "final rating 21-22": "Number",
-      "final rating 22-23": "Number",
-      "final rating 23-24": "Number",
-      "last promotion date": [
-        "Null",
-        "Timestamp"
-      ],
-      "rating 24-25": "Number",
-      "experience prior to tata play": [
-        "Number",
-        "Null"
-      ],
-      "tata play experience": "Number",
-      "total years experience": "Number",
-      "previous company": "String",
-      "mt batch": "Null",
-      "highest qualification": "String",
-      "university name": "String"
-    },
-    "indexes": {
-      "_id_": {
-        "v": 2,
-        "key": [
-          [
-            "_id",
-            1
-          ]
-        ]
-      }
-    },
-    "samples": [
-      {
-        "_id": {
-          "$oid": "692fee91324c1daebcf762aa"
-        },
-        "employee code": 1004,
-        "first name": "Gyanendra",
-        "last name": "Singh",
-        "grade": "M5",
-        "grade level": "M5a",
-        "designation": "Assistant Manager - Quality",
-        "department": "Technology",
-        "sub department": "Field Engineering and Audit",
-        "location": "Lucknow",
-        "office": "Lucknow",
-        "region": "North",
-        "date of joining": {
-          "$date": "2006-04-03T00:00:00Z"
-        },
-        "assignment status type": "ACTIVE",
-        "final rating 20-21": 3,
-        "final rating 21-22": 3,
-        "final rating 22-23": 3,
-        "final rating 23-24": 3,
-        "last promotion date": null,
-        "rating 24-25": 3,
-        "experience prior to tata play": 13,
-        "tata play experience": 19,
-        "total years experience": 32,
-        "previous company": "Adonis Electronics Pvt. Ltd.",
-        "mt batch": null,
-        "highest qualification": "Diploma (Electrical Engineering)",
-        "university name": "Board of Technical Education, U.P."
-      },
-      {
-        "_id": {
-          "$oid": "692fee91324c1daebcf762ab"
-        },
-        "employee code": 1034,
-        "first name": "Monoranjon",
-        "last name": "Dutta",
-        "grade": "M4",
-        "grade level": "M4a",
-        "designation": "Senior Manager - Field Service Delivery",
-        "department": "Field Service Delivery",
-        "sub department": "Field Service Delivery - General",
-        "location": "Kolkata",
-        "office": "Kolkata",
-        "region": "East",
-        "date of joining": {
-          "$date": "2006-04-10T00:00:00Z"
-        },
-        "assignment status type": "ACTIVE",
-        "final rating 20-21": 3,
-        "final rating 21-22": 4,
-        "final rating 22-23": 4,
-        "final rating 23-24": 3,
-        "last promotion date": {
-          "$date": "2014-04-01T00:00:00Z"
-        },
-        "rating 24-25": 3,
-        "experience prior to tata play": 8,
-        "tata play experience": 19,
-        "total years experience": 28,
-        "previous company": "Usha International Ltd",
-        "mt batch": null,
-        "highest qualification": "BA",
-        "university name": "Guwahati University"
-      }
-    ]
-  },
   "goal_setting_status": {
     "fields": {
       "_id": "ObjectId",
@@ -558,7 +440,12 @@
       "email": "String",
       "reason for resignation": "String",
       "reporting to": "String",
-      "role": "String"
+      "role": "String",
+      "manager details": {
+        "manager name": "String",
+        "manager mail": "String",
+        "manager designation": "String"
+      }
     },
     "indexes": {
       "_id_": {
@@ -610,7 +497,12 @@
         "email": "lynetted@tataplay.com",
         "reason for resignation": "Involuntary",
         "reporting to": "Jasmine Vidhani",
-        "role": "NA"
+        "role": "NA",
+        "manager details": {
+          "manager name": "Jasmine Vidhani",
+          "manager mail": "jasmine.vidhani@tataplay.com",
+          "manager designation": "Senior Vice President - Legal Affairs"
+        }
       },
       {
         "_id": {
@@ -648,7 +540,12 @@
         "email": "sandipad@tatasky.com",
         "reason for resignation": "NA",
         "reporting to": "NA",
-        "role": "NA"
+        "role": "NA",
+        "manager details": {
+          "manager name": "NA",
+          "manager mail": "NA",
+          "manager designation": "NA"
+        }
       }
     ]
   },
@@ -1533,6 +1430,248 @@
         "development goal status": "NOT_STARTED",
         "category": "70% - On the Job learning",
         "manager approval date": null
+      }
+    ]
+  },
+  "assignment details": {
+    "fields": {
+      "_id": "ObjectId",
+      "employee code": "Number",
+      "name": "String",
+      "email": "String",
+      "assignment status type": "String",
+      "person count": "Number",
+      "designation": "String",
+      "region": "String",
+      "sub department": "String",
+      "department": "String",
+      "grade level": "String",
+      "grade": "Timestamp",
+      "legal employer": "String",
+      "location": "String",
+      "notice period": "Number",
+      "notice period uom": "String",
+      "user person type": "String",
+      "probation period": "Number",
+      "probation unit": "String",
+      "action code": "String",
+      "effective start date": "Timestamp",
+      "effective end date": "Timestamp",
+      "assignment category": "String",
+      "employee category": "String",
+      "normal working hours": "Number",
+      "normal working hours frequency": "String",
+      "probation end date": "Timestamp",
+      "hourly/salaried": "String",
+      "primary phone": "String"
+    },
+    "indexes": {
+      "_id_": {
+        "v": 2,
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
+      }
+    },
+    "samples": [
+      {
+        "_id": {
+          "$oid": "6936c47c3fa5d44b823afbb5"
+        },
+        "employee code": 10,
+        "name": "Irene D'Cunha",
+        "email": "irened@tatasky.com",
+        "assignment status type": "Inactive",
+        "person count": 1,
+        "designation": "Assistant Manager CEO's Office",
+        "region": "Corporate",
+        "sub department": "Executive Office - General",
+        "department": "Executive Office",
+        "grade level": "M4z",
+        "grade": "M4",
+        "legal employer": "Tata Play Ltd.",
+        "location": "Mumbai",
+        "notice period": 1,
+        "notice period uom": "Months",
+        "user person type": "Employee",
+        "probation period": 6,
+        "probation unit": "Months",
+        "action code": "PROMOTION",
+        "effective start date": {
+          "$date": "2010-04-01T00:00:00Z"
+        },
+        "effective end date": {
+          "$date": "2013-03-31T00:00:00Z"
+        },
+        "assignment category": "Full-time",
+        "employee category": "Confirmed",
+        "normal working hours": 8,
+        "normal working hours frequency": "Daily",
+        "probation end date": {
+          "$date": "2005-12-05T00:00:00Z"
+        },
+        "hourly/salaried": "Salaried",
+        "primary phone": "9820374841"
+      },
+      {
+        "_id": {
+          "$oid": "6936c47c3fa5d44b823afbb6"
+        },
+        "employee code": 10,
+        "name": "Irene D'Cunha",
+        "email": "irened@tatasky.com",
+        "assignment status type": "Inactive",
+        "person count": 1,
+        "designation": "Deputy Manager CEO's Office",
+        "region": "Corporate",
+        "sub department": "Executive Office - General",
+        "department": "Executive Office",
+        "grade level": "M4b",
+        "grade": "M4",
+        "legal employer": "Tata Play Ltd.",
+        "location": "Mumbai",
+        "notice period": 1,
+        "notice period uom": "Months",
+        "user person type": "Employee",
+        "probation period": 6,
+        "probation unit": "Months",
+        "action code": "PROMOTION",
+        "effective start date": {
+          "$date": "2013-04-01T00:00:00Z"
+        },
+        "effective end date": {
+          "$date": "2015-03-31T00:00:00Z"
+        },
+        "assignment category": "Full-time",
+        "employee category": "Confirmed",
+        "normal working hours": 8,
+        "normal working hours frequency": "Daily",
+        "probation end date": {
+          "$date": "2005-12-05T00:00:00Z"
+        },
+        "hourly/salaried": "Salaried",
+        "primary phone": "9820374841"
+      }
+    ]
+  },
+  "historical_ratings_and_other_information": {
+    "fields": {
+      "_id": "ObjectId",
+      "employee code": "Number",
+      "first name": "String",
+      "last name": "String",
+      "grade": "Timestamp",
+      "grade level": "String",
+      "designation": "String",
+      "department": "String",
+      "sub department": "String",
+      "location": "String",
+      "office": "String",
+      "region": "String",
+      "date of joining": "Timestamp",
+      "assignment status type": "String",
+      "cy-4": "Number",
+      "cy-3": "Number",
+      "cy-2": "Number",
+      "cy-1": "Number",
+      "last promotion date": [
+        "Null",
+        "Timestamp"
+      ],
+      "current year": "Number",
+      "experience prior to tata play": [
+        "Number",
+        "Null"
+      ],
+      "tata play experience": "Number",
+      "total years experience": "Number",
+      "previous company": "String",
+      "mt batch": "Null",
+      "highest qualification": "String",
+      "university name": "String"
+    },
+    "indexes": {
+      "_id_": {
+        "v": 2,
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
+      }
+    },
+    "samples": [
+      {
+        "_id": {
+          "$oid": "6936ce28cebc7ab32a1f7505"
+        },
+        "employee code": 1004,
+        "first name": "Gyanendra",
+        "last name": "Singh",
+        "grade": "M5",
+        "grade level": "M5a",
+        "designation": "Assistant Manager - Quality",
+        "department": "Technology",
+        "sub department": "Field Engineering and Audit",
+        "location": "Lucknow",
+        "office": "Lucknow",
+        "region": "North",
+        "date of joining": {
+          "$date": "2006-04-03T00:00:00Z"
+        },
+        "assignment status type": "ACTIVE",
+        "cy-4": 3,
+        "cy-3": 3,
+        "cy-2": 3,
+        "cy-1": 3,
+        "last promotion date": null,
+        "current year": 3,
+        "experience prior to tata play": 13,
+        "tata play experience": 19,
+        "total years experience": 32,
+        "previous company": "Adonis Electronics Pvt. Ltd.",
+        "mt batch": null,
+        "highest qualification": "Diploma (Electrical Engineering)",
+        "university name": "Board of Technical Education, U.P."
+      },
+      {
+        "_id": {
+          "$oid": "6936ce28cebc7ab32a1f7506"
+        },
+        "employee code": 1034,
+        "first name": "Monoranjon",
+        "last name": "Dutta",
+        "grade": "M4",
+        "grade level": "M4a",
+        "designation": "Senior Manager - Field Service Delivery",
+        "department": "Field Service Delivery",
+        "sub department": "Field Service Delivery - General",
+        "location": "Kolkata",
+        "office": "Kolkata",
+        "region": "East",
+        "date of joining": {
+          "$date": "2006-04-10T00:00:00Z"
+        },
+        "assignment status type": "ACTIVE",
+        "cy-4": 3,
+        "cy-3": 4,
+        "cy-2": 4,
+        "cy-1": 3,
+        "last promotion date": {
+          "$date": "2014-04-01T00:00:00Z"
+        },
+        "current year": 3,
+        "experience prior to tata play": 8,
+        "tata play experience": 19,
+        "total years experience": 28,
+        "previous company": "Usha International Ltd",
+        "mt batch": null,
+        "highest qualification": "BA",
+        "university name": "Guwahati University"
       }
     ]
   }

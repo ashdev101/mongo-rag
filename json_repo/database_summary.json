@@ -1,438 +1,459 @@
 {
     "entities": {
-        "Employee History and Ratings": {
-            "collection": "historical_ratings_and_other_information",
-            "key_fields": [
-                "_id",
-                "employee code",
-                "first name",
-                "last name",
-                "department",
-                "grade level",
-                "designation",
-                "date of joining"
-            ],
-            "synonyms": [
-                "employee history",
-                "employee histories",
-                "rating history",
-                "past ratings",
-                "performance trend"
-            ],
-            "intent_patterns": [
-                "show rating history for employee",
-                "trend of final rating by year",
-                "list employees by last promotion date",
-                "employees with prior experience over value",
-                "filter history by department or region"
-            ],
-            "ambiguous_fields": [
-                "grade",
-                "grade level",
-                "office",
-                "location",
-                "region"
-            ],
-            "routing_keywords": [
-                "final rating",
-                "last promotion date",
-                "experience",
-                "qualification",
-                "university",
-                "previous company"
-            ]
-        },
         "Goal Setting Status": {
             "collection": "goal_setting_status",
             "key_fields": [
-                "_id",
                 "employee code",
                 "employee name",
-                "manager employee code",
                 "reviewer employee code",
+                "reviewer name",
                 "status",
-                "department"
+                "department",
+                "sub department",
+                "region",
+                "location",
+                "date of joining",
+                "office",
+                "designation",
+                "grade level"
             ],
             "synonyms": [
-                "goal setting status",
-                "goal setting statuses",
-                "goal submission",
-                "goal approval",
-                "goal alignment"
+                "Goal Setting Status",
+                "Goal Setting Statuses",
+                "goal status",
+                "PMS goal setup",
+                "objective setting",
+                "goal planning"
             ],
             "intent_patterns": [
-                "who has not set goals",
-                "show goal status by department",
-                "my team goal setting status",
-                "reviewer status for goals",
-                "list goal approvals pending"
+                "show goal setting status",
+                "goal status for {employee|department}",
+                "who hasn't set goals",
+                "goal planning status by {region|manager}",
+                "pending goal setup"
             ],
             "ambiguous_fields": [
                 "status",
-                "reviewer name",
-                "grade",
-                "grade level",
+                "reviewer",
+                "department",
                 "location",
-                "office",
-                "region"
+                "name",
+                "grade"
             ],
             "routing_keywords": [
-                "goal",
+                "goal setting",
                 "status",
                 "reviewer",
-                "reporting to",
-                "manager"
+                "employee code",
+                "goal",
+                "department",
+                "region",
+                "location",
+                "office",
+                "grade level",
+                "PMS"
             ]
         },
         "PMS Task Status": {
             "collection": "pms_task_status_report_all",
             "key_fields": [
-                "_id",
                 "employee code",
                 "employee name",
-                "manager employee code",
-                "reviewer employee code",
                 "employee evaluation status",
                 "manager evaluation status",
-                "final status"
+                "initiate approval status",
+                "share document status",
+                "final status",
+                "department",
+                "sub department",
+                "region",
+                "manager employee code",
+                "reviewer employee code"
             ],
             "synonyms": [
-                "PMS task status",
-                "PMS task statuses",
-                "performance tasks",
-                "workflow status",
-                "evaluation status"
+                "PMS Task Status",
+                "PMS Task Statuses",
+                "task status",
+                "evaluation workflow",
+                "PMS progress"
             ],
             "intent_patterns": [
-                "where are performance tasks stuck",
-                "show final status by department",
-                "list pending manager evaluations",
-                "initiate approval status",
-                "share document status overview"
+                "show PMS task status",
+                "workflow status for {employee}",
+                "who is pending in PMS",
+                "evaluation status by {department}",
+                "final status summary"
             ],
             "ambiguous_fields": [
-                "final status",
-                "grade",
-                "grade level",
+                "status",
+                "reviewer",
+                "manager",
                 "department",
-                "reviewer name"
+                "name"
             ],
             "routing_keywords": [
-                "employee evaluation",
-                "manager evaluation",
+                "PMS",
+                "task",
+                "evaluation",
                 "initiate approval",
                 "share document",
-                "final status"
+                "final status",
+                "manager evaluation",
+                "employee evaluation",
+                "department",
+                "region"
             ]
         },
-        "Performance Ratings 2025-2026": {
+        "Performance Rating 2025-2026": {
             "collection": "permormance_rating_report_year_2025_2026",
             "key_fields": [
-                "_id",
                 "employee code",
                 "employee name",
-                "department",
+                "performance document name",
+                "manager rating",
+                "self rating",
+                "final status",
                 "manager employee code",
-                "self rating",
-                "manager rating",
-                "final status",
-                "performance document name"
-            ],
-            "synonyms": [
-                "performance rating",
-                "performance ratings",
-                "self rating",
-                "manager rating",
-                "annual rating"
-            ],
-            "intent_patterns": [
-                "show 2025-26 ratings",
-                "list self ratings",
-                "ratings by region",
-                "final status for ratings",
-                "fetch performance document name"
-            ],
-            "ambiguous_fields": [
-                "final status",
-                "grade",
+                "department",
+                "region",
                 "grade level",
                 "designation",
-                "office",
-                "region"
+                "office"
+            ],
+            "synonyms": [
+                "Performance Rating",
+                "Performance Ratings",
+                "ratings",
+                "annual rating",
+                "year-end rating"
+            ],
+            "intent_patterns": [
+                "show year-end ratings",
+                "ratings for {employee|department}",
+                "manager vs self rating",
+                "rating distribution by {region}",
+                "employees with final status {value}"
+            ],
+            "ambiguous_fields": [
+                "rating",
+                "status",
+                "department",
+                "manager",
+                "name"
             ],
             "routing_keywords": [
-                "2025-2026",
+                "performance rating",
                 "self rating",
                 "manager rating",
                 "final status",
-                "performance document name"
+                "performance document name",
+                "2025",
+                "2026",
+                "department",
+                "region"
             ]
         },
         "Performance Goals 2025-2026": {
             "collection": "performance_goal_report_2025_2026",
             "key_fields": [
-                "_id",
                 "employee code",
                 "employee name",
                 "goal name",
                 "goal plan name",
-                "description",
-                "weight",
                 "review period name",
-                "department"
+                "weight",
+                "department",
+                "sub department",
+                "region",
+                "grade level"
             ],
             "synonyms": [
-                "goal",
+                "Performance Goal",
+                "Performance Goals",
                 "goals",
                 "goal plan",
-                "KPIs",
-                "weights"
+                "KRA"
             ],
             "intent_patterns": [
-                "list goals for employee",
-                "goals by department",
-                "sum goal weights",
-                "find goal plan",
-                "goals for review period"
+                "list performance goals",
+                "goals for {employee}",
+                "goals with weight > {number}",
+                "goals by {department|region}",
+                "goal plan {name}"
             ],
             "ambiguous_fields": [
+                "goal",
                 "weight",
-                "grade",
-                "grade level",
                 "department",
-                "region",
-                "sub department"
+                "name"
             ],
             "routing_keywords": [
-                "goal name",
+                "goal",
                 "goal plan",
-                "weight",
                 "review period",
-                "description"
+                "weight",
+                "KRA",
+                "department",
+                "region"
             ]
         },
-        "Quarterly Ratings Q2 25-26": {
+        "PMS Q2 25-26 Ratings": {
             "collection": "pms_q2_25_26_rating_report_all",
             "key_fields": [
-                "_id",
                 "employee code",
                 "employee name",
                 "performance document name",
-                "overall employee rating",
                 "overall manager rating",
+                "overall employee rating",
                 "performance document status",
                 "department",
-                "location"
+                "sub department",
+                "region",
+                "location",
+                "designation",
+                "grade level"
             ],
             "synonyms": [
-                "quarterly rating",
-                "quarterly ratings",
-                "Q2 rating",
-                "manager rating",
-                "document status"
+                "Quarterly Rating",
+                "Quarterly Ratings",
+                "Q2 ratings",
+                "mid-year rating",
+                "PMS Q2"
             ],
             "intent_patterns": [
                 "show Q2 ratings",
-                "list pending performance documents",
-                "compare manager and employee ratings",
-                "Q2 ratings by location",
-                "Q2 ratings by department"
+                "quarterly ratings for {department}",
+                "manager vs employee rating in Q2",
+                "Q2 status {value}",
+                "top performers Q2"
             ],
             "ambiguous_fields": [
-                "location",
+                "rating",
+                "status",
                 "department",
-                "grade level",
-                "grade"
+                "location",
+                "quarter",
+                "name"
             ],
             "routing_keywords": [
                 "Q2",
                 "overall manager rating",
                 "overall employee rating",
                 "performance document status",
-                "performance document name"
+                "department",
+                "region",
+                "location",
+                "PMS"
             ]
         },
-        "Employee Profile and Status": {
+        "Employee Master": {
             "collection": "base_report",
             "key_fields": [
-                "_id",
                 "employee code",
                 "first name",
                 "last name",
                 "email",
                 "department",
-                "designation",
-                "date of joining",
-                "date of leaving",
-                "assignment status type",
-                "manager employee code"
-            ],
-            "synonyms": [
-                "employee",
-                "employees",
-                "staff",
-                "people",
-                "workforce",
-                "headcount"
-            ],
-            "intent_patterns": [
-                "show employee profile",
-                "headcount by department",
-                "list leavers by month",
-                "active versus resigned employees",
-                "find manager of employee"
-            ],
-            "ambiguous_fields": [
-                "assignment status type",
-                "department",
                 "sub department",
-                "location",
-                "office",
                 "region",
                 "state",
+                "location",
+                "office",
+                "assignment status type",
+                "designation",
+                "grade level",
+                "manager employee code",
+                "reporting to",
+                "date of joining",
+                "date of resignation",
+                "date of leaving",
+                "last year rating",
                 "role"
             ],
+            "synonyms": [
+                "Employee Master",
+                "Employee Masters",
+                "employees",
+                "workforce",
+                "HRIS"
+            ],
+            "intent_patterns": [
+                "find employee {code|name}",
+                "list active employees",
+                "leavers this month",
+                "headcount by {region|department}",
+                "org details for {employee}"
+            ],
+            "ambiguous_fields": [
+                "department",
+                "location",
+                "manager",
+                "name",
+                "rating",
+                "status"
+            ],
             "routing_keywords": [
+                "employee",
+                "assignment status type",
                 "date of joining",
                 "date of leaving",
-                "resignation",
                 "manager",
-                "gender",
-                "role",
-                "assignment status type"
+                "region",
+                "location",
+                "office",
+                "department",
+                "grade level",
+                "HRIS"
             ]
         },
         "PIP Transactions": {
             "collection": "pip_transaction_report",
             "key_fields": [
-                "_id",
                 "employee code",
+                "first name",
+                "last name",
                 "employee email",
                 "pip submitted date",
                 "pip completion date",
                 "task status",
+                "pip document status",
                 "assigned to",
+                "manager employee code",
+                "manager email",
+                "rhr employee code",
+                "rhr name",
                 "reviewer employee code",
-                "rhr employee code"
+                "reviewer name"
             ],
             "synonyms": [
+                "PIP Transaction",
+                "PIP Transactions",
                 "PIP",
-                "PIPs",
                 "performance improvement plan",
-                "pip task",
-                "pip document"
+                "PIP cases"
             ],
             "intent_patterns": [
-                "list employees on PIP",
-                "PIP status by department",
-                "overdue PIP tasks",
-                "PIP assigned to person",
-                "show PIP document status"
+                "show PIP cases",
+                "open PIPs",
+                "PIP status by {reviewer|RHR}",
+                "PIP submitted in {period}",
+                "PIP assignee {name}"
             ],
             "ambiguous_fields": [
-                "task status",
-                "reviewer name",
-                "assigned to",
-                "grade",
-                "grade level"
+                "status",
+                "reviewer",
+                "manager",
+                "name",
+                "document"
             ],
             "routing_keywords": [
                 "PIP",
+                "performance improvement plan",
                 "task status",
+                "document status",
                 "assigned to",
-                "pip document status",
-                "rhr",
-                "reviewer"
+                "reviewer",
+                "RHR",
+                "manager"
             ]
         },
         "Offboarding Checklist": {
             "collection": "offboarding_checklist",
             "key_fields": [
-                "_id",
                 "Core HR.employee code",
                 "Core HR.employee name",
+                "Core HR.employee status",
                 "Core HR.department",
+                "Core HR.sub department",
+                "Core HR.region",
                 "Core HR.date of resignation",
                 "Core HR.date of leaving",
                 "Status.all task status",
-                "Core HR.manager name"
+                "Exit Checklist - IT.pc/laptop returned",
+                "Exit Checklist - Facilities.employee id card returned",
+                "Exit Checklist - Payroll.gratuity payable"
             ],
             "synonyms": [
-                "offboarding",
-                "offboardings",
+                "Offboarding Checklist",
+                "Offboarding Checklists",
                 "exit checklist",
-                "clearance",
-                "separation"
+                "separation checklist",
+                "clearance"
             ],
             "intent_patterns": [
-                "offboarding status for employee",
-                "pending exit items by function",
-                "who has not returned assets",
-                "overall exit status",
-                "manager exit confirmation"
+                "show offboarding checklist",
+                "pending exit tasks",
+                "offboarding status by {department}",
+                "who hasn't returned assets",
+                "leavers this month offboarding"
             ],
             "ambiguous_fields": [
-                "employee status",
-                "all task status",
-                "comments",
+                "status",
                 "department",
-                "sub department"
+                "leavers",
+                "name"
             ],
             "routing_keywords": [
+                "offboarding",
                 "exit checklist",
                 "all task status",
+                "employee status",
+                "date of leaving",
                 "facilities",
                 "IT",
-                "finance",
+                "payroll",
                 "RHR",
-                "payroll"
+                "clearance"
             ]
         },
-        "Leave Transactions and Balance": {
+        "Leave Transactions": {
             "collection": "leave_transaction_with_balance_report_leave_transaction_with_balance_report",
             "key_fields": [
-                "_id",
                 "employee code",
                 "employee name",
+                "email",
                 "absence name",
                 "start date",
                 "end date",
                 "duration",
                 "status of leave",
                 "approval status",
-                "balance value",
-                "manager email"
+                "manager email",
+                "balance value"
             ],
             "synonyms": [
+                "Leave Transaction",
+                "Leave Transactions",
                 "leave",
-                "leaves",
                 "time off",
-                "absence",
-                "vacation"
+                "absence"
             ],
             "intent_patterns": [
                 "show leave balance",
-                "list approved leaves",
+                "leaves for {employee}",
                 "pending leave approvals",
-                "leaves by type",
-                "manager leave report"
+                "leave by {period|department}",
+                "absence details"
             ],
             "ambiguous_fields": [
-                "status of leave",
-                "approval status"
+                "status",
+                "name",
+                "manager"
             ],
             "routing_keywords": [
+                "leave",
                 "absence",
-                "leave balance",
                 "approval status",
+                "status of leave",
+                "balance",
                 "start date",
-                "end date"
+                "end date",
+                "duration"
             ]
         },
         "360 Feedback Participants": {
             "collection": "performance_360_degree_feedback_participants_status_all",
             "key_fields": [
-                "_id",
                 "employee code",
                 "employee name",
                 "performance document name",
@@ -440,82 +461,200 @@
                 "role",
                 "role status",
                 "participation status",
-                "department"
+                "department",
+                "sub department",
+                "region",
+                "grade level"
             ],
             "synonyms": [
+                "360 Feedback Participant",
+                "360 Feedback Participants",
                 "360 feedback",
-                "360 feedbacks",
-                "multirater",
-                "peer review",
-                "participants"
+                "multi-rater",
+                "peer review"
             ],
             "intent_patterns": [
-                "list 360 participants",
-                "who has not completed 360",
-                "participants by role",
-                "360 status by document",
-                "360 participation by department"
+                "show 360 participants",
+                "pending 360 feedback",
+                "participant status for {employee}",
+                "360 by {role}",
+                "participation status summary"
             ],
             "ambiguous_fields": [
                 "role",
-                "role status",
-                "participation status",
-                "department",
-                "sub department"
+                "status",
+                "name",
+                "department"
             ],
             "routing_keywords": [
+                "360",
                 "participant",
-                "role",
+                "role status",
                 "participation status",
                 "performance document",
-                "360"
+                "peer",
+                "multi rater",
+                "department"
             ]
         },
-        "Goal Details": {
+        "Goal Detail": {
             "collection": "goal_detail_report",
             "key_fields": [
-                "_id",
                 "employee code",
                 "first name",
                 "last name",
                 "goal type",
                 "goal name",
                 "goal description",
-                "category",
                 "start date",
                 "target completion date",
+                "creation date",
                 "development goal status",
-                "manager approval date",
-                "department"
+                "category",
+                "manager approval date"
             ],
             "synonyms": [
-                "goal",
-                "goals",
+                "Goal Detail",
+                "Goal Details",
                 "development goal",
-                "goal detail",
-                "objectives"
+                "objective",
+                "goal record"
             ],
             "intent_patterns": [
                 "list development goals",
-                "goals due by date",
-                "approved goals",
-                "goals by category",
-                "employee goal details"
+                "overdue goals",
+                "goals by category {name}",
+                "goal details for {employee}",
+                "goal status {value}"
             ],
             "ambiguous_fields": [
-                "goal type",
-                "category",
-                "development goal status",
-                "grade",
-                "grade level",
-                "region"
+                "goal",
+                "status",
+                "name"
             ],
             "routing_keywords": [
                 "goal type",
-                "category",
+                "goal description",
                 "development goal status",
-                "target completion",
-                "manager approval"
+                "target completion date",
+                "category",
+                "objective"
+            ]
+        },
+        "Assignment Details": {
+            "collection": "assignment details",
+            "key_fields": [
+                "employee code",
+                "name",
+                "email",
+                "assignment status type",
+                "designation",
+                "department",
+                "sub department",
+                "region",
+                "location",
+                "legal employer",
+                "effective start date",
+                "effective end date",
+                "assignment category",
+                "employee category",
+                "notice period",
+                "notice period uom",
+                "probation period",
+                "probation unit",
+                "probation end date",
+                "hourly/salaried",
+                "primary phone"
+            ],
+            "synonyms": [
+                "Assignment Detail",
+                "Assignment Details",
+                "assignment",
+                "position assignment",
+                "job assignment"
+            ],
+            "intent_patterns": [
+                "show assignment for {employee}",
+                "active assignments",
+                "probationers",
+                "notice period for {employee}",
+                "assignments by {department|location}"
+            ],
+            "ambiguous_fields": [
+                "status",
+                "department",
+                "location",
+                "name"
+            ],
+            "routing_keywords": [
+                "assignment",
+                "assignment status type",
+                "effective start date",
+                "effective end date",
+                "designation",
+                "legal employer",
+                "notice period",
+                "probation"
+            ]
+        },
+        "Historical Ratings and Profile": {
+            "collection": "historical_ratings_and_other_information",
+            "key_fields": [
+                "employee code",
+                "first name",
+                "last name",
+                "cy-4",
+                "cy-3",
+                "cy-2",
+                "cy-1",
+                "last promotion date",
+                "assignment status type",
+                "experience prior to tata play",
+                "tata play experience",
+                "total years experience",
+                "previous company",
+                "highest qualification",
+                "university name",
+                "designation",
+                "department",
+                "sub department",
+                "location",
+                "office",
+                "region",
+                "grade level"
+            ],
+            "synonyms": [
+                "Historical Rating",
+                "Historical Ratings",
+                "past ratings",
+                "rating history",
+                "profile info"
+            ],
+            "intent_patterns": [
+                "show rating history",
+                "trend for {employee}",
+                "high performers over years",
+                "last promotion dates",
+                "experience summary by {department}"
+            ],
+            "ambiguous_fields": [
+                "rating",
+                "department",
+                "location",
+                "name",
+                "status",
+                "grade"
+            ],
+            "routing_keywords": [
+                "historical ratings",
+                "cy-1",
+                "cy-2",
+                "cy-3",
+                "cy-4",
+                "last promotion date",
+                "experience",
+                "previous company",
+                "qualification"
             ]
         }
     },
@@ -523,247 +662,276 @@
         {
             "term": "status",
             "possible_meanings": [
-                "goal setting status",
-                "PMS workflow status (employee/manager evaluation, initiate approval, share document, final status)",
-                "rating final status (annual 2025-2026)",
-                "performance document status (Q2 25-26)",
-                "leave status",
-                "leave approval status",
+                "goal-setting status",
+                "PMS task final status",
+                "employee evaluation status",
+                "manager evaluation status",
+                "initiate approval status",
+                "share document status",
+                "performance document status",
                 "offboarding all task status",
-                "PIP task status",
-                "employee employment status",
-                "development goal status",
-                "360 role/participation status"
+                "employee status (offboarding)",
+                "role status (360 feedback)",
+                "participation status (360 feedback)",
+                "approval status (leave)",
+                "status of leave"
             ],
             "disambiguation_keywords": [
                 "goal",
                 "PMS",
-                "rating",
-                "performance document",
-                "leave",
+                "evaluation",
+                "approval",
+                "document",
                 "offboarding",
-                "PIP",
-                "employment",
-                "development",
-                "360"
+                "360",
+                "role",
+                "participation",
+                "leave",
+                "employee"
             ],
-            "ask_user": "Which status do you mean: goal setting, PMS workflow, rating final, performance document, leave, offboarding, PIP, employment, development goal, or 360?"
+            "ask_user": "Do you mean goal-setting status, PMS workflow status, performance document status, 360 role/participation status, leave status, or offboarding task status?"
         },
         {
             "term": "reviewer",
             "possible_meanings": [
                 "goal-setting reviewer",
                 "performance reviewer (PMS)",
-                "PIP reviewer",
-                "360 reviewer/participant"
+                "PIP reviewer"
             ],
             "disambiguation_keywords": [
                 "goal",
                 "PMS",
-                "PIP",
-                "360",
-                "performance"
+                "PIP"
             ],
-            "ask_user": "Use goal-setting reviewer, PMS reviewer, PIP reviewer, or 360 reviewer?"
+            "ask_user": "Use goal-setting reviewer, PMS reviewer, or PIP reviewer?"
         },
         {
             "term": "department",
             "possible_meanings": [
-                "employee department (base profile)",
-                "reporting department in PMS/rating reports",
-                "department on PIP record",
-                "department in offboarding"
+                "employee's department (master)",
+                "department in PMS reports",
+                "department in goals",
+                "department in awards/R&R"
             ],
             "disambiguation_keywords": [
-                "base",
+                "employee master",
                 "PMS",
-                "rating",
-                "PIP",
-                "offboarding",
-                "sub department"
+                "goals",
+                "awards",
+                "R&R"
             ],
-            "ask_user": "Is this the base employee department, PMS/rating report department, PIP department, or offboarding department?"
+            "ask_user": "Filter by department from employee master, PMS, goals, or awards?"
         },
         {
             "term": "location",
             "possible_meanings": [
-                "office location",
+                "work location",
+                "office",
                 "region",
-                "state",
-                "circle"
+                "state"
             ],
             "disambiguation_keywords": [
                 "office",
                 "region",
                 "state",
-                "circle",
+                "city",
                 "site"
             ],
-            "ask_user": "Do you mean office location, region, state, or circle?"
+            "ask_user": "Do you mean work location, office, region, or state?"
         },
         {
             "term": "rating",
             "possible_meanings": [
-                "final rating by year (20-21 to 23-24)",
-                "rating 24-25",
-                "last year rating (base)",
-                "self rating (2025-2026)",
-                "manager rating (2025-2026)",
-                "overall employee rating (Q2 25-26)",
-                "overall manager rating (Q2 25-26)"
+                "manager rating (year-end)",
+                "self rating (year-end)",
+                "overall manager rating (quarterly)",
+                "overall employee rating (quarterly)",
+                "historical ratings (cy-4..cy-1)",
+                "last year rating (employee master)"
             ],
             "disambiguation_keywords": [
-                "final",
-                "year",
-                "self",
                 "manager",
+                "self",
                 "overall",
-                "Q2",
-                "2025-2026",
-                "last year"
+                "quarter",
+                "year-end",
+                "historical"
             ],
-            "ask_user": "Which rating: final by year, last year, self, manager, or Q2 overall (employee/manager)?"
+            "ask_user": "Which rating: manager, self, overall quarterly, historical, or last year?"
         },
         {
             "term": "goal",
             "possible_meanings": [
-                "goal name",
-                "goal plan name",
-                "goal type",
-                "development goal details",
-                "goal weight"
+                "performance goals (plan with weights)",
+                "development goals (goal details)",
+                "goal-setting status (setup stage)"
             ],
             "disambiguation_keywords": [
-                "name",
-                "plan",
-                "type",
+                "performance",
                 "development",
+                "setup",
+                "plan",
                 "weight"
             ],
-            "ask_user": "Do you mean goal name, goal plan, goal type, development goal, or goal weight?"
+            "ask_user": "Do you mean performance goals, development goals, or goal-setting status?"
         },
         {
             "term": "weight",
             "possible_meanings": [
-                "goal weight (2025-2026 goals)"
+                "goal weight (performance goals)"
             ],
-            "disambiguation_keywords": [
-                "goal",
-                "KPI",
-                "allocation"
-            ],
-            "ask_user": "Do you mean the goal weight in the 2025-2026 goal plan?"
+            "disambiguation_keywords": [],
+            "ask_user": "Do you mean the goal weight in the performance goal plan?"
         },
         {
             "term": "name",
             "possible_meanings": [
                 "employee name",
-                "first name",
-                "last name",
                 "manager name",
                 "reviewer name",
-                "participant name",
-                "poc name (offboarding CHR Ops)"
+                "receiver name (awards)",
+                "nominator name (awards)",
+                "participant name (360)",
+                "performance document name",
+                "goal name",
+                "award name"
             ],
             "disambiguation_keywords": [
                 "employee",
                 "manager",
                 "reviewer",
+                "receiver",
+                "nominator",
                 "participant",
-                "POC",
-                "first",
-                "last"
-            ],
-            "ask_user": "Whose name: employee, manager, reviewer, participant, or POC? If employee, first name, last name, or full?"
-        },
-        {
-            "term": "leavers",
-            "possible_meanings": [
-                "employees with date of leaving",
-                "employees with date of resignation",
-                "offboarding in progress"
-            ],
-            "disambiguation_keywords": [
-                "leaving",
-                "resignation",
-                "offboarding",
-                "exit"
-            ],
-            "ask_user": "Do you want resigned employees, already left employees, or those currently in offboarding?"
-        },
-        {
-            "term": "top/bottom N",
-            "possible_meanings": [
-                "top or bottom performers by rating",
-                "top or bottom by leave usage",
-                "top or bottom by goal weight or count"
-            ],
-            "disambiguation_keywords": [
-                "top",
-                "bottom",
-                "highest",
-                "lowest",
-                "rating",
-                "leave",
+                "document",
                 "goal",
-                "N"
+                "award"
             ],
-            "ask_user": "Top/bottom based on which metric: rating, leave usage, or goals? And what N?"
-        },
-        {
-            "term": "grade",
-            "possible_meanings": [
-                "grade level (band)",
-                "grade timestamp (effective date in data)",
-                "grade vs grade level distinction"
-            ],
-            "disambiguation_keywords": [
-                "level",
-                "band",
-                "effective date"
-            ],
-            "ask_user": "Do you mean grade level (band) or the grade effective date?"
-        },
-        {
-            "term": "role",
-            "possible_meanings": [
-                "employee role (base report)",
-                "360 participant role"
-            ],
-            "disambiguation_keywords": [
-                "employee",
-                "360",
-                "participant"
-            ],
-            "ask_user": "Is this the employee's job role or the 360 participant role?"
+            "ask_user": "Which name: employee, manager, reviewer, receiver/nominator, participant, performance document, goal, or award?"
         },
         {
             "term": "manager",
             "possible_meanings": [
                 "manager name",
                 "manager employee code",
-                "manager email"
+                "manager email",
+                "manager evaluation",
+                "overall manager rating"
             ],
             "disambiguation_keywords": [
                 "name",
                 "code",
-                "email"
+                "email",
+                "evaluation",
+                "rating"
             ],
-            "ask_user": "Do you need manager name, employee code, or email?"
+            "ask_user": "Do you mean manager name, code, email, evaluation, or rating?"
         },
         {
-            "term": "document status",
+            "term": "leavers",
             "possible_meanings": [
-                "performance document status (Q2 25-26)",
+                "employees with date of leaving (employee master)",
+                "employees in offboarding checklist"
+            ],
+            "disambiguation_keywords": [
+                "date of leaving",
+                "offboarding",
+                "exit checklist"
+            ],
+            "ask_user": "Leavers from employee master or from offboarding checklist?"
+        },
+        {
+            "term": "top/bottom N",
+            "possible_meanings": [
+                "top N ratings",
+                "bottom N ratings",
+                "top N award points",
+                "top N leavers by attribute (e.g., department)"
+            ],
+            "disambiguation_keywords": [
+                "rating",
+                "awards",
+                "points",
+                "leavers",
+                "department",
+                "quarter"
+            ],
+            "ask_user": "Top/bottom N by ratings, award points, or leavers?"
+        },
+        {
+            "term": "quarter",
+            "possible_meanings": [
+                "PMS quarter (e.g., Q2 25-26 ratings)",
+                "R&R award quarter"
+            ],
+            "disambiguation_keywords": [
+                "PMS",
+                "R&R",
+                "award",
+                "rating"
+            ],
+            "ask_user": "Is the quarter for PMS ratings or R&R awards?"
+        },
+        {
+            "term": "role",
+            "possible_meanings": [
+                "employee role (HRIS)",
+                "360 feedback role (participant role)"
+            ],
+            "disambiguation_keywords": [
+                "360",
+                "participant",
+                "HRIS",
+                "employee master"
+            ],
+            "ask_user": "Do you mean the HRIS employee role or the 360 participant role?"
+        },
+        {
+            "term": "document",
+            "possible_meanings": [
+                "performance document name (PMS)",
                 "PIP document status"
             ],
             "disambiguation_keywords": [
                 "performance",
-                "Q2",
                 "PIP",
-                "document"
+                "status"
             ],
-            "ask_user": "Document status for performance (Q2) or for PIP?"
+            "ask_user": "Performance document or PIP document?"
+        },
+        {
+            "term": "code",
+            "possible_meanings": [
+                "employee code",
+                "manager employee code",
+                "reviewer employee code",
+                "receiver employee code (awards)",
+                "nominator employee code (awards)",
+                "RHR employee code"
+            ],
+            "disambiguation_keywords": [
+                "employee",
+                "manager",
+                "reviewer",
+                "receiver",
+                "nominator",
+                "RHR",
+                "awards"
+            ],
+            "ask_user": "Which code: employee, manager, reviewer, receiver, nominator, or RHR?"
+        },
+        {
+            "term": "grade",
+            "possible_meanings": [
+                "grade level",
+                "grade (effective date or band reference)"
+            ],
+            "disambiguation_keywords": [
+                "level",
+                "band",
+                "effective date"
+            ],
+            "ask_user": "Do you mean grade level or the grade field value?"
         }
     ]
 }

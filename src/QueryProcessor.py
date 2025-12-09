@@ -136,7 +136,7 @@ class QueryProcessor:
         nl_for_converter = modified_query if modified_query else result.get("question")
 
         # know which collections to use to resolve the query
-        collections = get_collection(nl_for_converter)
+        collections = get_collection(nl_for_converter , use_rule_based_first=False)
         print("Collections to use for query:", collections)
         # Initialize converter with current query to generate relevant example
         self.converter = NaturalLanguageToMQL(user_query=nl_for_converter, include_collections = collections)

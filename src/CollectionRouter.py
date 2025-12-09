@@ -3,11 +3,14 @@ from CollectionRouterVectorBased import CollectionRouterVectorBased
 from SemanticDictionaryProcessor import SemanticDictionaryProcessor
 
 class CollectionRouterAgent:
-    def __init__(self , collectionRouterRuleBased : CollectionRouterRuleBased , collectionRouterVector : CollectionRouterVectorBased  ) :
+    def __init__(self , semanticDictionaryProcessor : SemanticDictionaryProcessor , collectionRouterRuleBased : CollectionRouterRuleBased , collectionRouterVector : CollectionRouterVectorBased , use_rule_based_first : bool = True , include_default_collection : bool = True) :
+        self.semanticDictionaryProcessor = semanticDictionaryProcessor
         self.collectionRouterRuleBased = collectionRouterRuleBased
         self.collectionRouterVector = collectionRouterVector
+        self.use_rule_based_first = use_rule_based_first
+        self.include_default_collection = include_default_collection
     
-    def route_query(self, user_query: str, include_default_collection: bool = True):
+    def route_query(self, user_query: str):
         """
         Returns ALL collections that match the user query based on routing keywords.
 
@@ -16,11 +19,16 @@ class CollectionRouterAgent:
         Output:
             ["collection1", "collection2", ...]
         """
+
+        # Get default collections
+        matched_collections = [] if not self.include_default_collection else self.semanticDictionaryProcessor.get_default_collections()
+        
         # First use rule-based routing
-        matched_collections = self.collectionRouterRuleBased.route_query(user_query, include_default_collection)
+        if self.use_rule_based_first:
+            matched_collections = self.collectionRouterRuleBased.route_query(user_query, include_default_collection = False)
 
         # If collections matched size is 1, use vector-based routing as fallback
-        if not matched_collections or len(matched_collections) == 1:
+        if not matched_collections or len(matched_collections) <= 1:
             print("Using vector-based routing as fallback...")
             vector_match = self.collectionRouterVector.top_k_collections(user_query)
             if vector_match:
@@ -30,15 +38,15 @@ class CollectionRouterAgent:
 
         return matched_collections
     
-def get_collection(query : str):
+def get_collection(query : str , use_rule_based_first : bool = True) -> list:
     processor = SemanticDictionaryProcessor("./json_repo/database_summary.json")
     defualt_collections = processor.get_default_collections()
     collections = processor.get_collection_routing_list()
     collectionRouterRuleBased = CollectionRouterRuleBased(collections , defualt_collections)
     collectionRouterVectorBased = CollectionRouterVectorBased()
-    router = CollectionRouterAgent(collectionRouterRuleBased , collectionRouterVectorBased)
+    router = CollectionRouterAgent(processor , collectionRouterRuleBased , collectionRouterVectorBased , use_rule_based_first)
     return router.route_query(query)
     
 if __name__ == "__main__":
-    matches = get_collection("Show me my performance rating for this year")
+    matches = get_collection("last promotion date for ashish" , use_rule_based_first=False)
     print(matches)

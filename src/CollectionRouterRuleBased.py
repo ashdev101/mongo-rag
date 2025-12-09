@@ -73,7 +73,7 @@ class CollectionRouterRuleBased:
 # ================================
 
 if __name__ == "__main__":
-    processor = SemanticDictionaryProcessor("database_summary.json")
+    processor = SemanticDictionaryProcessor("./json_repo/database_summary.json")
     collections = processor.get_collection_routing_list()
     defualt_collections = processor.get_default_collections()
     router = CollectionRouterRuleBased(collections , defualt_collections)
@@ -85,10 +85,10 @@ if __name__ == "__main__":
     ]
 
     # for q in queries:
-    collection = router.route_query("My weights?")
-    # print(f"Routed Collection: {collection}\n")
-    result = processor.get_clarification_agent_structure(
-        allowed_collections=collection
-    )
+    collection = router.route_query("education details of employees in grade m2 and m4 working in HR and finance departments in east and west regions")
+    print(f"Routed Collection: {collection}\n")
+    # result = processor.get_clarification_agent_structure(
+    #     allowed_collections=collection
+    # )
 
-    print(json.dumps(result, indent=2))
+    # print(json.dumps(result, indent=2))

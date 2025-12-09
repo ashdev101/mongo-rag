@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 app_dir = os.path.join(os.getcwd())
 load_dotenv(os.path.join(app_dir, ".env"))
 from MongoSchemaInferer import MongoSchemaInferer
+from MongoSchemaReport import MongoSchemaReport
 
 MONGO_URI = os.getenv('MONGODB_URI')
 # DB_NAME = 'hr'
@@ -89,9 +90,12 @@ if __name__ == "__main__":
   print("Extracting MongoDB schema...")
   db_name = "hr-cleaned"
   client = MongoClient(MONGODB_URI)
-  mongoSchemaInferer = MongoSchemaInferer(client, db_name=db_name)
+  mongoSchemaInferer = MongoSchemaInferer(client, db_name=db_name , sample_docs=2)
+  mongoSchemaReport = MongoSchemaReport(client,mongoSchemaInferer=mongoSchemaInferer, db_name=db_name , sample_docs_in_collection_info=2)
 
-  schema = mongoSchemaInferer.extract_schema()
+  schema = mongoSchemaReport.build_full_fields_report()
+
+  # print(json.dumps(schema, indent=2))
 
   print("Generating database summary using LLM...")
   summary = build_summary_document(schema)
