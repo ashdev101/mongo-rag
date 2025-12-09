@@ -4,6 +4,7 @@ from Mongo import NaturalLanguageToMQL
 from langchain_core.messages import HumanMessage, AIMessage
 from langgraph_sample import access_agent
 from CollectionRouter import get_collection
+from aggregation.AggregationRBAC import AggregationRBAC
 
 # =====================================================================
 # Helper: safely get results from converter.print_results()
@@ -71,18 +72,29 @@ class QueryProcessor:
         Returns a dict with status, agent_output, generated_mql and db_results (string).
         """
         state = {
-            "needs_clarification": False,
-            "clarification_question": "",
-            "email": email,
-            "employee_code": 0,
-            "designation": "",
-            "department": "",
-            "region": "",
-            "question": "",
-            "intent": "",
-            "decision": "",
-            "messages": [HumanMessage(content=nl_query)],
-            "modified_query": ""
+        "needs_clarification": False,
+        "clarification_question": "",
+        "email": email,
+        "designation": "",
+        "department" : "",
+        "region" : "",
+        "isSpecialHRUser" : False,
+        "department_exception" : [],
+        "grade_allowed" : [],
+        "region_access" : [],
+        "requested_region" : [],
+        "requested_grade" : [],
+        "requested_department" : [],
+        "access_denied" : False,
+        "access_denied_regions" : [],
+        "access_denied_grades" : [],
+        "access_denied_departments" : [],
+        "access_message" : "",
+        "question": "",
+        "intent": "",
+        "decision": "",
+        "messages": [HumanMessage(content= nl_query)],
+        "modified_query" : ""
         }
 
         # invoke the access agent
@@ -124,12 +136,12 @@ class QueryProcessor:
                 "mql": result.get("clarification_question"),
                 "db_results": clarification_question
             }
-        if decision != "Allowed":
+        if decision != "Access Granted":
             return {
                 "status": "Access Denied",
                 "agent_output": result,
                 "mql": modified_query or result.get("question"),
-                "db_results": "Access Denied"
+                "db_results": result["access_message"]
             }
 
         # Convert to MQL + Execute
@@ -138,8 +150,16 @@ class QueryProcessor:
         # know which collections to use to resolve the query
         collections = get_collection(nl_for_converter , use_rule_based_first=False)
         print("Collections to use for query:", collections)
+        aggregationRBAC = AggregationRBAC(
+                            user={"isHR" : result["department"] == "Human Resources",
+                                   "employeeCode" : result["employee_code"],
+                                    "region" : result.get("asked_region" , []),
+                                    "department" : result.get("asked_department" , []),
+                                    "grades" : result.get("asked_grades" , [])
+                                }
+                            )
         # Initialize converter with current query to generate relevant example
-        self.converter = NaturalLanguageToMQL(user_query=nl_for_converter, include_collections = collections)
+        self.converter = NaturalLanguageToMQL(user_query=nl_for_converter, include_collections = collections , aggregationRBAC= aggregationRBAC , userid=result["employee_code"])
 
         # Some converter implementations expect convert_to_mql_and_execute_query to accept None or empty strings:
         try:
@@ -214,5 +234,5 @@ class QueryProcessor:
 if __name__ == "__main__":
     querProcessor = QueryProcessor()
 
-    ans = querProcessor.process("Subhash.Deokar@tataplay.com" , "My goal status")
+    ans = querProcessor.process("arund@tataplay.com" , "goal status for employee code 1192")
     print(ans)

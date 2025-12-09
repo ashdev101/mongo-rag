@@ -9,6 +9,7 @@ from langchain_mongodb.agent_toolkit import (
 from MONGODB_AGENT_SYS_PROMPT import MONGODB_AGENT_SYSTEM_PROMPT
 from MongoDbDatabseLocalContextAndPiiMasking import MongoDBDatabasePIIToolkit
 from RegexPIIMasker import FieldBasedPIIMasker
+from aggregation.AggregationRBAC import AggregationRBAC
 from pathlib import Path
 
 # Load environment variables from .env file
@@ -38,20 +39,24 @@ NATURAL_LANGUAGE_QUERY = 'how many people have joined the organisation and resig
 
 
 class NaturalLanguageToMQL:
-    def __init__(self, user_query: str = None , include_collections: list = None):
+    def __init__(self, aggregationRBAC : AggregationRBAC , userid: int , user_query: str = None ,include_collections: list = None):
         # self.llm = ChatOpenAI(model="gpt-5")
         # self.llm = ChatOpenAI(model="gpt-4-turbo")
+        
         self.llm = ChatOpenAI(model="gpt-4o-mini")
         example = oneshot_example(query=user_query) if user_query else ""
         print("+++++++++Similar Search Result: ",example,"+++++++++++++++++++++")
         print("========Inside Mongo.py for execution========")
-        self.system_message = MONGODB_AGENT_SYSTEM_PROMPT.format(top_k=50, example=example)
+        self.userid = userid
+        self.system_message = MONGODB_AGENT_SYSTEM_PROMPT.format(top_k=50, example=example , userinfo = {"employee code" : self.userid})
         self.pii_masker = FieldBasedPIIMasker()
+        self.aggregationRBAC = aggregationRBAC
         self.db_wrapper = MongoDBDatabasePIIToolkit.from_connection_string(
             MONGODB_URI,
             database=DB_NAME,
             schema= "./json_repo/mongo_schema_report.json",
             pii_masker=self.pii_masker,
+            aggregationRBAC= self.aggregationRBAC,
             include_collections= include_collections
         )
         self.toolkit = MongoDBDatabaseToolkit(db=self.db_wrapper, llm=self.llm)

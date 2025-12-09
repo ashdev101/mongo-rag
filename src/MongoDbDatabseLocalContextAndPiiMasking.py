@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional , Union , Iterable
 from pymongo.cursor import Cursor
 from pymongo import MongoClient
 import pathlib
+from aggregation.AggregationRBAC import AggregationRBAC
 
 
 class MongoDBDatabasePIIToolkit(MongoDBDatabase):
@@ -23,6 +24,7 @@ class MongoDBDatabasePIIToolkit(MongoDBDatabase):
         client: MongoClient,
         database: str,
         pii_masker: FieldBasedPIIMasker,
+        aggregationRBAC : AggregationRBAC,
         schema: Optional[str] = None,
         ignore_collections: Optional[List[str]] = None,
         include_collections: Optional[List[str]] = None,
@@ -40,6 +42,7 @@ class MongoDBDatabasePIIToolkit(MongoDBDatabase):
         )
         self.piiMasker = pii_masker
         self._local_schema = None
+        self.aggregationRBAC = aggregationRBAC
         if schema:        # <--- schema argument contains path to schema.json
             self._load_local_schema(schema)
     # overridde the _get_sample_docs method to add PII masking
@@ -132,6 +135,7 @@ class MongoDBDatabasePIIToolkit(MongoDBDatabase):
             print("===="*20)
             print("Aggregation Pipeline 1 :" , agg_pipeline)
             print("===="*20)
+            agg_pipeline = self.aggregationRBAC.enforce(agg_pipeline)
             result = coll.aggregate(agg_pipeline)
             result_list = list(result)
             # print("Aggregation Result:" , result_list)
