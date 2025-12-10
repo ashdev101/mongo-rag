@@ -11,6 +11,7 @@ from MongoDbDatabseLocalContextAndPiiMasking import MongoDBDatabasePIIToolkit
 from RegexPIIMasker import FieldBasedPIIMasker
 from aggregation.AggregationRBAC import AggregationRBAC
 from pathlib import Path
+from data_context import DataContext
 
 # Load environment variables from .env file
 from dotenv import load_dotenv
@@ -41,14 +42,30 @@ NATURAL_LANGUAGE_QUERY = 'how many people have joined the organisation and resig
 class NaturalLanguageToMQL:
     def __init__(self, aggregationRBAC : AggregationRBAC , userid: int , user_query: str = None ,include_collections: list = None):
         # self.llm = ChatOpenAI(model="gpt-5")
-        # self.llm = ChatOpenAI(model="gpt-4-turbo")
-        
-        self.llm = ChatOpenAI(model="gpt-4o-mini")
+        # self.llm = ChatOpenAI(model="gpt-4-turbo") 
+        self.SYSTEM_INSTRUCTIONS_MONGODB = DataContext
+        self.llm = ChatOpenAI(model="gpt-4o")
         example = oneshot_example(query=user_query) if user_query else ""
         print("+++++++++Similar Search Result: ",example,"+++++++++++++++++++++")
         print("========Inside Mongo.py for execution========")
         self.userid = userid
-        self.system_message = MONGODB_AGENT_SYSTEM_PROMPT.format(top_k=50, example=example , userinfo = {"employee code" : self.userid})
+        self.system_message = MONGODB_AGENT_SYSTEM_PROMPT.format(
+                                top_k=50, 
+                                example=example ,
+                                userinfo = {"employee code" : self.userid} ,
+                                BASE_REPORT_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["base_report"],
+                                OFFBOARDING_CHECKLIST_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["offboarding_checklist"],
+                                LEAVE_TRANSACTION_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["leave_transaction_with_balance_report_leave_transaction_with_balance_report"],
+                                PERFORMANCE_GOAL_REPORT_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["performance_goal_report_2025_2026"],
+                                GOAL_SETTING_STATUS_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["goal_setting_status"],
+                                PERMORMANCE_RATING_REPORT_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["permormance_rating_report"],
+                                PIP_TRANSACTION_REPORT_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["pip_transaction_report"],
+                                PMS_TASK_STATUS_REPORT_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["pms_task_status_report_all"],
+                                PMS_Q2_25_26_RATING_REPORT_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["pms_q2_25_26_rating_report_all"],
+                                PERFORMANCE_360_DEGREE_FEEDBACK_PARTICIPANTS_STATUS_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["performance_360_degree_feedback_participants_status_all"],
+                                HISTORICAL_RATINGS_AND_OTHER_INFORMATION_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["historical_ratings_and_other_information"],
+                                GOAL_DETAIL_REPORT_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["goal_detail_report"],
+                            )
         self.pii_masker = FieldBasedPIIMasker()
         self.aggregationRBAC = aggregationRBAC
         self.db_wrapper = MongoDBDatabasePIIToolkit.from_connection_string(
@@ -70,6 +87,13 @@ class NaturalLanguageToMQL:
         )
 
         self.messages = []
+    
+    # def _load_SystemPrompt(self, schema_path: str):
+    #     with open(schema_path, "r") as f:
+    #         self.SYSTEM_INSTRUCTIONS_MONGODB = json.load(f)
+
+    def get_mongo_prompt(self):
+        return self.system_message
 
     def pii_masking_pre_model_hook(self, state: dict) -> dict:
         messages = state["messages"]
@@ -170,6 +194,15 @@ class NaturalLanguageToMQL:
         
 
 if __name__ == "__main__":
-    converter = NaturalLanguageToMQL()
-    converter.convert_to_mql_and_execute_query(NATURAL_LANGUAGE_QUERY)
-    converter.print_results()
+    aggregationRBAC = AggregationRBAC(
+                    user={"isHR" : False,
+                            "employeeCode" : 7207,
+                            "region" : [],
+                            "department" : [],
+                            "grades" : []
+                        }
+                    )
+    converter = NaturalLanguageToMQL(aggregationRBAC=aggregationRBAC , userid = 7207)
+    print(converter.get_mongo_prompt())
+    # converter.convert_to_mql_and_execute_query(NATURAL_LANGUAGE_QUERY)
+    # converter.print_results()

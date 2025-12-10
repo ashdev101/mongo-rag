@@ -17,17 +17,18 @@ MODEL_NAME = "gpt-5"
 
 client_ai = OpenAI()
 
-def build_summary_document(schema_json):
+def build_summary_document(schema_json , database_explanation):
     prompt = f"""
       You are a Semantic Dictionary Generator Agent.
 
       Your job:
-      Given the MongoDB database schema, produce a BUSINESS-ORIENTED ROUTING DICTIONARY.
+      Given the MongoDB database schema and database explanation, produce a BUSINESS-ORIENTED ROUTING DICTIONARY.
 
       The dictionary must include: entity_name, collection, key_fields, synonyms, intent_patterns, ambiguous_fields, routing_keywords.
 
       SYNONYM MINIMIZATION RULE:
       Generate only 3–6 high-signal synonyms per entity.
+      It should cover the Key Fields in varoius synonym manner
       Include ONLY:
       1) the main business term (singular+plural),
       2) 1–2 common user terms,
@@ -35,7 +36,7 @@ def build_summary_document(schema_json):
       Avoid long lists or rare variations.
 
       INTENT PATTERN RULE:
-      Keep intent patterns short, natural-language, and no more than 5 patterns per entity.
+      Keep intent patterns short, natural-language, and as much as possible as this will also be going to be used for semantic based routing , covering all the key fields in different dimensions .
 
       Ambiguous Terms (global)**  
         - At the end of the dictionary, create a single top-level object `ambiguous_terms`.
@@ -69,6 +70,9 @@ def build_summary_document(schema_json):
 
       Database Schema:
       {json.dumps(schema_json, indent=2)}
+
+      Database explanation :
+      {database_explanation}
       """
     response = client_ai.chat.completions.create(
         model=MODEL_NAME,
@@ -97,8 +101,10 @@ if __name__ == "__main__":
 
   # print(json.dumps(schema, indent=2))
 
+  from data_context import DataContext
+
   print("Generating database summary using LLM...")
-  summary = build_summary_document(schema)
+  summary = build_summary_document(schema , DataContext)
 
   # If summary is already a JSON string, convert it to a dict
   try:

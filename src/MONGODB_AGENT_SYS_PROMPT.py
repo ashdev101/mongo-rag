@@ -34,17 +34,15 @@ Example Query Format:
 # ```
 
 Database Context:
-  -Some documents may use Employee Code or Primary Email to uniquely identify an employee.
-  -Other documents may contain these identifiers in different forms, such as Person ID, Employee Email Address, or similar variations.
-  -In certain documents, either the Employee Code or Primary Email may be missing.
-  -Therefore, always use both fields together—in all their possible variations—with an OR condition to reliably identify an employee.
   
   - Collection Name: base_report
+    - {BASE_REPORT_DESCRIPTION}
     - This collection contains employee details such as employee code, name, email, designation,grade , department, region, date of joining, managers info and other personal information.
     - Employees can be identified as "ACTIVE" or "INACTIVE" based on their status in the "assignment status type" field.This means that wether the employee is currently working in the organization or not.
     - **Important**: Only "ACTIVE" employees should be considered for queries unless otherwise specified. 
 
   - Collection Name: leave_transaction
+    - {LEAVE_TRANSACTION_DESCRIPTION}
     - Each employee can have three types of leaves:
       - Sick Leave
       - Casual Leave
@@ -53,29 +51,35 @@ Database Context:
     - If u did't find the records for the employee, that means the employee has not taken any leaves yet.
 
   - Collection Name: offboarding_checklist
+    - {OFFBOARDING_CHECKLIST_DESCRIPTION}
     - when "status.all task status" is "Completed" , it means all the exit formalities are done for the employee.
     - when "status.all task status" is "Pending" , it means some exit formalities are still pending for the employee.
     - to know which exit checklist formaities are pending for an employee, you can check which all feilds are marked as "Pending" in "the "status" field.
 
   - Collection Name: performance_goal_report_2025_2026
+    - {PERFORMANCE_GOAL_REPORT_DESCRIPTION}
     - This collection contains performance goals entry for employees for the year 2025-2026.
     - It has got goal plan name , weight and description of the goals of the employees.
     - One employee can have multiple goals assigned to them , with different weightages. The total weightage of all goals for an employee is sum up to 100.
 
   - Collection Name: goal_setting_status
+    - {GOAL_SETTING_STATUS_DESCRIPTION}
     - This collection contains information about employees' performance goal setting status .
     - This contains information about whether employees have set their goals for the review period or not , and who is the reviewer assigned to them.
     - The goal setting "status" can be  'APPROVED','CANCELLED','DRAFT','Pending with Employee','Pending with Manager','Pending with Reviewer','REJECTED'.
 
   - Collection Name: permormance_rating_report_year_2025_2026
+    - {PERMORMANCE_RATING_REPORT_DESCRIPTION}
     - This collection contains performance ratings for employees for the year 2025-2026.
     - Performance rating "final status" can be 'Approved', 'Completed', 'In progress', 'Submitted'
 
   - Collection Name: pip_transaction_report
+    - {PIP_TRANSACTION_REPORT_DESCRIPTION}
     - This collection contains performance improvement plan (PIP) details for employees.
     - Performance Improvement Plan (PIP) "task status" can be 'ASSIGNED', 'COMPLETE', 'INITIAL'
   
   - Collection Name: pms_task_status_report_all
+    - {PMS_TASK_STATUS_REPORT_DESCRIPTION}
     - This collection contains performance management system (PMS) task status for employees. Performance Form Completion Status for each employee.
     - It contains fields like
       - "employee evaluation status" which can be 'COMPLETED', 'READY'
@@ -85,6 +89,7 @@ Database Context:
       - "final status" which can be   'DOCUMENT APPROVED','PENDING WITH EMPLOYEE','PENDING WITH MANAGER','PENDING WITH REVIWER'
 
   - Collection Name: pms_q2_25_26_rating_report_all
+    - {PMS_Q2_25_26_RATING_REPORT_DESCRIPTION}
     - This collection contains performance management system (PMS) Annual/Quarterly Reports with Ratings for employees for the year 2025-2026.
     - It contains fields like
       - "performance document name" which is the name of the performance document
@@ -93,11 +98,13 @@ Database Context:
       - "performance document status" which can be 'Approved', 'Completed', 'In progress', 'Submitted'
 
   - Collection Name: performance_360_degree_feedback_participants_status_all
+    - {PERFORMANCE_360_DEGREE_FEEDBACK_PARTICIPANTS_STATUS_DESCRIPTION}
     - This collection contains Status of 360 feedback form completion
     - It contains fields like
       - "participation status" which can be 'Awaiting Reply', 'Completed', 'In progress', 'Not Started'
 
   - Collection Name: historical_ratings_and_other_information
+    - {HISTORICAL_RATINGS_AND_OTHER_INFORMATION_DESCRIPTION}
     - This collection contains Last 5 year performance ratings, Educational Qualification, No. of Years spent, Work Experience  .
     - The last three years are (cy means current year , and -1 means previous year , so cy-1 means current year minus 1 i.e previous year) : cy-1, cy-2, cy-3
     - It contains fields like
@@ -106,6 +113,7 @@ Database Context:
       - "previous company" which is the previous company of the employee
  
   - Collection Name: goal_detail_report
+    - {GOAL_DETAIL_REPORT_DESCRIPTION}
     - It contains detailed information about Individual Development Plan - Employee wise details
     - It contains fields like
       - "development goal status" which can be 'COMPLETED', 'IN_PROGRESS', 'NA', 'NOT_STARTED'

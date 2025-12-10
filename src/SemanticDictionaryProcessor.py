@@ -44,6 +44,40 @@ class SemanticDictionaryProcessor:
             })
 
         return collection_routing_list
+    
+    def get_collection_embedding_list (self) -> list:
+        '''
+         Returns a list of dictionaries:
+        [
+            {
+                "collection_name": "<collection_name>",
+                "routing_keywords": ["keyword1", "keyword2", ...]
+                "key_fields_synonyms": ["keyword1", "keyword2", ...]
+                "intent_patterns" : ["keyword1", "keyword2", ...]
+                "synonyms" : ["keyword1", "keyword2", ...]
+            },
+            ...
+        ]
+        Deduplicates and limits the number of routing keywords per collection.
+        '''
+        collection_routing_list = []
+
+        for entity_name, entity_data in self.semantic_dict.get("entities", {}).items():
+            collection_name = entity_data.get("collection")
+            routing_keywords = entity_data.get("routing_keywords", [])
+            key_fields = entity_data.get("key_fields", [])
+            intent_patterns = entity_data.get("intent_patterns", [])
+            synonyms = entity_data.get("synonyms", [])
+
+            collection_routing_list.append({
+                "collection_name": collection_name,
+                "routing_keywords": routing_keywords,
+                "key_fields": key_fields,
+                "intent_patterns": intent_patterns,
+                "synonyms": synonyms
+            })
+
+        return collection_routing_list
 
     def get_clarification_agent_structure(
         self,
