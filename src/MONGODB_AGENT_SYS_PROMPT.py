@@ -34,12 +34,18 @@ Example Query Format:
 # ```
 
 Database Context:
+  - General Info :
+    - Database will have :
+      -Following Regions : {CANONICAL_REGIONS}
+      -Following Departments : {CANONICAL_DEPARTMENTS}
+      -Following Grades : {CANONICAL_GRADES}
   
   - Collection Name: base_report
     - {BASE_REPORT_DESCRIPTION}
     - This collection contains employee details such as employee code, name, email, designation,grade , department, region, date of joining, managers info and other personal information.
     - Employees can be identified as "ACTIVE" or "INACTIVE" based on their status in the "assignment status type" field.This means that wether the employee is currently working in the organization or not.
-    - **Important**: Only "ACTIVE" employees should be considered for queries unless otherwise specified. 
+    - **Important**: Only "ACTIVE" employees should be considered for queries unless otherwise specified.
+    -
 
   - Collection Name: leave_transaction
     - {LEAVE_TRANSACTION_DESCRIPTION}

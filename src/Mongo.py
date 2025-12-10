@@ -12,6 +12,7 @@ from RegexPIIMasker import FieldBasedPIIMasker
 from aggregation.AggregationRBAC import AggregationRBAC
 from pathlib import Path
 from data_context import DataContext
+from databse_dsitcint_values import CANONICAL_GRADES, CANONICAL_DEPARTMENTS, CANONICAL_REGIONS
 
 # Load environment variables from .env file
 from dotenv import load_dotenv
@@ -53,6 +54,9 @@ class NaturalLanguageToMQL:
                                 top_k=50, 
                                 example=example ,
                                 userinfo = {"employee code" : self.userid} ,
+                                CANONICAL_REGIONS = CANONICAL_REGIONS,
+                                CANONICAL_DEPARTMENTS = CANONICAL_DEPARTMENTS,
+                                CANONICAL_GRADES = CANONICAL_GRADES,
                                 BASE_REPORT_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["base_report"],
                                 OFFBOARDING_CHECKLIST_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["offboarding_checklist"],
                                 LEAVE_TRANSACTION_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["leave_transaction_with_balance_report_leave_transaction_with_balance_report"],
