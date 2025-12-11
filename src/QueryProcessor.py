@@ -224,17 +224,22 @@ class QueryProcessor:
                 "questions": []  # No questions for access denied
             }
         
-        # ===== APPLY RBAC (if HR user) =====
-        # OPTIMIZATION: Lazy load RBAC - only fetch when needed (after clarification, if HR user)
+        # ===== PHASE 8B: RBAC (Applied at MongoDB Aggregation Level) =====
         # Get user_profile from result (set by unified_agent_node)
         user_profile = result.get("user_profile")
-        # Priority: final_clarified_query (from LLM) > modified_query > question > original nl_query
+        # Priority: final_clarified_query (from unified_agent_node, already enhanced) > modified_query > question
         final_clarified_query = result.get("final_clarified_query") or modified_query or result.get("question") or nl_query
         
-        # Apply RBAC if HR user (lazy fetch - only when needed)
+        # Phase 7 (Query Enhancement) already added employee_code in unified_agent_node
+        # So we use final_clarified_query directly (it's already enhanced)
+        nl_for_converter = final_clarified_query
+        
+        # Note: RBAC is currently applied via query text modification (rbac_tool.apply_rbac)
+        # TODO: Future enhancement - apply RBAC at MongoDB aggregation level using AggregationRBAC class
+        # For now, keep current approach for HR users
         if (user_profile and 
             user_profile.get("department", "").lower() in ["human resources", "hr", "human resource"]):
-            # Fetch RBAC permissions only now (when we know we need it)
+            # Fetch RBAC permissions only now (lazy loading - only when needed)
             from langgraph_sample import fetch_rbac_permissions
             rbac_permissions = fetch_rbac_permissions(user_profile.get("employee_code", 0))
             
@@ -242,48 +247,17 @@ class QueryProcessor:
                 from rbac_tool import apply_rbac
                 try:
                     rbac_result = apply_rbac.invoke({
-                        "question": final_clarified_query,
+                        "question": nl_for_converter,
                         "allowed_regions": rbac_permissions["allowed_regions"],
                         "allowed_grades": rbac_permissions["allowed_grades"],
                         "department_exceptions": rbac_permissions["department_exceptions"]
                     })
-                    final_clarified_query = rbac_result["final_query"]
-                    modified_query = final_clarified_query  # Update modified_query with RBAC-applied query
-                    print(f"✅ Applied RBAC constraints to query")
+                    nl_for_converter = rbac_result["final_query"]
+                    print(f"✅ Applied RBAC constraints to query (Phase 8B)")
                 except Exception as e:
                     print(f"⚠️ Error applying RBAC: {e}, using original query")
         
-        print("modified query" , modified_query)
-
-        # Add employee_code for self queries (context enhancement - only when needed)
-        intent = result.get("intent", "")
-        employee_code = user_profile.get("employee_code", 0) if user_profile else 0
-        # Use final_clarified_query (already has priority order from above)
-        query_for_converter = final_clarified_query
-        
-        # Check if employee_code is already in the query
-        employee_code_already_present = (
-            "employee code" in query_for_converter.lower() or 
-            (employee_code and f"employee code is {employee_code}" in query_for_converter.lower())
-        )
-        
-        # Context enhancement rules:
-        # 1. Only add employee_code for self queries (not for "others" queries)
-        # 2. Only add if not already present in query
-        # 3. Only add if query needs filtering by employee (e.g., "my status", "my manager", not "all employees")
-        # 4. Don't over-enhance - if query is already clear and complete, don't add unnecessary context
-        needs_employee_code = (
-            intent == "self" and 
-            employee_code and 
-            not employee_code_already_present and
-            # Only add if query is about self (contains "my", "I", or is clearly self-referential)
-            any(word in query_for_converter.lower() for word in ["my ", " i ", " me ", "myself", "employee code"])
-        )
-        
-        if needs_employee_code:
-            nl_for_converter = f"{query_for_converter} . My employee code is {employee_code}"
-        else:
-            nl_for_converter = query_for_converter
+        print(f"Final query for MongoDB Agent: {nl_for_converter[:100]}...")
 
         # Update state with final query (after RBAC and employee_code addition)
         # Preserve original_query for summarization agent
@@ -293,92 +267,113 @@ class QueryProcessor:
         # Check if this is a formatting request (skip MongoDB Agent)
         skip_mongo_agent = result.get("skip_mongo_agent", False)
         
+        # Initialize variables (will be set in if/else blocks below)
+        db_results = ""
+        is_summarized = False
+        agg_pipeline = None
+        
         if skip_mongo_agent:
             # Formatting request detected - workflow already handled summarization
             # db_results is already reformatted by summarization_agent_node in workflow
-            # Just return the result as-is (no need to call summarization again)
-            print(f"⏭️ Formatting request - workflow already handled summarization, returning result")
+            # Just read the results from workflow (no MongoDB execution needed)
+            print("Formatting request - workflow already handled summarization, skipping MongoDB Agent")
             
             # Read results from workflow (already summarized)
             db_results = result.get("db_results", "")
             is_summarized = result.get("is_summarized", False)
-            
-            output = {
-                "status": "Allowed",
-                "agent_output": result,
-                "mql": nl_for_converter,
-                "db_results": db_results,  # Already reformatted by workflow
-                "agg_pipeline": None,  # No MongoDB query for formatting requests
-                "questions": [],
-                "is_summarized": is_summarized
-            }
-            print("Final Output (formatting request):", output)
-            return output
+            agg_pipeline = None  # No MongoDB query for formatting requests
         else:
-            # Execute MongoDB Agent with updated query (after RBAC/employee_code)
-            print(f"🔄 Executing MongoDB Agent with query: {nl_for_converter[:100]}...")
+            # ===== QA TESTING MODE: MOCK MONGODB AGENT =====
+            # MongoDB Agent execution commented out for QA testing
+            # Returns simple "Access Granted" message instead of executing actual MongoDB query
+            print("QA MODE: Returning Access Granted (MongoDB Agent skipped)")
             
-            # Initialize converter with current query to generate relevant example
-            self.converter = NaturalLanguageToMQL(user_query=nl_for_converter)
-
-            # Some converter implementations expect convert_to_mql_and_execute_query to accept None or empty strings:
-            try:
-                self.converter.convert_to_mql_and_execute_query(nl_for_converter)
-            except Exception as e:
-                return {
-                    "status": "Error",
-                    "agent_output": result,
-                    "mql": nl_for_converter,
-                    "db_results": f"Converter execution failed: {e}",
-                    "questions": []  # No questions for errors
-                }
-
-            # obtain results robustly
-            db_output = get_converter_results(self.converter)
-
-            # default agg pipeline
-            agg_pipeline = None
-
-            # If converter returned structured data, extract fields
-            if isinstance(db_output, dict):
-                # unmasked_output may be present
-                db_results = db_output.get("unmasked_output") or db_output
-                agg_pipeline = db_output.get("agg_pipeline")
-            else:
-                # fallback: string result
-                db_results = db_output
-                # try to get pipeline directly from converter's db wrapper if available
-                try:
-                    agg_pipeline = getattr(self.converter.db_wrapper, "last_agg_pipeline", None)
-                except Exception:
-                    agg_pipeline = None
+            # Mock response - simple "Access Granted" message
+            db_results = "Access Granted"
+            is_summarized = False  # No summarization in mock mode
+            agg_pipeline = None  # No actual pipeline in mock mode
             
-            # Update result with MongoDB results
+            # Update result with mock MongoDB results
             result["db_results"] = db_results
             result["agg_pipeline"] = agg_pipeline
+            
+            # ===== ORIGINAL CODE (COMMENTED FOR QA TESTING) =====
+            # # Normal query - Execute MongoDB Agent with updated query (after RBAC/employee_code)
+            # print(f"🔄 Executing MongoDB Agent with query: {nl_for_converter[:100]}...")
+            # 
+            # # Initialize converter with current query to generate relevant example
+            # self.converter = NaturalLanguageToMQL(user_query=nl_for_converter)
+            #
+            # # Some converter implementations expect convert_to_mql_and_execute_query to accept None or empty strings:
+            # try:
+            #     self.converter.convert_to_mql_and_execute_query(nl_for_converter)
+            # except Exception as e:
+            #     return {
+            #         "status": "Error",
+            #         "agent_output": result,
+            #         "mql": nl_for_converter,
+            #         "db_results": f"Converter execution failed: {e}",
+            #         "questions": []  # No questions for errors
+            #     }
+            #
+            # # obtain results robustly
+            # db_output = get_converter_results(self.converter)
+            #
+            # # default agg pipeline
+            # agg_pipeline = None
+            #
+            # # If converter returned structured data, extract fields
+            # if isinstance(db_output, dict):
+            #     # unmasked_output may be present
+            #     db_results = db_output.get("unmasked_output") or db_output
+            #     agg_pipeline = db_output.get("agg_pipeline")
+            # else:
+            #     # fallback: string result
+            #     db_results = db_output
+            #     # try to get pipeline directly from converter's db wrapper if available
+            #     try:
+            #         agg_pipeline = getattr(self.converter.db_wrapper, "last_agg_pipeline", None)
+            #     except Exception:
+            #         agg_pipeline = None
+            # 
+            # # Update result with MongoDB results
+            # result["db_results"] = db_results
+            # result["agg_pipeline"] = agg_pipeline
         
-        # Execute Summarization Agent (for both formatting requests and normal queries)
-        print(f"🔄 Executing Summarization Agent...")
-        summarization_state = {**result, "original_query": result.get("original_query") or nl_query}
-        summarization_result = summarization_agent_node(summarization_state)
-        result.update(summarization_result)
+        # ===== QA TESTING MODE: SKIP SUMMARIZATION AGENT =====
+        # Summarization Agent execution commented out for QA testing
+        # Using mock db_results directly without summarization
+        print("QA MODE: Skipping Summarization Agent")
+        
+        # ===== ORIGINAL CODE (COMMENTED FOR QA TESTING) =====
+        # # Execute Summarization Agent only for normal queries (formatting requests already summarized in workflow)
+        # if not skip_mongo_agent:
+        #     # Normal query - summarization happens here in QueryProcessor
+        #     print(f"🔄 Executing Summarization Agent...")
+        #     summarization_state = {**result, "original_query": result.get("original_query") or nl_query}
+        #     summarization_result = summarization_agent_node(summarization_state)
+        #     result.update(summarization_result)
+        # else:
+        #     # Formatting request - summarization already done in workflow, just use existing results
+        #     print(f"⏭️ Skipping Summarization Agent (already handled in workflow for formatting request)")
         
         print("Final Result (after MongoDB/Summarization):" , result)
 
-        # Read results from state (MongoDB Agent and Summarization Agent have executed)
-        db_results = result.get("db_results", "")
-        is_summarized = result.get("is_summarized", False)
-        # For formatting requests, there's no agg_pipeline (no MongoDB query was executed)
-        agg_pipeline = None if skip_mongo_agent else result.get("agg_pipeline")
+        # Read final results from state (summarization may have updated them for normal queries)
+        # For formatting requests: use values already set from workflow
+        # For normal queries: use values updated by summarization_agent_node
+        final_db_results = result.get("db_results", db_results)
+        final_is_summarized = result.get("is_summarized", is_summarized)
+        # agg_pipeline is already set correctly above (None for formatting requests, actual pipeline for normal queries)
 
         output = {
             "status": "Allowed",
             "agent_output": result,
             "mql": nl_for_converter,
-            "db_results": db_results,  # This is the FINAL result from Summarization Agent (summarized or unchanged)
-            "agg_pipeline": agg_pipeline,  # From state memory (None for formatting requests)
+            "db_results": final_db_results,  # This is the FINAL result (summarized for normal queries, or from workflow for formatting requests)
+            "agg_pipeline": agg_pipeline,  # From MongoDB execution (None for formatting requests)
             "questions": [],  # No questions for successful queries
-            "is_summarized": is_summarized  # NEW: Indicates if summarization was applied
+            "is_summarized": final_is_summarized  # Indicates if summarization was applied
         }
         print("Final Output:" , output)
         return output

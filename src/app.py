@@ -47,6 +47,23 @@ def run_query(email, question, user_profile=None, needs_routing=False):
         
         output = processor.process(email.strip(), question.strip(), user_profile=user_profile, needs_routing=needs_routing)
         
+        # Debug: Check if output is None or missing required keys
+        if output is None:
+            print("❌ ERROR: processor.process() returned None")
+            return "Error", "Processor returned None", None, "Internal error: Processor returned None", None, []
+        
+        if not isinstance(output, dict):
+            print(f"❌ ERROR: processor.process() returned non-dict: {type(output)}")
+            return "Error", f"Processor returned invalid type: {type(output)}", None, f"Internal error: Invalid output type", None, []
+        
+        # Check for required keys
+        required_keys = ["status", "agent_output", "mql", "db_results"]
+        missing_keys = [key for key in required_keys if key not in output]
+        if missing_keys:
+            print(f"❌ ERROR: Missing keys in output: {missing_keys}")
+            print(f"Available keys: {list(output.keys())}")
+            return "Error", f"Missing keys: {missing_keys}", None, f"Internal error: Missing output keys", None, []
+        
         status = output["status"]
         agent_output = output["agent_output"]
         mql = output["mql"]
@@ -55,18 +72,23 @@ def run_query(email, question, user_profile=None, needs_routing=False):
         questions = output.get("questions", [])  # Get questions as separate field
 
         print("===="*10,"app.py","===="*10)
-        print("User Question:",agent_output.get("question", ""))
+        print("User Question:",agent_output.get("question", "") if isinstance(agent_output, dict) else "N/A")
         print("Generated Output:",output["db_results"])
 
         try:
             agent_out_str = json.dumps(agent_output, indent=2, default=str)
-        except Exception:
+        except Exception as json_err:
+            print(f"⚠️ JSON serialization error: {json_err}, using str()")
             agent_out_str = str(agent_output)
 
         return status, agent_out_str, mql, db_results, agg_pipeline, questions
 
     except Exception as e:
-        return "Error", str(e), None, None, None, []
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"❌ EXCEPTION in run_query: {e}")
+        print(f"Traceback:\n{error_trace}")
+        return "Error", str(e), None, f"Error: {str(e)}", None, []
 
 
 # =====================================================================
@@ -155,6 +177,10 @@ def mql_execute(email, question):
         return status, agent_out_str, mql, db_results
     
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"❌ EXCEPTION in mql_execute: {e}")
+        print(f"Traceback:\n{error_trace}")
         err = safe_json({"error": str(e)})
         return "Error", err, None, str(e)
 

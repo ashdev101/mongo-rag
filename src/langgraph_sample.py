@@ -316,8 +316,9 @@ def detect_formatting_request(query: str, chat_history: List[Dict[str, str]]) ->
 # Continuation Detection (Hybrid Approach)
 # ============================================================================
 
-def detect_continuation_rule_based(query: str, chat_history: List[Dict[str, str]]) -> tuple[str, bool]:
+def detect_continuation_rule_based(query: str, chat_history: List[Dict[str, str]]) -> tuple[str, float]:
     """
+    Phase 2: Continuation Detection (70% Rule-Based, 30% LLM)
     Fast rule-based continuation detection for common cases.
     Detects if current query is a continuation of previous query (without pronouns).
     
@@ -331,9 +332,9 @@ def detect_continuation_rule_based(query: str, chat_history: List[Dict[str, str]
         chat_history: List of message dicts with "user" and "assistant" keys
     
     Returns:
-        Tuple of (resolved_query, is_confident):
+        Tuple of (resolved_query, confidence):
         - resolved_query: Resolved query with context (or original if not continuation)
-        - is_confident: True if confident it's a continuation, False otherwise
+        - confidence: Float 0.0-1.0 (0.8+ = confident, <0.8 = needs LLM)
     """
     if not query or not chat_history or len(chat_history) == 0:
         return query, False
@@ -366,11 +367,11 @@ def detect_continuation_rule_based(query: str, chat_history: List[Dict[str, str]
                     if entity_type == "manager":
                         resolved = f"my manager {query}"
                         print(f"✅ Rule-based continuation detection (manager): '{query}' → '{resolved}'")
-                        return resolved, True
+                        return resolved, 0.9  # High confidence
                     elif entity_type == "reviewer":
                         resolved = f"my reviewer {query}"
                         print(f"✅ Rule-based continuation detection (reviewer): '{query}' → '{resolved}'")
-                        return resolved, True
+                        return resolved, 0.9  # High confidence
                     elif entity_type == "employee":
                         # Check if previous query was about "my employee" or just "employee"
                         if "my employee" in user_msg or "my employees" in user_msg:
@@ -378,11 +379,11 @@ def detect_continuation_rule_based(query: str, chat_history: List[Dict[str, str]
                         else:
                             resolved = f"employee {query}"
                         print(f"✅ Rule-based continuation detection (employee): '{query}' → '{resolved}'")
-                        return resolved, True
+                        return resolved, 0.85  # High confidence
                     elif entity_type == "department":
                         resolved = f"{query} in my department"
                         print(f"✅ Rule-based continuation detection (department): '{query}' → '{resolved}'")
-                        return resolved, True
+                        return resolved, 0.85  # High confidence
     
     # Rule 2: Check if query is a single field/info request that could continue previous context
     # Common fields: email, name, number, code, id, status, reviewer, manager
@@ -402,23 +403,24 @@ def detect_continuation_rule_based(query: str, chat_history: List[Dict[str, str]
             if "manager" in assistant_msg and ("name" in assistant_msg or "is" in assistant_msg):
                 resolved = f"my manager {query}"
                 print(f"✅ Rule-based continuation detection (from assistant context): '{query}' → '{resolved}'")
-                return resolved, True
+                return resolved, 0.8  # High confidence
             elif "reviewer" in assistant_msg and ("name" in assistant_msg or "is" in assistant_msg):
                 resolved = f"my reviewer {query}"
                 print(f"✅ Rule-based continuation detection (from assistant context): '{query}' → '{resolved}'")
-                return resolved, True
+                return resolved, 0.8  # High confidence
     
     # Not a continuation (or not confident) → let LLM handle
-    return query, False
+    return query, 0.3  # Low confidence, needs LLM
 
 
 # ============================================================================
 # Pronoun Resolution (Hybrid Approach)
 # ============================================================================
 
-def resolve_pronouns_rule_based(query: str, chat_history: List[Dict[str, str]]) -> tuple[str, bool]:
+def resolve_pronouns_rule_based(query: str, chat_history: List[Dict[str, str]]) -> tuple[str, float]:
     """
-    Fast rule-based pronoun resolution for common cases (Hybrid Approach - Option C).
+    Phase 3: Pronoun Resolution (80-90% Rule-Based, 10-20% LLM)
+    Fast rule-based pronoun resolution for common cases.
     Handles all pronouns: his, her, their, he, she, they, it, this, that, him.
     Focuses on insensitive info: email, number, name, code, id for manager/reviewer.
     
@@ -427,9 +429,9 @@ def resolve_pronouns_rule_based(query: str, chat_history: List[Dict[str, str]]) 
         chat_history: List of message dicts with "user" and "assistant" keys
     
     Returns:
-        Tuple of (resolved_query, is_confident):
+        Tuple of (resolved_query, confidence):
         - resolved_query: Resolved query (or original if couldn't resolve)
-        - is_confident: True if resolution is confident (clear entity match), False otherwise
+        - confidence: Float 0.0-1.0 (0.7+ = confident, <0.7 = needs LLM)
     """
     if not query or not chat_history:
         return query, False
@@ -467,29 +469,29 @@ def resolve_pronouns_rule_based(query: str, chat_history: List[Dict[str, str]]) 
     
     if not last_answer_msg:
         # No clear answer found → let LLM handle (not confident)
-        return query, False
+        return query, 0.5  # Low confidence, needs LLM
     
     # Determine entity type from answer message
     entity_type = None
-    is_confident = False
+    confidence = 0.7  # Default confidence for pronoun resolution
     
     # Manager patterns - check for clear manager mentions
     if "manager" in last_answer_msg:
         # Check if it's clearly about manager (not ambiguous)
         if any(pattern in last_answer_msg for pattern in ["your manager", "manager's", "manager is", "manager name"]):
             entity_type = "manager"
-            is_confident = True
+            confidence = 0.9  # High confidence for clear manager mentions
     
     # Reviewer patterns - check for clear reviewer mentions
     if "reviewer" in last_answer_msg and not entity_type:
         # Check if it's clearly about reviewer (not ambiguous)
         if any(pattern in last_answer_msg for pattern in ["your reviewer", "reviewer's", "reviewer is", "reviewer name"]):
             entity_type = "reviewer"
-            is_confident = True
+            confidence = 0.9  # High confidence for clear reviewer mentions
     
     # If no clear entity found, let LLM handle
     if not entity_type:
-        return query, False
+        return query, 0.5  # Low confidence, needs LLM
     
     # Resolve pronouns based on entity type
     resolved_query = query
@@ -542,17 +544,18 @@ def resolve_pronouns_rule_based(query: str, chat_history: List[Dict[str, str]]) 
     
     # Only log if resolution actually happened
     if resolved_query != query:
-        print(f"✅ Rule-based pronoun resolution ({entity_type}): '{query}' → '{resolved_query}' (confident: {is_confident})")
+        print(f"✅ Rule-based pronoun resolution ({entity_type}): '{query}' → '{resolved_query}' (confidence: {confidence:.2f})")
     
-    return resolved_query, is_confident
+    return resolved_query, confidence
 
 
 # ============================================================================
 # Rule-Based Intent Detection (Hybrid Approach)
 # ============================================================================
 
-def detect_intent_rule_based(query: str, user_profile: dict) -> tuple[str, bool, bool]:
+def detect_intent_rule_based(query: str, user_profile: dict) -> tuple[str, bool, float]:
     """
+    Phase 4: Intent Classification + Access Control (60% Rule-Based, 40% LLM, Merged)
     Fast rule-based intent detection for obvious sensitive info requests.
     Catches cases like "when should I wish my manager" → intent="others" → DENY immediately.
     
@@ -561,10 +564,10 @@ def detect_intent_rule_based(query: str, user_profile: dict) -> tuple[str, bool,
         user_profile: User profile dict with designation, department, etc.
     
     Returns:
-        Tuple of (intent, should_deny, is_confident):
+        Tuple of (intent, should_deny, confidence):
         - intent: "others" if detected, None if not confident
         - should_deny: True if should immediately deny (non-HR + others + sensitive), False otherwise
-        - is_confident: True if confident about intent classification, False to let LLM handle
+        - confidence: Float 0.0-1.0 (0.8+ = confident, <0.8 = needs LLM)
     """
     if not query:
         return None, False, False
@@ -572,10 +575,11 @@ def detect_intent_rule_based(query: str, user_profile: dict) -> tuple[str, bool,
     query_lower = query.lower().strip()
     
     # Check if user is HR (HR users have full access)
-    is_hr = user_profile.get("designation", "").lower() in ["hr", "human resources", "hr manager", "hr executive"]
+    department = user_profile.get("department", "").lower() if user_profile else ""
+    is_hr = is_hr_department(department)
     if is_hr:
         # HR users have full access - let LLM handle (no immediate deny)
-        return None, False, False
+        return None, False, 0.9  # HR can access all, confidence high
     
     # Check if query is about manager/reviewer
     is_about_manager = "manager" in query_lower and ("my manager" in query_lower or "manager's" in query_lower or "manager " in query_lower)
@@ -615,33 +619,166 @@ def detect_intent_rule_based(query: str, user_profile: dict) -> tuple[str, bool,
         "how old is", "how old are", "what age is", "what age are", "age of"
     ]
     
-    # Check for explicit sensitive info
-    has_explicit_sensitive = any(pattern in query_lower for pattern in explicit_sensitive)
+    # Check for explicit sensitive info (use word boundaries to avoid substring matches)
+    # CRITICAL FIX: Use regex word boundaries to prevent "age" matching in "manager" (man-age-r)
+    matching_explicit = []
+    for pattern in explicit_sensitive:
+        # Use word boundary regex to match whole words only
+        if re.search(r'\b' + re.escape(pattern) + r'\b', query_lower):
+            matching_explicit.append(pattern)
+    has_explicit_sensitive = len(matching_explicit) > 0
     
     # Check for implicit sensitive info
-    has_implicit_birthday = any(pattern in query_lower for pattern in implicit_birthday_patterns)
-    has_implicit_salary = any(pattern in query_lower for pattern in implicit_salary_patterns)
-    has_implicit_age = any(pattern in query_lower for pattern in implicit_age_patterns)
+    matching_birthday = [pattern for pattern in implicit_birthday_patterns if pattern in query_lower]
+    has_implicit_birthday = len(matching_birthday) > 0
+    
+    matching_salary = [pattern for pattern in implicit_salary_patterns if pattern in query_lower]
+    has_implicit_salary = len(matching_salary) > 0
+    
+    matching_age = [pattern for pattern in implicit_age_patterns if pattern in query_lower]
+    has_implicit_age = len(matching_age) > 0
     
     has_sensitive_info = has_explicit_sensitive or has_implicit_birthday or has_implicit_salary or has_implicit_age
     
-    if has_sensitive_info:
-        # Query is about manager/reviewer AND requesting sensitive info → intent="others"
-        # For non-HR users, this should be denied immediately
-        print(f"🚫 Rule-based intent detection: '{query}' → intent='others' (sensitive info request about manager/reviewer)")
-        return "others", True, True  # should_deny=True for non-HR users
+    # DEBUG: Log which patterns matched
+    if has_sensitive_info and (is_about_manager or is_about_reviewer):
+        print(f"🔍 DEBUG SENSITIVE: query='{query_lower}', matching_explicit={matching_explicit}, matching_birthday={matching_birthday}, matching_salary={matching_salary}, matching_age={matching_age}")
     
     # Check if query is requesting ONLY allowed info (name, email, code, number, id)
     allowed_info = ["name", "email", "code", "number", "id", "employee code", "employee id", "contact", "phone"]
     has_allowed_info = any(info in query_lower for info in allowed_info)
     
-    # If query is about manager/reviewer but only requesting allowed info → intent="self" (let LLM confirm)
+    # Check if query uses "my manager" or "my reviewer" (explicit self-reference)
+    uses_my_manager = "my manager" in query_lower
+    uses_my_reviewer = "my reviewer" in query_lower
+    is_explicit_self_reference = uses_my_manager or uses_my_reviewer
+    
+    # DEBUG: Log the detection state
+    if is_about_manager or is_about_reviewer:
+        print(f"🔍 DEBUG: query='{query}', is_explicit_self_reference={is_explicit_self_reference}, has_allowed_info={has_allowed_info}, has_sensitive_info={has_sensitive_info} (explicit={has_explicit_sensitive}, birthday={has_implicit_birthday}, salary={has_implicit_salary}, age={has_implicit_age})")
+        if has_sensitive_info:
+            print(f"⚠️ WARNING: Query '{query}' detected as sensitive but should be allowed! This is a bug.")
+    
+    # PRIORITY: Check for allowed info FIRST (before sensitive info check)
+    # CRITICAL FIX: "my manager name" should be allowed - check this BEFORE sensitive info check
+    # If query is about manager/reviewer with "my" AND requesting allowed info → intent="self" (explicitly allow)
+    # IMPORTANT: Check allowed info even if sensitive info is detected, because allowed info takes priority
+    if is_explicit_self_reference and has_allowed_info:
+        # Check which allowed info keywords are present
+        present_allowed = [info for info in allowed_info if info in query_lower]
+        
+        # If query contains allowed info (name, email, code, etc.), allow it
+        # This overrides any false positive sensitive info detection
+        # Example: "my manager name" should be allowed even if something incorrectly matches sensitive pattern
+        if present_allowed:
+            # Explicitly set intent="self" with high confidence - these queries are allowed
+            print(f"✅ Rule-based intent detection: '{query}' → intent='self' (my manager/reviewer + allowed info: {present_allowed})")
+            return "self", False, 0.9  # High confidence, don't deny - explicitly allow
+    
+    # Then check for sensitive info (only if not already handled above)
+    if has_sensitive_info:
+        # Query is about manager/reviewer AND requesting sensitive info → intent="others"
+        # For non-HR users, this should be denied immediately
+        print(f"🚫 Rule-based intent detection: '{query}' → intent='others' (sensitive info request about manager/reviewer)")
+        return "others", True, 0.95  # should_deny=True for non-HR users, high confidence
+    
+    # If query is about manager/reviewer but only requesting allowed info (without "my") → let LLM confirm
     if has_allowed_info and not has_sensitive_info:
         # This is likely intent="self" but let LLM confirm (not confident enough to skip LLM)
-        return None, False, False
+        return None, False, 0.6  # Medium confidence, let LLM confirm
+    
+    # Check for "my", "I", "me" → self
+    if re.search(r'\b(my|i|me)\b', query_lower):
+        return "self", False, 0.9  # High confidence for self queries
     
     # If about manager/reviewer but unclear what info → let LLM handle
-    return None, False, False
+    return None, False, 0.5  # Low confidence, needs LLM
+
+
+# ============================================================================
+# Phase 7: Query Enhancement (Rule-Based)
+# ============================================================================
+
+def enhance_query_rule_based(query: str, intent: str, employee_code: int) -> str:
+    """
+    Phase 7: Query Enhancement (100% Rule-Based)
+    Adds employee_code if needed, checks for duplicates.
+    
+    Args:
+        query: Final clarified query
+        intent: "self" or "others"
+        employee_code: User's employee code
+    
+    Returns:
+        Enhanced query with employee_code added (if needed)
+    """
+    if not query or not employee_code:
+        return query
+    
+    query_lower = query.lower()
+    
+    # Check if employee_code already in query
+    employee_code_patterns = [
+        r"employee\s+code",
+        r"employee_code",
+        r"my\s+employee\s+code",
+        r"emp\s+code",
+        r"employee\s+id",
+        r"emp\s+id"
+    ]
+    
+    has_employee_code = any(re.search(pattern, query_lower) for pattern in employee_code_patterns)
+    
+    # Add employee_code based on intent
+    if intent == "self" and not has_employee_code:
+        enhanced_query = f"{query}. My employee code is {employee_code}"
+        print(f"✅ Query enhancement: Added employee_code for self query")
+        return enhanced_query
+    
+    return query
+
+
+# ============================================================================
+# Phase 8A: Routing (Hybrid - 90% Rule-Based, 10% LLM)
+# ============================================================================
+
+def route_query_rule_based(query: str, needs_routing: bool) -> tuple[str, float]:
+    """
+    Phase 8A: Routing (90% Rule-Based, 10% LLM)
+    Routes query to "document" or "policy".
+    
+    Args:
+        query: Final clarified and enhanced query
+        needs_routing: Whether routing is needed (True for Combined tab)
+    
+    Returns:
+        Tuple of (route, confidence):
+        - route: "document" or "policy"
+        - confidence: Float 0.0-1.0
+    """
+    if not needs_routing:
+        return ("document", 1.0)  # MQL Agent tab - always document
+    
+    query_lower = query.lower()
+    
+    # Rule-based fast path (90% of cases)
+    policy_keywords = ["policy", "regulation", "procedure", "rule", "guideline", "eligibility"]
+    if any(keyword in query_lower for keyword in policy_keywords):
+        return ("policy", 1.0)  # Rule-based, very confident
+    
+    # Default to document (rule-based, high confidence)
+    default_route = ("document", 0.9)
+    
+    # Check for ambiguous patterns (10% of cases)
+    ambiguous_patterns = [
+        "rules for", "rules about", "what are the", "how to", "what should"
+    ]
+    is_ambiguous = any(pattern in query_lower for pattern in ambiguous_patterns)
+    
+    if is_ambiguous:
+        return ("document", 0.5)  # Low confidence, may need LLM
+    
+    return default_route
 
 
 # ============================================================================
@@ -709,29 +846,29 @@ def unified_agent_node(state: Dict[str, Any]) -> Dict[str, Any]:
     # Preserve clarification_progress - let LLM handle new query detection (it has better context)
     clarification_progress = state.get("clarification_progress", {"original_query": "", "pending_ambiguities": {}, "resolved_ambiguities": {}})
     
-    # ===== PHASE 1: CONTINUATION DETECTION (Hybrid: Rule-based first, LLM validates/fallback) =====
+    # ===== PHASE 2: CONTINUATION DETECTION (Hybrid: Rule-based first, LLM validates/fallback) =====
     # Detect if current query is a continuation of previous query (without pronouns)
     # Examples: "my manager name" → "email" → "my manager email"
-    continuation_query, continuation_confident = detect_continuation_rule_based(current_query, chat_history_messages)
+    continuation_query, continuation_confidence = detect_continuation_rule_based(current_query, chat_history_messages)
     
-    # ===== PHASE 2: PRONOUN RESOLUTION (Hybrid: Rule-based first, LLM validates/fallback) =====
+    # ===== PHASE 3: PRONOUN RESOLUTION (Hybrid: Rule-based first, LLM validates/fallback) =====
     # Resolve pronouns in query (or continuation-resolved query)
     # Use continuation-resolved query if continuation was detected, otherwise use original
-    query_for_pronoun_resolution = continuation_query if continuation_confident else current_query
-    resolved_query, pronoun_confident = resolve_pronouns_rule_based(query_for_pronoun_resolution, chat_history_messages)
+    query_for_pronoun_resolution = continuation_query if continuation_confidence >= 0.7 else current_query
+    resolved_query, pronoun_confidence = resolve_pronouns_rule_based(query_for_pronoun_resolution, chat_history_messages)
     
     # Determine final query for LLM
     # If either continuation or pronoun resolution was confident, use resolved query
     # Otherwise, pass original to LLM for full processing
-    is_confident = continuation_confident or pronoun_confident
+    is_confident = continuation_confidence >= 0.8 or pronoun_confidence >= 0.7
     query_for_llm = resolved_query if is_confident else current_query
     
-    # ===== PHASE 3: RULE-BASED INTENT DETECTION (BEFORE LLM - IMMEDIATE DENY FOR OBVIOUS CASES) =====
+    # ===== PHASE 4: INTENT CLASSIFICATION + ACCESS CONTROL (Hybrid: Rule-based first, LLM validates/fallback) =====
     # Check for obvious sensitive info requests about manager/reviewer
     # If detected → immediately deny for non-HR users (skip LLM call)
-    rule_based_intent, should_deny, intent_confident = detect_intent_rule_based(query_for_llm, user_profile)
+    rule_based_intent, should_deny, intent_confidence = detect_intent_rule_based(query_for_llm, user_profile)
     
-    if should_deny and intent_confident:
+    if should_deny and intent_confidence >= 0.8:
         # Obvious sensitive info request about manager/reviewer → immediately deny
         print(f"🚫 Rule-based access denial: '{query_for_llm}' → intent='others' → ACCESS_DENIED (non-HR user requesting sensitive manager/reviewer info)")
         return {
@@ -747,18 +884,20 @@ def unified_agent_node(state: Dict[str, Any]) -> Dict[str, Any]:
         }
     
     # Log processing steps
-    if continuation_confident:
-        print(f"✅ Continuation detected: '{current_query}' → '{continuation_query}'")
-    if pronoun_confident and resolved_query != query_for_pronoun_resolution:
-        print(f"✅ Pronoun resolved: '{query_for_pronoun_resolution}' → '{resolved_query}'")
+    if continuation_confidence >= 0.8:
+        print(f"✅ Continuation detected (confidence: {continuation_confidence:.2f}): '{current_query}' → '{continuation_query}'")
+    if pronoun_confidence >= 0.7 and resolved_query != query_for_pronoun_resolution:
+        print(f"✅ Pronoun resolved (confidence: {pronoun_confidence:.2f}): '{query_for_pronoun_resolution}' → '{resolved_query}'")
     if not is_confident:
-        print(f"ℹ️ Rule-based couldn't resolve, LLM will handle continuation/pronouns: '{current_query}'")
+        print(f"ℹ️ Rule-based couldn't resolve (continuation: {continuation_confidence:.2f}, pronoun: {pronoun_confidence:.2f}), LLM will handle: '{current_query}'")
     
-    # Prepare context for clarification (use query_for_llm for routing - may be resolved or original)
+    # Prepare context for clarification
     processor = get_semantic_processor()
     collections = processor.get_collection_routing_list()
     default_collections = processor.get_default_collections()
-    collection = CollectionRouterAgent(collections, default_collections).route_query(query_for_llm)
+    # Use rule-based routing first (Phase 8A will be applied after clarification)
+    # For now, use default collection routing for clarification context
+    collection = default_collections  # Will be refined after clarification
     structure = processor.get_clarification_agent_structure(allowed_collections=collection)
     
     # HYBRID APPROACH: Filter ambiguous_terms by query content (code-level filtering)
@@ -786,7 +925,7 @@ def unified_agent_node(state: Dict[str, Any]) -> Dict[str, Any]:
         # No ambiguous terms in query and no pending ambiguities → Skip clarification, go straight to ready
         print(f"✅ No ambiguous terms found in query and no pending ambiguities → Skipping clarification, proceeding to ready status")
         # Use rule-based intent if available, otherwise default to "self"
-        default_intent = rule_based_intent if intent_confident else "self"
+        default_intent = rule_based_intent if intent_confidence >= 0.8 else "self"
         # Build a minimal result to proceed without clarification
         result = {
             "status": "ready",
@@ -809,13 +948,13 @@ def unified_agent_node(state: Dict[str, Any]) -> Dict[str, Any]:
         # Pass rule-based results for validation (including intent detection)
         rule_based_results = {
             "original_query": current_query,  # Original query before rule-based processing
-            "continuation_detected": continuation_confident,  # Whether continuation was detected
-            "continuation_resolved": continuation_query if continuation_confident else "",  # Resolved continuation query
-            "continuation_confident": continuation_confident,  # Whether continuation detection was confident
-            "pronoun_resolved": resolved_query if pronoun_confident else "",  # Resolved pronoun query
-            "pronoun_confident": pronoun_confident,  # Whether pronoun resolution was confident
-            "intent_detected": rule_based_intent if intent_confident else None,  # Rule-based intent ("others" or None)
-            "intent_confident": intent_confident,  # Whether intent detection was confident
+            "continuation_detected": continuation_confidence >= 0.8,  # Whether continuation was detected
+            "continuation_resolved": continuation_query if continuation_confidence >= 0.8 else "",  # Resolved continuation query
+            "continuation_confidence": continuation_confidence,  # Confidence score (float)
+            "pronoun_resolved": resolved_query if pronoun_confidence >= 0.7 else "",  # Resolved pronoun query
+            "pronoun_confidence": pronoun_confidence,  # Confidence score (float)
+            "intent_detected": rule_based_intent if intent_confidence >= 0.8 else None,  # Rule-based intent ("others" or None)
+            "intent_confidence": intent_confidence,  # Confidence score (float)
         }
         result = clarify_query(
             query_for_llm, structure["collections"], filtered_ambiguous_terms,
@@ -871,15 +1010,32 @@ def unified_agent_node(state: Dict[str, Any]) -> Dict[str, Any]:
     
     # Handle ready status (all clear, access allowed)
     if status == "ready":
-        final_query = result.get("final_clarified_query", current_query)
+        final_query = result.get("final_clarified_query", query_for_llm)
+        
+        # ===== PHASE 7: QUERY ENHANCEMENT (Rule-Based) =====
+        # Add employee_code if needed (for self queries)
+        employee_code = user_profile.get("employee_code", 0)
+        enhanced_query = enhance_query_rule_based(final_query, intent, employee_code)
+        
+        # ===== PHASE 8A: ROUTING (Hybrid - 90% Rule-Based, 10% LLM) =====
+        route = "document"  # Default
+        route_confidence = 0.9
+        if state.get("needs_routing"):
+            # Try rule-based routing first
+            route, route_confidence = route_query_rule_based(enhanced_query, True)
+            # If confidence is low, use LLM result (if available)
+            if route_confidence < 0.8:
+                route = result.get("route", "document")  # Fallback to LLM result
+            print(f"✅ Routing (confidence: {route_confidence:.2f}): '{enhanced_query[:50]}...' → '{route}'")
+        
         updates.update({
             "needs_clarification": False,
-            "final_clarified_query": final_query, 
-            "question": final_query,
-            "decision": "Allowed"  # Set decision so QueryProcessor knows query is ready
+            "final_clarified_query": enhanced_query,  # Use enhanced query
+            "question": enhanced_query,
+            "modified_query": enhanced_query,  # For backward compatibility
+            "decision": "Allowed",  # Set decision so QueryProcessor knows query is ready
+            "route": route  # Set route for Combined tab
         })
-        if state.get("needs_routing"):
-            updates["route"] = result.get("route", "document")
         return updates
     
     # Unknown status - log warning and default to error
@@ -919,33 +1075,91 @@ def normalize_clarification_state(state: AccessState) -> dict:
     
     return updates
 
-def initialize_chat_history_node(state: AccessState):
+def data_preparation_node(state: AccessState) -> Dict[str, Any]:
     """
-    Load chat history from MongoDB once at session start and store in state.
-    This node should run before input_node on the first query.
+    Phase 1: Input Preparation (100% Rule-Based, Parallel)
+    Fetches user profile, chat history, and semantic dictionary in parallel.
+    Uses session state caching to avoid duplicate fetches.
     """
-    # Check if already loaded
-    if state.get("chat_history_loaded", False):
-        return {}  # Already loaded, no update needed
-    
     email = state.get("email", "")
     if not email:
         return {"chat_history_loaded": True, "chat_history_messages": []}
     
-    # Load chat history from MongoDB
-    chat_history_messages = get_chat_history_as_messages(email)
+    # Check session state for cached data
+    session_state = get_session_state(email)
     
-    # Initialize clarification progress if not exists
+    # Parallel execution using ThreadPoolExecutor
+    from concurrent.futures import ThreadPoolExecutor
+    
+    def fetch_profile():
+        # Use cached profile if available
+        if session_state.get("user_profile"):
+            return session_state["user_profile"]
+        profile = fetch_user_profile(email)
+        session_state["user_profile"] = profile
+        return profile
+    
+    def fetch_history():
+        # Use cached history if available
+        if session_state.get("chat_history_messages"):
+            return session_state["chat_history_messages"]
+        history = get_chat_history_as_messages(email)
+        session_state["chat_history_messages"] = history
+        return history
+    
+    def load_semantic():
+        # Semantic processor is singleton, just return it
+        return get_semantic_processor()
+    
+    # Execute in parallel
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        future_profile = executor.submit(fetch_profile)
+        future_history = executor.submit(fetch_history)
+        future_semantic = executor.submit(load_semantic)
+        
+        user_profile = future_profile.result()
+        chat_history_messages = future_history.result()
+        semantic_processor = future_semantic.result()
+    
+    # Initialize clarification_progress if not exists
     clarification_progress = state.get("clarification_progress", {
         "original_query": "",
-        "clarified_terms": [],
-        "pending_terms": []
+        "pending_ambiguities": {},
+        "resolved_ambiguities": {}
     })
+    
+    # Populate RBAC fields from user_profile and access_record
+    department = user_profile.get("department", "")
+    employee_code = user_profile.get("employee_code", 0)
+    
+    # Initialize RBAC fields
+    region_access = [user_profile.get("region", "")] if is_hr_department(department) else []
+    department_exception = [] if is_hr_department(department) else []
+    grade_allowed = [] if is_hr_department(department) else []
+    special_hr_user = False
+    
+    # Check access_record.json for special HR users
+    rbac_permissions = fetch_rbac_permissions(employee_code)
+    if rbac_permissions:
+        region_access = rbac_permissions.get("allowed_regions", [])
+        department_exception = rbac_permissions.get("department_exceptions", [])
+        grade_allowed = rbac_permissions.get("allowed_grades", [])
+        special_hr_user = True
     
     return {
         "chat_history_loaded": True,
         "chat_history_messages": chat_history_messages,
-        "clarification_progress": clarification_progress
+        "clarification_progress": clarification_progress,
+        "user_profile": user_profile,
+        "employee_code": user_profile.get("employee_code", 0),
+        "designation": user_profile.get("designation", ""),
+        "department": department,
+        "region": user_profile.get("region", ""),
+        "region_access": region_access,
+        "department_exception": department_exception,
+        "grade_allowed": grade_allowed,
+        "isSpecialHRUser": special_hr_user,
+        "rbac_permissions": rbac_permissions
     }
 
 def input_node(state: AccessState):
@@ -1071,80 +1285,9 @@ def ask_for_clarification_node(state: AccessState):
             "resolved_ambiguities": {}
         })
     }
-    # return {
-    #     "messages": [
-    #         AIMessage(content=state["clarification_question"])
-    #     ]
-    # }
-def clarification_condition(state: AccessState):
-    if state.get("needs_clarification", False):
-        return "ask_clarification"   # pause + ask user
-    else:
-        return "modify_query"        # continue normally (skip fetch_role)
-
-# COMMENTED OUT: modify_query_node - Redundant, unified_agent_node already enhances query
-# def modify_query_node(state: dict):
-#     """
-#     Modify query by adding employee_code for self queries.
-#     RBAC constraints are already applied by rbac_tool in app.py, so we don't handle region constraints here.
-#     """
-#     question = state["question"]
-#     intent = state["intent"]
-#     employee_code = state.get("employee_code", 0)
-#     
-#     # Check if employee_code is already in the query (unified agent may have added it)
-#     employee_code_already_present = (
-#         "employee code" in question.lower() or 
-#         (employee_code and f"employee code is {employee_code}" in question.lower())
-#     )
-#     
-#     # Only add employee_code for self queries if not already present
-#     # RBAC constraints are already applied by rbac_tool in app.py
-#     if intent == "self" and employee_code and not employee_code_already_present:
-#         modified_query = f"{question} . My employee code is {employee_code}"
-#     else:
-#         modified_query = question
-# 
-#     return {"modified_query": modified_query}
-
-# COMMENTED OUT: check_access_node - Redundant, unified_agent_node already checks access early
-# def check_access_node(state: AccessState):
-#     """
-#     Check access permissions based on department, intent, and sensitive fields.
-#     
-#     Rules:
-#     - HR users: Can access anyone (self OR others), but RBAC restricts by region
-#     - Non-HR users: 
-#       * Can access self queries for non-sensitive info (name, email, manager name/email, etc.)
-#       * Cannot access sensitive info even for self (DOB, salary, etc.) - only HR can
-#       * Cannot access others' info at all
-#     """
-#     department = state["department"]
-#     intent = state["intent"]
-#     question = state.get("question", "").lower()
-#     
-#     # Check for sensitive fields (even in self queries, non-HR cannot access these)
-#     sensitive_fields = ["date of birth", "dob", "birth date", "salary", "compensation", "pay", "ssn", "social security"]
-#     has_sensitive_field = any(field in question for field in sensitive_fields)
-#     
-#     # Use case-insensitive HR check
-#     if is_hr_department(department):
-#         # HR users: Can access anyone (self OR others), but RBAC restricts by region
-#         decision = "Allowed"
-#     else:
-#         # Non-HR users
-#         if intent == "self":
-#             # Self queries: allowed for non-sensitive info, denied for sensitive info
-#             if has_sensitive_field:
-#                 decision = "Not allowed"  # Even self queries for sensitive info are denied for non-HR
-#             else:
-#                 decision = "Allowed"  # Non-sensitive self queries are allowed
-#         elif intent == "others":
-#             decision = "Not allowed"  # Non-HR cannot access others' info
-#         else:
-#             decision = "Unclear intent"
-# 
-#     return {"decision": decision}
+# Removed: modify_query_node - Redundant, unified_agent_node already enhances query
+# Removed: check_access_node - Redundant, unified_agent_node already checks access early
+# Removed: clarification_condition - Replaced by unified_agent_condition
 
 def summarization_agent_node(state: AccessState) -> Dict[str, Any]:
     """
@@ -1168,6 +1311,42 @@ def summarization_agent_node(state: AccessState) -> Dict[str, Any]:
     
     # Skip if error occurred in MongoDB Agent
     if state.get("error") or "Error" in db_results:
+        return {
+            "db_results": db_results,
+            "is_summarized": False
+        }
+    
+    # FAST PATH: Quick check if result already directly answers the query
+    # Skip LLM call for simple, direct answers (saves time and cost)
+    original_lower = original_query.lower().strip()
+    db_results_lower = db_results.lower().strip()
+    
+    # Check if result is a simple, direct answer (common patterns)
+    is_direct_answer = False
+    
+    # Pattern 1: Result contains key terms from query (for simple queries like "my manager name")
+    # Example: query="my manager name", result="Your manager's name is John Doe"
+    if any(keyword in db_results_lower for keyword in ["name", "email", "code", "number", "id"]):
+        # Check if query is asking for that specific info
+        if any(keyword in original_lower for keyword in ["name", "email", "code", "number", "id", "contact", "phone"]):
+            # Result is concise (less than 200 chars) and contains answer
+            if len(db_results) < 200 and not any(skip_word in db_results_lower for skip_word in ["error", "not found", "no results"]):
+                is_direct_answer = True
+    
+    # Pattern 2: Result starts with answer format (e.g., "Your...", "Found...", "Total...")
+    if db_results_lower.startswith(("your ", "found ", "total ", "there are ", "there is ")):
+        # Check if it's concise and answers the query
+        if len(db_results) < 300:
+            is_direct_answer = True
+    
+    # Pattern 3: Count/Number answers (e.g., "Found 17 employees")
+    if re.search(r'\b(found|total|count|number|there (are|is))\s+\d+', db_results_lower):
+        if any(keyword in original_lower for keyword in ["how many", "count", "total", "number"]):
+            is_direct_answer = True
+    
+    # If result is already a good direct answer, skip LLM call
+    if is_direct_answer:
+        print(f"⏭️ Fast path: Result already directly answers query, skipping LLM summarization")
         return {
             "db_results": db_results,
             "is_summarized": False
@@ -1213,26 +1392,17 @@ def response_node(state: AccessState):
 
 workflow = StateGraph(AccessState)
 
-# def hr_conditional_path(state: dict):
-#     # If HR, go to 'modify_query'; else, skip to 'check_access'
-#     if state["department"] == "Human Resources":
-#         return "modify_query"
-#     else:
-#         return "check_access"
-
-workflow.add_node("initialize_chat_history", initialize_chat_history_node)
 workflow.add_node("input", input_node)
-workflow.add_node("unified_agent", unified_agent_node)  # NEW: Unified agent node (replaces query_clarifying_agent)
+workflow.add_node("data_preparation", data_preparation_node)  # Phase 1: Parallel data fetching
+workflow.add_node("unified_agent", unified_agent_node)  # Phases 0, 2-8: Unified agent
 workflow.add_node("ask_clarification", ask_for_clarification_node)
-# workflow.add_node("modify_query", modify_query_node)  # COMMENTED: Redundant - unified_agent_node already enhances query
-# workflow.add_node("check_access", check_access_node)  # COMMENTED: Redundant - unified_agent_node already checks access
 workflow.add_node("summarization_agent", summarization_agent_node)  # Result summarization node
 workflow.add_node("response", response_node)
 
 
-workflow.set_entry_point("initialize_chat_history")
-workflow.add_edge("initialize_chat_history", "input")
-workflow.add_edge("input", "unified_agent")  # NEW: Go to unified agent after input
+workflow.set_entry_point("input")
+workflow.add_edge("input", "data_preparation")  # Phase 1: Prepare data in parallel
+workflow.add_edge("data_preparation", "unified_agent")  # Phases 0, 2-8: Process query
 
 # Conditional: If clarification needed, ask user; otherwise continue
 def unified_agent_condition(state: AccessState):
@@ -1262,29 +1432,9 @@ workflow.add_conditional_edges(
 )
 
 workflow.add_edge("ask_clarification", END)  # User will respond in next query
-# workflow.add_edge("modify_query", "check_access")  # COMMENTED: Nodes removed from flow
-# workflow.add_edge("check_access", "response")  # COMMENTED: Nodes removed from flow
 workflow.add_edge("summarization_agent", "response")  # After summarization, go to response
 workflow.add_edge("response", END)
 
 access_agent = workflow.compile()
-
-# state = {
-#     "needs_clarification": False,
-#     "clarification_question": "",
-#     "email": "lynetted@tataplay.com",
-#     "designation": "",
-#     "department" : "",
-#     "region" : "",
-#     "question": "",
-#     "intent": "",
-#     "decision": "",
-#     "messages": [HumanMessage(content="Whos my reviewer?")],
-#     "modified_query" : ""
-# }
-
-# result = access_agent.invoke(state)
-# print(result)
-# print(result["decision"])
 
 
