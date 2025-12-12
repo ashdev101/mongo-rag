@@ -212,7 +212,7 @@ class QueryProcessor:
                 "route": route
             }
         
-        # FIX: Check access denied BEFORE applying RBAC (don't waste time on RBAC if access denied)
+        # FIX: Check access denied early (don't waste time if access denied)
         if decision != "Allowed":
             # Extract access denied reason from decision if available
             access_denied_reason = decision if decision else "Access Denied"
@@ -224,42 +224,18 @@ class QueryProcessor:
                 "questions": []  # No questions for access denied
             }
         
-        # ===== PHASE 8B: RBAC (Applied at MongoDB Aggregation Level) =====
-        # Get user_profile from result (set by unified_agent_node)
-        user_profile = result.get("user_profile")
+        # ===== PHASE 8: Prepare Query for MongoDB Agent =====
         # Priority: final_clarified_query (from unified_agent_node, already enhanced) > modified_query > question
         final_clarified_query = result.get("final_clarified_query") or modified_query or result.get("question") or nl_query
         
         # Phase 7 (Query Enhancement) already added employee_code in unified_agent_node
         # So we use final_clarified_query directly (it's already enhanced)
+        # Note: RBAC will be applied at MongoDB aggregation level (not in query text)
         nl_for_converter = final_clarified_query
-        
-        # Note: RBAC is currently applied via query text modification (rbac_tool.apply_rbac)
-        # TODO: Future enhancement - apply RBAC at MongoDB aggregation level using AggregationRBAC class
-        # For now, keep current approach for HR users
-        if (user_profile and 
-            user_profile.get("department", "").lower() in ["human resources", "hr", "human resource"]):
-            # Fetch RBAC permissions only now (lazy loading - only when needed)
-            from langgraph_sample import fetch_rbac_permissions
-            rbac_permissions = fetch_rbac_permissions(user_profile.get("employee_code", 0))
-            
-            if rbac_permissions and rbac_permissions.get("allowed_regions"):
-                from rbac_tool import apply_rbac
-                try:
-                    rbac_result = apply_rbac.invoke({
-                        "question": nl_for_converter,
-                        "allowed_regions": rbac_permissions["allowed_regions"],
-                        "allowed_grades": rbac_permissions["allowed_grades"],
-                        "department_exceptions": rbac_permissions["department_exceptions"]
-                    })
-                    nl_for_converter = rbac_result["final_query"]
-                    print(f"✅ Applied RBAC constraints to query (Phase 8B)")
-                except Exception as e:
-                    print(f"⚠️ Error applying RBAC: {e}, using original query")
         
         print(f"Final query for MongoDB Agent: {nl_for_converter[:100]}...")
 
-        # Update state with final query (after RBAC and employee_code addition)
+        # Update state with final query (after employee_code addition)
         # Preserve original_query for summarization agent
         result["final_clarified_query"] = nl_for_converter
         result["original_query"] = result.get("original_query") or nl_query  # Ensure original_query is set
@@ -298,7 +274,7 @@ class QueryProcessor:
             result["agg_pipeline"] = agg_pipeline
             
             # ===== ORIGINAL CODE (COMMENTED FOR QA TESTING) =====
-            # # Normal query - Execute MongoDB Agent with updated query (after RBAC/employee_code)
+            # # Normal query - Execute MongoDB Agent with updated query (after employee_code)
             # print(f"🔄 Executing MongoDB Agent with query: {nl_for_converter[:100]}...")
             # 
             # # Initialize converter with current query to generate relevant example
