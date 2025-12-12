@@ -1,7 +1,7 @@
 from .MongoDBEmbeddingStore import MongoDBEmbeddingStore   # adjust import to your file path
 from pymongo.errors import DuplicateKeyError
 from .hashing import md5_hash_string
-from .cleaner import clean_text
+from .cleaner import clean_text, mask_data
 def lander(choice, feedback_data):
     """
     feedback_data: {
@@ -35,7 +35,7 @@ def lander(choice, feedback_data):
                 "hash": md5,
                 "query": raw_query,
                 "db_results": agg_list[-1],
-                "agg_pipeline": agg_list[:-2],
+                "agg_pipeline": mask_data(str(agg_list[:-2])),
                 "collection_name": agg_list[-2],
                 "embedding": embedding
             }
