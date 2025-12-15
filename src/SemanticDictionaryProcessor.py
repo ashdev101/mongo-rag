@@ -6,6 +6,7 @@ class SemanticDictionaryProcessor:
         """
         Initialize the processor with the path to the semantic dictionary JSON.
         """
+        self.semantic_dict_path = semantic_dict_path  # Store path for later use
         with open(semantic_dict_path, "r") as f:
             self.semantic_dict = json.load(f)
 
@@ -68,8 +69,8 @@ class SemanticDictionaryProcessor:
         Params:
         - allowed_collections: list[str] or None
             → If provided, only include entities from these collections.
-        - include_default_collection: bool
-            → Includes the default_reports list from schema.
+        
+        Note: Loads ambiguous_terms from database_summary2.json.
         """
 
         collections_output = {}
@@ -97,10 +98,15 @@ class SemanticDictionaryProcessor:
                 "key_fields": key_fields
             }
 
+        # Load ambiguous_terms from database_summary2.json
+        with open("database_summary2.json", "r") as f:
+            ambiguous_dict = json.load(f)
+            ambiguous_terms = ambiguous_dict.get("ambiguous_terms", [])
+
         # Build final structure
         result = {
             "collections": collections_output,
-            "ambiguous_terms": self.semantic_dict.get("ambiguous_terms", [])
+            "ambiguous_terms": ambiguous_terms
         }
 
         return result

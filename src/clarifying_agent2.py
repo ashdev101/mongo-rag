@@ -562,9 +562,11 @@ CORE RULES:
 - Unqualified: "status", "reviewer", "leaves" (only if in ambiguous_terms)
 - Once qualified → DONE, do NOT ask follow-up questions
 
-**RULE 4: Ask All Questions At Once**
-- Identify ALL ambiguities, return ALL questions in one response
-- If 2 ambiguities → 2 questions, if 5 → 5 questions
+**RULE 4: Ask All Questions At Once (CRITICAL)**
+- Identify ALL ambiguities in the query, return ALL questions in one response
+- If query has 2 ambiguous terms → return 2 questions, if 5 → return 5 questions
+- DO NOT skip any ambiguous terms - ask about EVERY unqualified ambiguous term found in the query
+- Check ALL ambiguous_terms provided - if any match the query, include them in questions
 
 **RULE 5: Query Enhancement** (when status="ready")
 - Extract entities from chat history (manager/reviewer names, employee IDs)
@@ -706,9 +708,10 @@ If clarification is needed (MUST return ALL questions at once):
   }}
 }}
 **CRITICAL REQUIREMENTS:**
-- "questions" array MUST contain ALL questions (if 2 ambiguities → 2 questions, if 5 → 5)
+- "questions" array MUST contain ALL questions for ALL ambiguous terms found in the query (if 2 ambiguities → 2 questions, if 5 → 5 questions)
+- DO NOT skip any ambiguous terms - if an ambiguous term from ambiguous_terms appears in the query and is unqualified, you MUST ask about it
 - If FIRST clarification → set original_query to current user_query
-- If status="needs_clarification" → set pending_ambiguities (dict) with ALL terms
+- If status="needs_clarification" → set pending_ambiguities (dict) with ALL ambiguous terms found in the query
 - If status="ready" → clear pending_ambiguities (empty dict), populate resolved_ambiguities (dict)
 - clarification_progress must be: {{"original_query": str, "pending_ambiguities": dict, "resolved_ambiguities": dict}}
 
