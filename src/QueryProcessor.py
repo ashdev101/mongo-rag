@@ -259,19 +259,34 @@ class QueryProcessor:
             is_summarized = result.get("is_summarized", False)
             agg_pipeline = None  # No MongoDB query for formatting requests
         else:
-            # ===== QA TESTING MODE: MOCK MONGODB AGENT =====
-            # MongoDB Agent execution commented out for QA testing
-            # Returns simple "Access Granted" message instead of executing actual MongoDB query
-            print("QA MODE: Returning Access Granted (MongoDB Agent skipped)")
+            # ===== VALIDATION: Enforce strict requirements before QA mode =====
+            # QA mode ONLY runs if ALL conditions are met (decision=Allowed, status=ready, route=document)
+            decision = result.get("decision", "")
+            status = result.get("status", "")
+            route = result.get("route", "document")
             
-            # Mock response - simple "Access Granted" message
-            db_results = "Access Granted"
-            is_summarized = False  # No summarization in mock mode
-            agg_pipeline = None  # No actual pipeline in mock mode
+            # STRICT CHECK: All three conditions MUST be met for QA mode
+            decision_ok = decision and decision.strip().lower() == "allowed"
+            status_ok = status == "ready"
+            route_ok = route != "policy"
             
-            # Update result with mock MongoDB results
-            result["db_results"] = db_results
-            result["agg_pipeline"] = agg_pipeline
+            if decision_ok and status_ok and route_ok:
+                # ===== QA TESTING MODE: MOCK MONGODB AGENT =====
+                # All validation passed - safe to return "Access Granted" for MongoDB queries
+                print("QA MODE: Returning Access Granted (MongoDB Agent skipped)")
+                db_results = "Access Granted"
+                is_summarized = False
+                agg_pipeline = None
+                result["db_results"] = db_results
+                result["agg_pipeline"] = agg_pipeline
+            else:
+                # Validation failed - use appropriate response (should have been caught earlier)
+                print(f"⚠️ QA mode blocked - decision={decision_ok}, status={status_ok}, route={route_ok}")
+                db_results = result.get("db_results", "") or (decision if decision else "Access Denied")
+                is_summarized = False
+                agg_pipeline = None
+                result["db_results"] = db_results
+                result["agg_pipeline"] = agg_pipeline
             
             # ===== ORIGINAL CODE (COMMENTED FOR QA TESTING) =====
             # # Normal query - Execute MongoDB Agent with updated query (after employee_code)
