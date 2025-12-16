@@ -9,7 +9,7 @@
     "DEPARTMENT": "Human Resources",
     "Region": ["Central","Corporate","East","North","South","West"],
     "Grade": ["M3","M4","M5"],
-    "Department_exception": ["HR" ,"Facilities"]
+    "Department_exception": ["Human Resources" ,"Facilities"]
   },
   {
     "Emp Code": 871,
@@ -21,7 +21,7 @@
     "DEPARTMENT": "Human Resources",
     "Region": ["Corporate", "West", "Central"],
     "Grade": ["M3","M4","M5"],
-    "Department_exception": ["HR" ,"Facilities"]
+    "Department_exception": ["Human Resources" ,"Facilities"]
   },
   {
     "Emp Code": 3951,
@@ -33,7 +33,7 @@
     "DEPARTMENT": "Human Resources",
     "Region": ["Central","Corporate","East","North","South","West"],
     "Grade": ["M3","M4","M5"],
-    "Department_exception": ["HR" ,"Facilities"]
+    "Department_exception": ["Human Resources" ,"Facilities"]
   },
   {
     "Emp Code": 3996,
@@ -57,7 +57,7 @@
     "DEPARTMENT": "Human Resources",
     "Region": ["South" , "East"],
     "Grade": ["M3","M4","M5"],
-    "Department_exception": ["HR" ,"Facilities"]
+    "Department_exception": ["Human Resources" ,"Facilities"]
   },
   {
     "Emp Code": 6671,
@@ -69,7 +69,7 @@
     "DEPARTMENT": "Human Resources",
     "Region": ["North"],
     "Grade": ["M3","M4","M5"],
-    "Department_exception": ["HR" ,"Facilities"]
+    "Department_exception": ["Human Resources" ,"Facilities"]
   },
   {
     "Emp Code": 7011,
@@ -105,7 +105,7 @@
     "DEPARTMENT": "Human Resources",
     "Region": ["North"],
     "Grade": ["M3","M4","M5"],
-    "Department_exception": ["HR" ,"Facilities"]
+    "Department_exception": ["Human Resources" ,"Facilities"]
   },
   {
     "Emp Code": 7207,
@@ -117,7 +117,7 @@
     "DEPARTMENT": "Human Resources",
     "Region": ["Corporate", "West" ,"Central"],
     "Grade": ["M3","M4","M5"],
-    "Department_exception": ["HR" ,"Facilities"]
+    "Department_exception": ["Human Resources" ,"Facilities"]
   },
   {
     "Emp Code": 7256,
@@ -129,7 +129,7 @@
     "DEPARTMENT": "Human Resources",
     "Region": ["South" , "East"],
     "Grade": ["M3","M4","M5"],
-    "Department_exception": ["HR" ,"Facilities"]
+    "Department_exception": ["Human Resources" ,"Facilities"]
   },
   {
     "Emp Code": 7565,
@@ -141,7 +141,7 @@
     "DEPARTMENT": "Human Resources",
     "Region": ["North"],
     "Grade": ["M3","M4","M5"],
-    "Department_exception": ["HR" ,"Facilities"]
+    "Department_exception": ["Human Resources" ,"Facilities"]
   },
   {
     "Emp Code": 7634,
