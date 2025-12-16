@@ -353,7 +353,8 @@ class QueryProcessor:
         # Read final results from state (summarization may have updated them for normal queries)
         # For formatting requests: use values already set from workflow
         # For normal queries: use values updated by summarization_agent_node
-        final_db_results = result.get("db_results", db_results)
+        # IMPORTANT: For QA mode, db_results is already set to "Access Granted" above - use it directly
+        final_db_results = db_results if db_results else result.get("db_results", "")
         final_is_summarized = result.get("is_summarized", is_summarized)
         # agg_pipeline is already set correctly above (None for formatting requests, actual pipeline for normal queries)
 

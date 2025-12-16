@@ -497,7 +497,9 @@ PROCESSING PIPELINE (Execute in order):
 - **IF rule-based detected continuation:** Validate against chat history (use if correct, override if incorrect)
 - **IF pending_ambiguities exist:**
   * Check if current query answers them (qualified terms match) → CONTINUATION
-  * Move answered terms to resolved_ambiguities
+  * **Answer Pattern Recognition:** Detect multi-selection patterns: "all", "all of them", "both", "all 3", "all [number]", "yes to all", "everything", or explicit enumeration like "performance and goal", "performance, goal, employee"
+  * **Multi-Value Resolution:** If multi-selection detected → expand to list of all possible values from ambiguous_terms for that term. Example: "all 3 status" → resolve to ["performance status", "goal-setting status", "employee status"]
+  * Move answered terms to resolved_ambiguities (store as list if multi-selection, single value if single selection)
   * If ALL answered → status="ready", merge into original_query
   * Use merged query for subsequent steps
 - **IF no pending_ambiguities and no rule-based continuation:**
@@ -572,6 +574,7 @@ CORE RULES:
 - Extract entities from chat history (manager/reviewer names, employee IDs)
 - Resolve pronouns to entities (e.g., "his email" → "my manager's email")
 - Add entity context: "Tell me his email" + History: "manager name is [Name]" → "Tell me my manager's email. My manager name is [Name]"
+- If resolved_ambiguities contains lists (multiple values) → build query with "and" connectors. Example: resolved_to: ["performance status", "goal status"] → "performance status and goal status"
 - Add employee_code for self queries: "My employee code is {{employee_code}}"
 - Add field mappings if needed: "employee ID (field: employee_code)"
 - Preserve original query structure (connectors, order, "my"/"I" pronouns)
@@ -741,6 +744,8 @@ If everything is clear (no clarification needed):
 **FINAL QUERY BUILDING** (when status="ready"):
 1. Start with original_query from clarification_progress
 2. Replace ambiguous terms with resolved values from resolved_ambiguities
+   - If resolved_to is a list → join with "and": "performance status and goal status and employee status"
+   - If resolved_to is a string → replace directly as before
 3. Preserve structure (order, connectors "and"/"or", "my"/"I" pronouns)
 4. Add entity context from chat history if pronouns were resolved
 5. Add field mappings if needed: "employee ID (field: employee_code)"
@@ -752,6 +757,8 @@ If everything is clear (no clarification needed):
   → Final: "IT department, performance status and performance reviewer"
 - Original: "my status and reviewer" + Resolved: {{"status": "performance status", "reviewer": "performance reviewer"}}
   → Final: "my performance status and performance reviewer. My employee code is 1045"
+- Original: "my status" + Resolved: {{"status": ["performance status", "goal-setting status", "employee status"]}}
+  → Final: "my performance status and goal-setting status and employee status. My employee code is 1045"
 
 **INTENT CLASSIFICATION:**
 - CONTINUATION: Use intent from ORIGINAL query
@@ -926,6 +933,13 @@ Resolved Ambiguities: {resolved_count} term(s)
                             resolved_value = info.get("resolved_to", term)
                         else:
                             resolved_value = str(info)
+                        
+                        # Handle list-based resolved values (multi-selection)
+                        if isinstance(resolved_value, list):
+                            # Join list with "and" connector
+                            resolved_value = " and ".join(resolved_value)
+                        else:
+                            resolved_value = str(resolved_value)
                         
                         # Replace term in original query with resolved value
                         # Use word boundaries to avoid partial matches
