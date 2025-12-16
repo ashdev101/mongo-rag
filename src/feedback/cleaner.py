@@ -1,5 +1,5 @@
 import re
-
+from RegexPIIMasker import FieldBasedPIIMasker
 def clean_text(text):
     """
     Replace all special characters in the given text with a space.
@@ -16,3 +16,14 @@ def clean_text(text):
     cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip()
 
     return cleaned_text
+
+
+def mask_data(text: str) -> str:
+    print("Un-masked agg",text)
+    masker = FieldBasedPIIMasker()
+
+    data_l=eval(text)
+    masked_data1= str(masker.mask(dict(data_l[0]))[0]) 
+    masked_data2= str(masker.mask(dict(data_l[1]))[0])
+    print("Un-masked agg",masked_data1+masked_data2)
+    return "["+masked_data1+","+masked_data2+"]"
