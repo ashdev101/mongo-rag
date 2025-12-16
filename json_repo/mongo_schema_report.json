@@ -591,21 +591,19 @@
   "offboarding_checklist": {
     "fields": {
       "_id": "ObjectId",
-      "Core HR": {
-        "employee code": "Number",
-        "employee name": "String",
-        "grade": "Timestamp",
-        "grade level": "String",
-        "designation": "String",
-        "department": "String",
-        "sub department": "String",
-        "region": "String",
-        "employee status": "String",
-        "manager name": "String",
-        "date of joining": "Timestamp",
-        "date of resignation": "Timestamp",
-        "date of leaving": "Timestamp"
-      },
+      "employee code": "Number",
+      "employee name": "String",
+      "grade": "Timestamp",
+      "grade level": "String",
+      "designation": "String",
+      "department": "String",
+      "sub department": "String",
+      "region": "String",
+      "employee status": "String",
+      "manager name": "String",
+      "date of joining": "Timestamp",
+      "date of resignation": "Timestamp",
+      "date of leaving": "Timestamp",
       "Status": {
         "exit checklist employee": "String",
         "exit checklist reporting manager": "String",
@@ -827,26 +825,24 @@
         "_id": {
           "$oid": "69317515d9c30f3baeffba45"
         },
-        "Core HR": {
-          "employee code": 2220,
-          "employee name": "Anshul Kapoor",
-          "grade": "M3",
-          "grade level": "M3b",
-          "designation": "Assistant General Manager - Facilities",
-          "department": "Facilities",
-          "sub department": "Facilities - General",
-          "region": "North",
-          "employee status": "Active",
-          "manager name": "Chanmeet Singh",
-          "date of joining": {
-            "$date": "2007-01-02T00:00:00Z"
-          },
-          "date of resignation": {
-            "$date": "2025-08-04T00:00:00Z"
-          },
-          "date of leaving": {
-            "$date": "2025-11-03T00:00:00Z"
-          }
+        "employee code": 2220,
+        "employee name": "Anshul Kapoor",
+        "grade": "M3",
+        "grade level": "M3b",
+        "designation": "Assistant General Manager - Facilities",
+        "department": "Facilities",
+        "sub department": "Facilities - General",
+        "region": "North",
+        "employee status": "Active",
+        "manager name": "Chanmeet Singh",
+        "date of joining": {
+          "$date": "2007-01-02T00:00:00Z"
+        },
+        "date of resignation": {
+          "$date": "2025-08-04T00:00:00Z"
+        },
+        "date of leaving": {
+          "$date": "2025-11-03T00:00:00Z"
         },
         "Status": {
           "exit checklist employee": "Pending",
@@ -973,26 +969,24 @@
         "_id": {
           "$oid": "69317515d9c30f3baeffba46"
         },
-        "Core HR": {
-          "employee code": 245,
-          "employee name": "Donthamsetti Venkata Subbarao",
-          "grade": "M4",
-          "grade level": "M4a",
-          "designation": "Senior Manager - Service Training",
-          "department": "Field Service Delivery",
-          "sub department": "Service Training - FSD",
-          "region": "South",
-          "employee status": "Inactive",
-          "manager name": "NA",
-          "date of joining": {
-            "$date": "2005-12-19T00:00:00Z"
-          },
-          "date of resignation": {
-            "$date": "2025-06-18T00:00:00Z"
-          },
-          "date of leaving": {
-            "$date": "2025-06-30T00:00:00Z"
-          }
+        "employee code": 245,
+        "employee name": "Donthamsetti Venkata Subbarao",
+        "grade": "M4",
+        "grade level": "M4a",
+        "designation": "Senior Manager - Service Training",
+        "department": "Field Service Delivery",
+        "sub department": "Service Training - FSD",
+        "region": "South",
+        "employee status": "Inactive",
+        "manager name": "NA",
+        "date of joining": {
+          "$date": "2005-12-19T00:00:00Z"
+        },
+        "date of resignation": {
+          "$date": "2025-06-18T00:00:00Z"
+        },
+        "date of leaving": {
+          "$date": "2025-06-30T00:00:00Z"
         },
         "Status": {
           "exit checklist employee": "Completed",
