@@ -94,15 +94,6 @@ Database Context:
       - "share document status " which can be 'COMPLETED', 'NOT COMPLETED', 'READY'
       - "final status" which can be   'DOCUMENT APPROVED','PENDING WITH EMPLOYEE','PENDING WITH MANAGER','PENDING WITH REVIWER'
 
-  - Collection Name: pms_q2_25_26_rating_report_all
-    - {PMS_Q2_25_26_RATING_REPORT_DESCRIPTION}
-    - This collection contains performance management system (PMS) Annual/Quarterly Reports with Ratings for employees for the year 2025-2026.
-    - It contains fields like
-      - "performance document name" which is the name of the performance document
-      - "overall manager rating" which is the overall rating given by the manager to the employee
-      - "overall employee rating" which is the overall rating given by the employee to themselves
-      - "performance document status" which can be 'Approved', 'Completed', 'In progress', 'Submitted'
-
   - Collection Name: performance_360_degree_feedback_participants_status_all
     - {PERFORMANCE_360_DEGREE_FEEDBACK_PARTICIPANTS_STATUS_DESCRIPTION}
     - This collection contains Status of 360 feedback form completion

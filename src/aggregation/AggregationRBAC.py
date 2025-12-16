@@ -170,6 +170,7 @@ class AggregationRBAC:
             pipeline.insert(0, {"$match": self.security_filter})
 
         print("output pipeline:", pipeline)
+        print("self.user:", self.user)
 
         return pipeline
 
@@ -284,6 +285,118 @@ if __name__ == "__main__":
             pipeline = [{"$match": {"region": "APAC"}}]
             result = AggregationRBAC(self.hr_user_scoped).enforce(deepcopy(pipeline))
             self.assertIn("$and", result[0]["$match"])
+
+        def test_hr_scoped_existing_match_and_lookup(self):
+            pipeline = [
+                        {"$match": {"balance value": {"$gt": 30}}},
+                        {"$lookup": {
+                            "from": "base_report",
+                            "localField": "employee code",
+                            "foreignField": "employee code",
+                            "as": "employee_details"
+                        }},
+                        {"$unwind": "$employee_details"},
+                        {"$match": {
+                            "employee_details.region": "Corporate",
+                            "employee_details.assignment status type": "ACTIVE"
+                        }},
+                        {"$project": {"employee code": 1}},
+                        {"$limit": 50}
+                    ]
+
+            result = AggregationRBAC(self.hr_user_scoped).enforce(deepcopy(pipeline))
+            print("result_lookup" , result)
+            self.assertIn(
+                result , 
+                [
+                    {
+                        "$match": {
+                        "$and": [
+                            {
+                            "balance value": {
+                                "$gt": 30
+                            }
+                            },
+                            {
+                            "$and": [
+                                {
+                                "region": {
+                                    "$in": ["APAC"]
+                                }
+                                },
+                                {
+                                "department": {
+                                    "$in": ["HR"]
+                                }
+                                },
+                                {
+                                "grade": {
+                                    "$in": ["A"]
+                                }
+                                }
+                            ]
+                            }
+                        ]
+                        }
+                    },
+                    {
+                        "$lookup": {
+                        "from": "base_report",
+                        "let": {
+                            "lf": "$employee code"
+                        },
+                        "pipeline": [
+                            {
+                            "$match": {
+                                "$and": [
+                                {
+                                    "region": {
+                                    "$in": ["APAC"]
+                                    }
+                                },
+                                {
+                                    "department": {
+                                    "$in": ["HR"]
+                                    }
+                                },
+                                {
+                                    "grade": {
+                                    "$in": ["A"]
+                                    }
+                                }
+                                ]
+                            }
+                            },
+                            {
+                            "$match": {
+                                "$expr": {
+                                "$eq": ["$employee code", "$$lf"]
+                                }
+                            }
+                            }
+                        ],
+                        "as": "employee_details"
+                        }
+                    },
+                    {
+                        "$unwind": "$employee_details"
+                    },
+                    {
+                        "$match": {
+                        "employee_details.region": "Corporate",
+                        "employee_details.assignment status type": "ACTIVE"
+                        }
+                    },
+                    {
+                        "$project": {
+                        "employee code": 1
+                        }
+                    },
+                    {
+                        "$limit": 50
+                    }
+                ]
+            )
 
         def test_lookup_pipeline_form_hr(self):
             pipeline = [{"$lookup": {

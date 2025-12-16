@@ -151,11 +151,12 @@ class QueryProcessor:
         collections = get_collection(nl_for_converter , use_rule_based_first=False)
         print("Collections to use for query:", collections)
         aggregationRBAC = AggregationRBAC(
-                            user={"isHR" : result["department"] == "Human Resources",
-                                   "employeeCode" : result["employee_code"],
-                                    "region" : result.get("asked_region" , []),
-                                    "department" : result.get("asked_department" , []),
-                                    "grades" : result.get("asked_grades" , [])
+                            user={
+                                    "isHR" : result["department"] == "Human Resources",
+                                    "employeeCode" : result["employee_code"],
+                                    "region" : result.get("requested_region" , []),
+                                    "department" : result.get("requested_department" , []),
+                                    "grades" : result.get("requested_grade" , [])
                                 }
                             )
         # Initialize converter with current query to generate relevant example
@@ -234,5 +235,5 @@ class QueryProcessor:
 if __name__ == "__main__":
     querProcessor = QueryProcessor()
 
-    ans = querProcessor.process("arund@tataplay.com" , "goal status for employee code 1192")
+    ans = querProcessor.process("Shayanta.Chaudhuri@tataplay.com" , "give me the people who have resigned in the year 2025 with m1 , m2 grades")
     print(ans)

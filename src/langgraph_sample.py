@@ -185,8 +185,8 @@ def fetch_role_node(state: AccessState):
     if record and "designation" in record:
         role = record["designation"].lower()
         region = record["region"]
-        region_access = [region] if record["department"] == "Human Resources" else [] #instantiate with single region by default
         department = record["department"]
+        region_access = [region] if record["department"] == "Human Resources" else [] #instantiate with single region by default
         department_exception = [] if record["department"] == "Human Resources" else databse_dsitcint_values.CANONICAL_DEPARTMENTS #no exception by default
         grade_allowed = databse_dsitcint_values.CANONICAL_GRADES if record["department"] == "Human Resources" else [] #all grades by default
         employees_code = record["employee code"]
@@ -527,18 +527,27 @@ def check_access_node(state: AccessState):
     print("asked_departments" , asked_departments)
 
     #check weather the user has the access to the regions , grade , and departments
-    for dep in asked_departments:
-        print("dep" , dep)
-        if dep in department_exceptions:
-            access_denied_departments.append(dep)
-    for reg in asked_regions:
-        print("reg" ,reg)
-        if reg not in regions_access:
-            access_denied_regions.append(reg)
-    for grade in asked_grades:
-        print("grade" , grade)
-        if grade not in grades_allowed:
-            access_denied_grades.append(grade)
+    if asked_departments :
+        for dep in asked_departments:
+            if dep in department_exceptions:
+                access_denied_departments.append(dep)
+    else :
+        departments_to_allow = [x for x in databse_dsitcint_values.CANONICAL_DEPARTMENTS if x not in department_exceptions]
+        asked_departments = departments_to_allow
+
+    if asked_regions :
+        for reg in asked_regions:
+            if reg not in regions_access:
+                access_denied_regions.append(reg)
+    else :
+        asked_regions = state["region_access"]
+    
+    if asked_grades:
+        for grade in asked_grades:
+            if grade not in grades_allowed:
+                access_denied_grades.append(grade)
+    else :
+        asked_grades = state["grade_allowed"]
     
     if access_denied_departments or access_denied_grades or access_denied_regions:
         access_denied = True

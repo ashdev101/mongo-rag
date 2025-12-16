@@ -249,47 +249,6 @@
                 "PMS"
             ]
         },
-        "Quarterly Ratings Q2": {
-            "collection": "pms_q2_25_26_rating_report_all",
-            "key_fields": [
-                "performance document name",
-                "overall manager rating",
-                "overall employee rating",
-                "performance document status"
-            ],
-            "synonyms": [
-                "quarterly rating",
-                "quarterly ratings",
-                "Q2 ratings",
-                "mid-cycle ratings",
-                "manager vs self rating"
-            ],
-            "intent_patterns": [
-                "q2 ratings by employee",
-                "q2 ratings by department",
-                "q2 ratings in region",
-                "compare manager and self ratings",
-                "q2 ratings by manager code",
-                "documents with approved q2 ratings",
-                "q2 ratings at location",
-                "rating distribution for q2"
-            ],
-            "ambiguous_fields": [
-                "performance document status",
-                "location",
-                "department",
-                "overall manager rating",
-                "overall employee rating"
-            ],
-            "routing_keywords": [
-                "Q2",
-                "quarter",
-                "rating",
-                "manager",
-                "self",
-                "performance document"
-            ]
-        },
         "Annual Ratings 2025-2026": {
             "collection": "permormance_rating_report_year_2025_2026",
             "key_fields": [
