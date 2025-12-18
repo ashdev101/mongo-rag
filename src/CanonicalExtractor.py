@@ -180,6 +180,14 @@ if __name__ == "__main__":
                 "departments": ["Business Development", "Executive Office", "Interactive Services"],
                 "regions": ["North", "West"]
             }
+        },
+        {
+            "query": "Share the current year and historical rating with last promotion dates for all employees in hr Department",
+            "expected": {
+                "grades": [],
+                "departments": ["Human Resources"],
+                "regions": []
+            }
         }
     ]
 

@@ -11,5 +11,5 @@ DataContext = {
     "leave_transaction_with_balance_report_leave_transaction_with_balance_report": "",
     "permormance_rating_report": "",
     "historical_ratings_and_other_information": "This captures last 3 years ratings, educational qualification and work experience .",
-    "goal_detail_report": ""
+    "goal_detail_report": "This captures the Individual Development Details for all the employees who have submitted there development plan in the HRMS"
 }
