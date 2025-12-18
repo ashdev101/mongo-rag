@@ -1,9 +1,11 @@
 import gradio as gr
 import json
+import re
 from QueryProcessor import QueryProcessor
 from rag.queryengine import query_main_store
 from query_router import router as query_router
 from memory.memorymanager import push_convo_pair
+from OnePager import OnePager
 
 # =====================================================================
 # Existing processor
@@ -91,10 +93,11 @@ def router(question):
 # =====================================================================
 def combined_execute(email, question):
     """
-    1. Call router
-    2. Execute the actual target agent
-    3. Store conversation history
-    4. Return router output + executed result
+    1. Check for special commands (/onepager)
+    2. Call router for regular queries
+    3. Execute the actual target agent
+    4. Store conversation history
+    5. Return router output + executed result
     """
 
     def safe_json(v):
@@ -104,6 +107,47 @@ def combined_execute(email, question):
             return str(v)
 
     try:
+        # Check for /onepager @<employee_code> command (e.g., /onepager @1001)
+        onepager_match = re.search(r'/onepager\s+@(\d+)', question.strip(), re.IGNORECASE)
+        
+        if onepager_match:
+            employee_code = onepager_match.group(1)
+            
+            # Generate OnePager report
+            onepager = OnePager()
+            try:
+                report = onepager.generate_report_aggregation(employee_code, email)
+                
+                # Format output
+                router_out_str = safe_json({
+                    "route": "onepager",
+                    "command": f"/onepager @{employee_code}",
+                    "employee_code": employee_code
+                })
+                
+                if report.get("status") == "success":
+                    # Format as text
+                    final_output_string = onepager.format_report_text(report)
+                    
+                    # Save to conversation history
+                    try:
+                        push_convo_pair(
+                            email=email,
+                            user_msg=question,
+                            bot_msg=final_output_string
+                        )
+                    except Exception as e:
+                        print("Failed to push conversation history:", e)
+                    
+                    return router_out_str, final_output_string
+                else:
+                    error_msg = report.get("message", "Error generating report")
+                    return router_out_str, error_msg
+                    
+            finally:
+                onepager.close()
+        
+        # Regular query routing
         route_result = query_router(question, email)
         router_out_str = safe_json(route_result)
 
