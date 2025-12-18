@@ -5,8 +5,8 @@ from datetime import datetime
 import logging
 import json
 
-from models import Message, TokenValidationResponse, HealthResponse, CombinedResponse
-from auth import verify_token, extract_user_info
+from backend.models import Message, TokenValidationResponse, HealthResponse, CombinedResponse
+from backend.auth import verify_token, extract_user_info
 from app import combined_execute
 
 logger = logging.getLogger(__name__)

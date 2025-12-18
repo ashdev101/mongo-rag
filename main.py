@@ -16,8 +16,8 @@ from contextlib import asynccontextmanager
 import logging
 
 from app import QueryProcessor
-from config import get_settings
-from routes import router
+from backend.config import get_settings
+from backend.routes import router
 
 # Configure logging
 logging.basicConfig(
