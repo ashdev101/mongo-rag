@@ -7,6 +7,7 @@ class Message(BaseModel):
     """Message request model."""
     text: str
     sender: Optional[str] = "user"
+    email: Optional[str] = None
 
 
 class MessageResponse(BaseModel):

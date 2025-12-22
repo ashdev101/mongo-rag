@@ -117,6 +117,47 @@ async def send_message(
         )
 
 
+@router.post("/api/messages-public", response_model=CombinedResponse)
+async def send_message_public(user_message: Message):
+    """
+    Receive a message without authentication and return response.
+    This endpoint calls combined_execute from app.py as the entry point.
+    Email must be provided in the request body.
+    """
+    try:
+        # Email must come from request body
+        email = user_message.email
+        
+        if not email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email is required in request body"
+            )
+        
+        logger.info(f"Processing public query from {email}")
+        
+        # Call combined_execute function from app.py
+        router_output, final_output = combined_execute(email, user_message.text)
+        
+        # Parse router output if it's a string
+        try:
+            router_data = json.loads(router_output) if isinstance(router_output, str) else router_output
+        except:
+            router_data = {"raw": router_output}
+        
+        return {
+            "router_output": router_data,
+            "final_output": final_output
+        }
+    
+    except Exception as e:
+        logger.exception("Error in send_message_public")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Server error: {str(e)}"
+        )
+
+
 @router.post("/api/query", response_model=CombinedResponse)
 async def query_sync(
     user_message: Message,
