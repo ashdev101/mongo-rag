@@ -1,7 +1,8 @@
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
-from langchain_openai import ChatOpenAI
+# from langchain_openai import ChatOpenAI
 from rag.VectorStoreManager import VectorStoreManager
+from llm.LLMFactory import LLMFactory
 from dotenv import load_dotenv
 import os
 
@@ -22,11 +23,16 @@ If not enough info, say: "Not enough information in the context."
     input_variables=["context", "question"]
 )
 
-llm = ChatOpenAI(
-    api_key=os.getenv("OPENAI_API_KEY"),
-    model_name=MODEL_NAME,
-    temperature=0.4
-)
+# llm = ChatOpenAI(
+#     api_key=os.getenv("OPENAI_API_KEY"),
+#     model_name=MODEL_NAME,
+#     temperature=0.4
+# )
+
+llm = LLMFactory(
+        provider="bedrock",
+        model="qwen.qwen3-235b-a22b-2507-v1:0",
+    ).create()
 
 vector_manager = VectorStoreManager()
 

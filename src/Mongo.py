@@ -13,6 +13,7 @@ from aggregation.AggregationRBAC import AggregationRBAC
 from pathlib import Path
 from data_context import DataContext
 from databse_dsitcint_values import CANONICAL_GRADES, CANONICAL_DEPARTMENTS, CANONICAL_REGIONS
+from llm.LLMFactory import LLMFactory
 
 # Load environment variables from .env file
 from dotenv import load_dotenv
@@ -45,7 +46,11 @@ class NaturalLanguageToMQL:
         # self.llm = ChatOpenAI(model="gpt-5")
         # self.llm = ChatOpenAI(model="gpt-4-turbo") 
         self.SYSTEM_INSTRUCTIONS_MONGODB = DataContext
-        self.llm = ChatOpenAI(model="gpt-4o")
+        # self.llm = ChatOpenAI(model="gpt-4o")
+        self.llm =  LLMFactory(
+                        provider="bedrock",
+                        model="qwen.qwen3-235b-a22b-2507-v1:0",
+                    ).create()
         example = oneshot_example(query=user_query) if user_query else ""
         print("+++++++++Similar Search Result: ",example,"+++++++++++++++++++++")
         print("========Inside Mongo.py for execution========")
