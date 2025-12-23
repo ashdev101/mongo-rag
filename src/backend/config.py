@@ -19,7 +19,14 @@ class Settings:
     AUTHORITY: str = f"https://login.microsoftonline.com/{TENANT_ID}"
     JWKS_URL: str = f"{AUTHORITY}/discovery/v2.0/keys"
     APP_ID_URI: str = os.getenv("APP_ID_URI", f"api://{CLIENT_ID}")
-    
+    BROWSER_TOKEN_SECRET : str = os.getenv("BROWSER_TOKEN_SECRET", "CHANGE_ME_STRONG_RANDOM")
+    BROWSER_TOKEN_TTL : str = int(os.getenv("BROWSER_TOKEN_TTL", 600)) 
+    CSRF_TOKEN_TTL : str = int(os.getenv("CSRF_TOKEN_TTL", 300)) 
+    SECRET_KEY: bytes = os.getenv(
+                            "SECRET_KEY",
+                            "CHANGE_ME_SUPER_SECRET"
+                            ).encode("utf-8")
+
     # Allowed audiences and issuers for token validation
     ALLOWED_AUDIENCES: list = [CLIENT_ID, APP_ID_URI]
     ALLOWED_ISSUERS: list = [

@@ -1,13 +1,18 @@
 """API route handlers."""
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status , Response
 from typing import Dict, Any
 from datetime import datetime
 import logging
 import json
+import time
 
 from backend.models import Message, TokenValidationResponse, HealthResponse, CombinedResponse
 from backend.auth import verify_token, extract_user_info
 from app import combined_execute
+from backend.config import Settings
+from backend.security.browser import enforce_browser_request
+from backend.security.browser_token import issue_browser_token , validate_browser_token
+from backend.security.csrf import issue_csrf, validate_csrf
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +55,31 @@ async def get_current_user(token_data: Dict[str, Any] = Depends(verify_token)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve user information: {str(e)}"
         )
+
+@router.get("/api/init")    
+async def init(request: Request, response: Response):
+    # enforce_browser_request(request)
+
+    browser_token = issue_browser_token(request)
+    csrf_token = issue_csrf(browser_token)
+
+    response.set_cookie(
+        key="browser_token",
+        value=browser_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+    )
+
+    response.set_cookie(
+        key="csrf_token",
+        value=csrf_token,
+        httponly=False,
+        secure=True,
+        samesite="none"
+    )
+
+    return {"status": "ok"}
 
 
 @router.post("/api/validate-token", response_model=TokenValidationResponse)
@@ -161,3 +191,40 @@ async def query_sync(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Server error: {str(e)}"
         )
+    
+@router.post("/api/secure-query", response_model=CombinedResponse)
+async def secure_query(
+    user_message: Message,
+    request: Request,
+):
+    """
+    Browser-only, site-locked endpoint.
+    No Azure AD / JWT involved.
+    """
+
+    # 1. Browser enforcement
+    # enforce_browser_request(request)
+
+    # 2. Browser token
+    browser_payload = validate_browser_token(request)
+    browser_token = request.cookies.get("browser_token")
+
+    # 3. CSRF
+    validate_csrf(request, browser_token)
+
+    # 5. Business logic
+    # router_output, final_output = combined_execute(
+    #     user_message.email,
+    #     user_message.text,
+    # )
+
+    # try:
+    #     router_data = json.loads(router_output) if isinstance(router_output, str) else router_output
+    # except Exception:
+    #     router_data = {"raw": router_output}
+    router_data = {"info": "Secure query executed successfully"}
+
+    return {
+        "router_output": router_data,
+        "final_output": {"status" : "ok"},
+    }
