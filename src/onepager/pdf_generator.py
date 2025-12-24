@@ -61,7 +61,8 @@ def generate_one_pager(payload: dict):
     elements.append(Spacer(1, 10))
 
     def clean_key(key: str) -> str:
-        return key.replace("_", " ")
+        key = key.replace("_", " ").strip()
+        return " ".join(word.capitalize() for word in key.split())
     
     def build_list_as_kv(items: list):
         rows = [["Field", "Data"]]
