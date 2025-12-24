@@ -4,6 +4,8 @@ from QueryProcessor import QueryProcessor
 from rag.queryengine import query_main_store
 from query_router import router as query_router
 from memory.memorymanager import push_convo_pair
+from onepager.pdf_generator import generate_one_pager
+
 from OnePager import OnePager
 
 # =====================================================================
@@ -126,7 +128,8 @@ def combined_execute(email, question):
                 
                 if report.get("status") == "success":
                     # Format as text
-                    final_output_string = onepager.format_report_text(report)
+                    final_output_string = generate_one_pager(report)
+                    #final_output_string = onepager.format_report_text(report)
                     
                     # Save to conversation history
                     try:
