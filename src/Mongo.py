@@ -49,7 +49,7 @@ class NaturalLanguageToMQL:
         # self.llm = ChatOpenAI(model="gpt-4o")
         self.llm =  LLMFactory(
                         provider="bedrock",
-                        model="global.anthropic.claude-sonnet-4-5-20250929-v1:0",
+                        model="global.anthropic.claude-opus-4-5-20251101-v1:0",
                     ).create()
         example = oneshot_example(query=user_query) if user_query else ""
         print("+++++++++Similar Search Result: ",example,"+++++++++++++++++++++")
