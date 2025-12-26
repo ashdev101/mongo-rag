@@ -225,4 +225,126 @@ def combined_execute(email, question):
             gr.update(visible=True, value=err),
             gr.update(visible=False, value=None)
         )
+    
+
+# ===================================================================== 
+# Combined Execute for api
+
+import json
+import os
+import re
+from fastapi import HTTPException
+from typing import Any, Optional 
+from pydantic import BaseModel
+
+
+class APIResponse(BaseModel):
+    type: str  # "text" | "file"
+    content: str  # text OR absolute file path
+
+def combined_execute_api(email: str, question: str):
+    """
+    Returns:
+    {
+        "type": "text" | "file",
+        "content": str   # text OR absolute file path
+    }
+    """
+
+    def safe_json(v):
+        try:
+            return json.dumps(v, indent=2, default=str)
+        except Exception:
+            return str(v)
+
+    try:
+        # ===== /onepager COMMAND =====
+        onepager_match = re.search(r'/onepager\s+@(\d+)', question.strip(), re.IGNORECASE)
+
+        if onepager_match:
+            employee_code = onepager_match.group(1)
+            onepager = OnePager()
+
+            try:
+                access_granted = rbac_onepager(email, employee_code)
+
+                if not access_granted:
+                    return APIResponse(
+                        type="text",
+                        content="Access denied for onepager report"
+                    )
+
+                report = onepager.generate_report_aggregation(employee_code, email)
+
+                if report.get("status") != "success":
+                    error_msg = report.get("message", "Error generating report")
+                    return APIResponse(
+                        type="text",
+                        content=error_msg
+                    )
+
+                final_output = generate_one_pager(report)
+
+                # Save history (TEXT ONLY)
+                if isinstance(final_output, str) and not os.path.isfile(final_output):
+                    try:
+                        push_convo_pair(email, question, final_output)
+                    except Exception:
+                        pass
+
+                # ===== FILE OUTPUT =====
+                if isinstance(final_output, str) and os.path.isfile(final_output):
+                    return APIResponse(
+                        type="file",
+                        content=final_output
+                    )
+
+                # ===== TEXT OUTPUT =====
+                return APIResponse(
+                    type="text",
+                    content=final_output
+                )
+
+            finally:
+                onepager.close()
+
+        # ===== REGULAR ROUTING =====
+        route_result = query_router(question, email)
+        route = route_result.get("route")
+        query = route_result.get("query", "")
+
+        if route == "document":
+            _, _, _, db_results, _ = run_query(email, query)
+            final_output = db_results
+
+        elif route == "policy":
+            final_output = run_policy_query(query)
+
+        else:
+            final_output = "Router returned invalid route"
+
+        # Save history
+        try:
+            push_convo_pair(email, question, final_output)
+        except Exception:
+            pass
+
+        # FILE VS TEXT
+        if isinstance(final_output, str) and os.path.isfile(final_output):
+            return APIResponse(
+                type="file",
+                content=final_output
+            )
+
+        return APIResponse(
+            type="text",
+            content=str(final_output)
+        )
+
+    except Exception as e:
+        return APIResponse(
+            type="text",
+            content=safe_json({"error": str(e)})
+        )
+
 

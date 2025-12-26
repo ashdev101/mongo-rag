@@ -8,6 +8,11 @@ class Message(BaseModel):
     text: str
     sender: Optional[str] = "user"
 
+class SharePointMessage(BaseModel):
+    """Message request model for Sharepoint."""
+    text: str
+    email: str
+
 
 class MessageResponse(BaseModel):
     """Message response model."""

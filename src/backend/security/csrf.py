@@ -17,7 +17,10 @@ def validate_csrf(request: Request, browser_token: str):
     if cookie_token != header_token:
         raise HTTPException(403, "CSRF mismatch")
 
-    payload = _verify(cookie_token)
+    try:
+        payload = _verify(cookie_token)
+    except ValueError:
+        raise HTTPException(403, "CSRF token invalid or expired")
 
     if payload["bt"] != browser_token:
-        raise HTTPException(403, "CSRF not bound to browser")
+        raise HTTPException(403, "CSRF token invalid or expired")

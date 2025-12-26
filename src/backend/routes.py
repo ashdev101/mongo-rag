@@ -1,5 +1,7 @@
 """API route handlers."""
+import os
 from fastapi import APIRouter, Depends, HTTPException, Request, status , Response
+from fastapi.responses import FileResponse, JSONResponse
 from typing import Dict, Any
 from datetime import datetime
 import re
@@ -7,9 +9,9 @@ import logging
 import json
 import time
 
-from backend.models import Message, TokenValidationResponse, HealthResponse, CombinedResponse
+from backend.models import Message, TokenValidationResponse, HealthResponse, CombinedResponse , SharePointMessage
 from backend.auth import verify_token, extract_user_info
-from app import combined_execute
+from app import combined_execute , combined_execute_api
 from backend.config import Settings
 from backend.security.browser import enforce_browser_request
 from backend.security.browser_token import issue_browser_token , validate_browser_token
@@ -72,17 +74,19 @@ async def init(request: Request, response: Response):
         httponly=True,
         secure=True,
         samesite="none",
+        path="/"
     )
 
     response.set_cookie(
         key="csrf_token",
         value=csrf_token,
-        httponly=False,
+        httponly=True,
         secure=True,
-        samesite="none"
+        samesite="none",
+        path="/"
     )
 
-    return {"status": "ok"}
+    return {"token":csrf_token }
 
 
 @router.post("/api/validate-token", response_model=TokenValidationResponse)
@@ -209,7 +213,7 @@ async def query_sync(
     
 @router.post("/api/secure-query", response_model=CombinedResponse)
 async def secure_query(
-    user_message: Message,
+    user_message: SharePointMessage,
     request: Request,
 ):
     """
@@ -228,18 +232,27 @@ async def secure_query(
     validate_csrf(request, browser_token)
 
     # 5. Business logic
-    # router_output, final_output = combined_execute(
-    #     user_message.email,
-    #     user_message.text,
-    # )
+    result = combined_execute_api(
+        user_message.email,
+        user_message.text,
+    )
 
-    # try:
-    #     router_data = json.loads(router_output) if isinstance(router_output, str) else router_output
-    # except Exception:
-    #     router_data = {"raw": router_output}
-    router_data = {"info": "Secure query executed successfully"}
+    # ✅ USE ATTRIBUTES, NOT DICT ACCESS
+    if result.type == "file":
+        file_path = result.content
 
-    return {
-        "router_output": router_data,
-        "final_output": {"status" : "ok"},
-    }
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail="File not found")
+
+        return FileResponse(
+            path=file_path,
+            filename=os.path.basename(file_path),
+            media_type="application/pdf",
+        )
+
+    # TEXT RESPONSE
+    return JSONResponse(
+        content={
+            "final_output": result.content
+        }
+    )
