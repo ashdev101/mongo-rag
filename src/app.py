@@ -5,7 +5,7 @@ from rag.queryengine import query_main_store
 from query_router import router as query_router
 from memory.memorymanager import push_convo_pair
 from onepager.pdf_generator import generate_one_pager
-
+from rbac_onepager import rbac_onepager
 from OnePager import OnePager
 
 # =====================================================================
@@ -92,13 +92,17 @@ def router(question):
 # =====================================================================
 # Combined Flow Function
 # =====================================================================
+import os
+import json
+import re
+import gradio as gr
+
 def combined_execute(email, question):
     """
-    1. Check for special commands (/onepager)
-    2. Call router for regular queries
-    3. Execute the actual target agent
-    4. Store conversation history
-    5. Return router output + executed result
+    Returns:
+    1. router_output (text)
+    2. final_text (Textbox OR hidden)
+    3. final_file (File OR hidden)
     """
 
     def safe_json(v):
@@ -108,98 +112,117 @@ def combined_execute(email, question):
             return str(v)
 
     try:
-        # Check for /onepager @<employee_code> command (e.g., /onepager @1001)
+        # ===== /onepager COMMAND =====
         onepager_match = re.search(r'/onepager\s+@(\d+)', question.strip(), re.IGNORECASE)
-        
+
         if onepager_match:
             employee_code = onepager_match.group(1)
-            
-            # Generate OnePager report
             onepager = OnePager()
+
             try:
+                access_granted = rbac_onepager(email , employee_code)
+
+                if not access_granted:
+                    router_out_str = safe_json({
+                        "route": "onepager",
+                        "command": f"/onepager @{employee_code}",
+                        "employee_code": employee_code
+                    })
+                    error_msg = "Access denied for onepager report"
+                    return (
+                        router_out_str,
+                        gr.update(visible=True, value=error_msg),
+                        gr.update(visible=False, value=None)
+                    )
                 report = onepager.generate_report_aggregation(employee_code, email)
-                
-                # Format output
+
                 router_out_str = safe_json({
                     "route": "onepager",
                     "command": f"/onepager @{employee_code}",
                     "employee_code": employee_code
                 })
-                
+
                 if report.get("status") == "success":
-                    # Format as text
-                    final_output_string = generate_one_pager(report)
-                    #final_output_string = onepager.format_report_text(report)
-                    
-                    # Save to conversation history
+                    final_output = generate_one_pager(report)  
+                    # ⬆️ could be TEXT or FILE PATH
+
+                    # Save history (text only)
                     try:
-                        push_convo_pair(
-                            email=email,
-                            user_msg=question,
-                            bot_msg=final_output_string
-                        )
+                        if isinstance(final_output, str) and not os.path.isfile(final_output):
+                            push_convo_pair(email, question, final_output)
                     except Exception as e:
-                        print("Failed to push conversation history:", e)
-                    
-                    return router_out_str, final_output_string
+                        print("History save failed:", e)
+
+                    # ===== FILE OUTPUT =====
+                    if isinstance(final_output, str) and os.path.isfile(final_output):
+                        return (
+                            router_out_str,
+                            gr.update(visible=False, value=None),
+                            gr.update(visible=True, value=final_output)
+                        )
+
+                    # ===== TEXT OUTPUT =====
+                    return (
+                        router_out_str,
+                        gr.update(visible=True, value=final_output),
+                        gr.update(visible=False, value=None)
+                    )
+
                 else:
                     error_msg = report.get("message", "Error generating report")
-                    return router_out_str, error_msg
-                    
+                    return (
+                        router_out_str,
+                        gr.update(visible=True, value=error_msg),
+                        gr.update(visible=False, value=None)
+                    )
+
             finally:
                 onepager.close()
-        
-        # Regular query routing
+
+        # ===== REGULAR ROUTING =====
         route_result = query_router(question, email)
         router_out_str = safe_json(route_result)
 
         route = route_result.get("route")
         query = route_result.get("query", "")
 
-        # ===== EXECUTE TARGET ENGINE =====
+        final_output = ""
+
         if route == "document":
             status, agent_out_str, mql, db_results, agg_pipeline = run_query(email, query)
-            final_output_dict = {
-                "status": status,
-                "mql": mql,
-                "db_results": db_results,
-                "agent_output": agent_out_str
-            }
-            final_output = safe_json(final_output_dict)
+            final_output = db_results
 
         elif route == "policy":
-            policy_ans = run_policy_query(query)
-            final_output_dict = {"policy_answer": policy_ans}
-            final_output = safe_json(final_output_dict)
+            final_output = run_policy_query(query)
 
         else:
-            final_output_dict = {"error": "Router returned invalid route"}
-            final_output = safe_json(final_output_dict)
+            final_output = "Router returned invalid route"
 
-        # ===== AUTO-SAVE CHAT HISTORY =====
-        final_output_string = ""
+        # Save history
         try:
-            if route == "document":
-                push_convo_pair(
-                    email=email,
-                    user_msg=question,
-                    bot_msg=final_output_dict.get("db_results")
-                )
-                final_output_string = final_output_dict.get("db_results")
-
-            elif route == "policy":
-                push_convo_pair(
-                    email=email,
-                    user_msg=question,
-                    bot_msg=final_output_dict.get("policy_answer")
-                )
-                final_output_string = final_output_dict.get("policy_answer")
-
+            push_convo_pair(email, question, final_output)
         except Exception as e:
-            print("Failed to push conversation history:", e)
+            print("History save failed:", e)
 
-        return router_out_str, final_output_string
+        # ===== FILE VS TEXT DETECTION =====
+        if isinstance(final_output, str) and os.path.isfile(final_output):
+            return (
+                router_out_str,
+                gr.update(visible=False, value=None),
+                gr.update(visible=True, value=final_output)
+            )
+
+        return (
+            router_out_str,
+            gr.update(visible=True, value=str(final_output)),
+            gr.update(visible=False, value=None)
+        )
 
     except Exception as e:
         err = safe_json({"error": str(e)})
-        return err, err
+        return (
+            err,
+            gr.update(visible=True, value=err),
+            gr.update(visible=False, value=None)
+        )
+

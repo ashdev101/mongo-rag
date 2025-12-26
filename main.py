@@ -152,12 +152,22 @@ with gr.Blocks(title="MQL Access Agent UI (robust)") as demo:
             combined_btn = gr.Button("Run Combined Router")
 
             router_output = gr.Textbox(label="Router Output (JSON)", lines=6)
-            final_output = gr.Textbox(label="Final Result (Executed Output)", lines=6)
+
+            final_text = gr.Textbox(
+                label="Final Result (Text)",
+                lines=6,
+                visible=False
+            )
+
+            final_file = gr.File(
+                label="Final Result (File)",
+                visible=False
+            )
 
             combined_btn.click(
                 combined_execute,
                 inputs=[combined_email, combined_question],
-                outputs=[router_output, final_output]
+                outputs=[router_output, final_text, final_file]
             )
 
 # Mount Gradio app to FastAPI

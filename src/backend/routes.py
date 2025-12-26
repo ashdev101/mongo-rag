@@ -15,6 +15,8 @@ from backend.security.browser import enforce_browser_request
 from backend.security.browser_token import issue_browser_token , validate_browser_token
 from backend.security.csrf import issue_csrf, validate_csrf
 
+from rbac_onepager import rbac_onepager
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -124,8 +126,20 @@ async def send_message(
         
         logger.info("Processing sync query from authenticated user")
         
+        # onepager_match = re.search(r'/onepager\s+@(\d+)', user_message.text.strip(), re.IGNORECASE)
+        # employee_code = onepager_match.group(1) if onepager_match else None
+        # print(f"Extracted employee_code: {employee_code}")
+        # print(f"Onepager match: {onepager_match}")
+        # if onepager_match and employee_code:
+        #     access_granted = rbac_onepager(email , employee_code)
+        #     if not access_granted:
+        #         return {
+        #             "router_output": {"error": "Access denied for onepager report"},
+        #             "final_output": "Access denied for onepager report"
+        #         }
         # Call combined_execute function from app.py
         router_output, final_output = combined_execute(email, user_message.text)
+
         
         # Parse router output if it's a string
         try:
