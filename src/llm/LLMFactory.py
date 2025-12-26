@@ -10,6 +10,12 @@ load_dotenv(os.path.join(app_dir, ".env"))
 Provider = Literal["bedrock", "openai"]
 
 
+bedrockModelId = {
+    "qwen": "qwen.qwen3-235b-a22b-2507-v1:0",
+    "claude_Opus_4.5": "global.anthropic.claude-opus-4-5-20251101-v1:0",
+    "claude_Sonnet_4.5" : "global.anthropic.claude-sonnet-4-5-20250929-v1:0",
+}
+
 class LLMFactory:
     """
     Unified interface for all LLM providers and models.
