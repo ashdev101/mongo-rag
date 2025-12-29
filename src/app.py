@@ -346,5 +346,3 @@ def combined_execute_api(email: str, question: str):
             type="text",
             content=safe_json({"error": str(e)})
         )
-
-

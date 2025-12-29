@@ -181,11 +181,12 @@ if __name__ == "__main__":
     import uvicorn
     
     logger.info(f"Starting server on port {settings.PORT}")
+    logger.info(f"Environment: {settings.ENVIRONMENT}")
     logger.info("Server ready - check /docs for API documentation")
     
     uvicorn.run(
         "main:app",
         host=settings.HOST,
         port=settings.PORT,
-        reload=False,  # Disable reload to avoid multiprocessing issues on Windows
+        reload=settings.ENVIRONMENT == "development",  # Auto-reload only in development
     )

@@ -25,3 +25,5 @@ test.ipynb
 tex.py
 # UV package manager files
 .uv.*.exe
+
+onepager/

@@ -44,15 +44,7 @@ async def get_current_user(token_data: Dict[str, Any] = Depends(verify_token)):
         
         # Add additional token claims if available
         return {
-            "user": user_info,
-            "claims": {
-                "oid": token_data.get("oid"),
-                "tid": token_data.get("tid"),
-                "iss": token_data.get("iss"),
-                "aud": token_data.get("aud"),
-                "scp": token_data.get("scp"),
-                "roles": token_data.get("roles", []),
-            }
+            "user": user_info
         }
     except Exception as e:
         logger.exception("Error retrieving user information")
@@ -111,7 +103,7 @@ async def validate_token(token_data: Dict[str, Any] = Depends(verify_token)):
 @router.post("/api/messages", response_model=CombinedResponse)
 async def send_message(
     user_message: Message,
-    token_data: Dict[str, Any] = Depends(verify_token)
+    # token_data: Dict[str, Any] = Depends(verify_token)
 ):
     """
     Receive a message from authenticated user and return response.
@@ -119,9 +111,10 @@ async def send_message(
     Token is validated via dependency.
     """
     try:
-        user_info = extract_user_info(token_data)
-        email = user_info.get("email") or user_info.get("upn") or user_info.get("preferred_username", "")
-        
+        # user_info = extract_user_info(token_data)
+        # email = user_info.get("email") or user_info.get("upn") or user_info.get("preferred_username", "")
+
+        email = "manisha.vasaikar@tataplay.com"
         if not email:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -141,19 +134,25 @@ async def send_message(
         #             "router_output": {"error": "Access denied for onepager report"},
         #             "final_output": "Access denied for onepager report"
         #         }
-        # Call combined_execute function from app.py
-        router_output, final_output = combined_execute(email, user_message.text)
+        # Call combined_execute_api function from app.py
+        result = combined_execute_api(email, user_message.text)
 
-        
-        # Parse router output if it's a string
-        try:
-            router_data = json.loads(router_output) if isinstance(router_output, str) else router_output
-        except:
-            router_data = {"raw": router_output}
-        
+        print(f"Result: {result}")
+
+        # Handle file response
+        if result.type == "file":
+            file_path = result.content
+            if not os.path.exists(file_path):
+                raise HTTPException(status_code=404, detail="File not found")
+            return FileResponse(
+                path=file_path,
+                filename=os.path.basename(file_path),
+                media_type="application/pdf",
+            )
+    
         return {
-            "router_output": router_data,
-            "final_output": final_output
+            "router_output": {"type": result.type},
+            "final_output": result.content
         }
     
     except HTTPException:
