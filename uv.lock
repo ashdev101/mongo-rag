@@ -3247,6 +3247,14 @@ dependencies = [
     { name = "xlrd" },
 ]
 
+[package.optional-dependencies]
+cpu = [
+    { name = "torch" },
+]
+gpu = [
+    { name = "torch" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "cryptography", specifier = ">=41.0.0" },
@@ -3280,9 +3288,12 @@ requires-dist = [
     { name = "spacy", specifier = ">=3.8.11" },
     { name = "sse-starlette", specifier = ">=1.6.0" },
     { name = "tiktoken", specifier = ">=0.12.0" },
+    { name = "torch", marker = "extra == 'cpu'", specifier = "==2.9.1" },
+    { name = "torch", marker = "extra == 'gpu'", specifier = "==2.9.1" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.24.0" },
     { name = "xlrd", specifier = ">=2.0.2" },
 ]
+provides-extras = ["cpu", "gpu"]
 
 [[package]]
 name = "rapidfuzz"

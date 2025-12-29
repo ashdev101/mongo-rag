@@ -5,6 +5,7 @@ from langchain_core.messages import HumanMessage, AIMessage
 from langgraph_sample import access_agent
 from CollectionRouter import get_collection
 from aggregation.AggregationRBAC import AggregationRBAC
+from feedback.cleaner import remove_emojis
 
 # =====================================================================
 # Helper: safely get results from converter.print_results()
@@ -134,14 +135,15 @@ class QueryProcessor:
                 "status": "Needs Clarification",
                 "agent_output": result,
                 "mql": result.get("clarification_question"),
-                "db_results": clarification_question
+                "db_results": remove_emojis(clarification_question) if isinstance(clarification_question, str) else clarification_question
             }
         if decision != "Access Granted":
+            access_msg = result["access_message"]
             return {
                 "status": "Access Denied",
                 "agent_output": result,
                 "mql": modified_query or result.get("question"),
-                "db_results": result["access_message"]
+                "db_results": remove_emojis(access_msg) if isinstance(access_msg, str) else access_msg
             }
 
         # Convert to MQL + Execute
@@ -222,6 +224,10 @@ class QueryProcessor:
             except Exception:
                 agg_pipeline = None
 
+        # Clean emojis from db_results
+        if isinstance(db_results, str):
+            db_results = remove_emojis(db_results)
+        
         output =  {
             "status": "Allowed",
             "agent_output": result,

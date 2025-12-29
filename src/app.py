@@ -7,6 +7,7 @@ from memory.memorymanager import push_convo_pair
 from onepager.pdf_generator import generate_one_pager
 from rbac_onepager import rbac_onepager
 from OnePager import OnePager
+from feedback.cleaner import remove_emojis
 
 # =====================================================================
 # Existing processor
@@ -39,6 +40,10 @@ def run_query(email, question):
             agent_out_str = json.dumps(agent_output, indent=2, default=str)
         except Exception:
             agent_out_str = str(agent_output)
+        
+        # Clean emojis from db_results
+        if isinstance(db_results, str):
+            db_results = remove_emojis(db_results)
 
         return status, agent_out_str, mql, db_results, agg_pipeline
 
@@ -52,7 +57,9 @@ def run_query(email, question):
 def run_policy_query(question):
     try:
         response = query_main_store(question)
-        return str(response)
+        response_str = str(response)
+        # Clean emojis from response
+        return remove_emojis(response_str)
     except Exception as e:
         return f"Error: {e}"
 

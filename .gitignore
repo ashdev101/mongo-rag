@@ -11,6 +11,13 @@ wheels/
 # env 
 .env
 
+# Database and vector store files
+chroma_store/
+*.sqlite3
+
+# Generated JSON files
+json_repo/
+
 # Private files 
 output_file/
 Reports/
