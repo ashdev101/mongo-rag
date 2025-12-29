@@ -103,7 +103,7 @@ async def validate_token(token_data: Dict[str, Any] = Depends(verify_token)):
 @router.post("/api/messages", response_model=CombinedResponse)
 async def send_message(
     user_message: Message,
-    # token_data: Dict[str, Any] = Depends(verify_token)
+    token_data: Dict[str, Any] = Depends(verify_token)
 ):
     """
     Receive a message from authenticated user and return response.
@@ -111,10 +111,9 @@ async def send_message(
     Token is validated via dependency.
     """
     try:
-        # user_info = extract_user_info(token_data)
-        # email = user_info.get("email") or user_info.get("upn") or user_info.get("preferred_username", "")
+        user_info = extract_user_info(token_data)
+        email = user_info.get("email") or user_info.get("upn") or user_info.get("preferred_username", "")
 
-        email = "manisha.vasaikar@tataplay.com"
         if not email:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
