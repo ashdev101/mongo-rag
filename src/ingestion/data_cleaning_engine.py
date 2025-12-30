@@ -214,11 +214,11 @@ def clean_performance_360(file_path):
     # Normalize
     normalized_docs = [
         normalize_doc_generic(
-            doc,
-            FIELDS,
-            KEY_RENAMES,
-            NUMERIC_FIELDS,
-            DATE_FIELDS
+            raw_doc=doc,
+            fields=FIELDS,
+            key_rename=KEY_RENAMES,
+            numeric_fields=NUMERIC_FIELDS,
+            date_fields=DATE_FIELDS
         )
         for doc in raw_docs
     ]
@@ -250,11 +250,11 @@ def clean_pip_transaction(file_path):
     DATE_FIELDS=pip_tran_config["DATE_FIELDS"]
     
     for col in df.columns:
-        if col not in FIELDS:
+        if col.strip() not in FIELDS:
             raise IndexError(
                 f"File doesn't contain Expected Columns."
                 f"check config.py for expected columns"
-            )
+            ) 
     raw_docs = []
 
 

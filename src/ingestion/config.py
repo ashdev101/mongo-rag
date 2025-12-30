@@ -40,7 +40,7 @@ REPORT_CONFIG = {
             "LAST NAME" : "last name",
             "GRADE" : "grade",
             "Grade Level" : "grade level",
-            "Designation" : "Designation",
+            "Designation" : "designation",
             "DEPARTMENT" : "department",
             "SUB-DEPT" : "sub department",
             "Location" : "location",
@@ -221,12 +221,12 @@ REPORT_CONFIG = {
             "Region",
             "DOJ",
             "Assignment Status Type",
-            "Final Rating  20-21",
-            "Final Rating  21-22",
-            "Final Rating  22-23",
-            "Final Rating  23-24",
+            "Current Year -4",
+            "Current Year -3",
+            "Current Year -2",
+            "Current Year - 1",
             "Last Promotion date",
-            "Rating 24-25",
+            "Current Year",
             "Experience Prior to Tata Play",
             "Tata Play Experience",
             "Total Yrs Exp",
@@ -249,12 +249,12 @@ REPORT_CONFIG = {
             "Region": "region",
             "DOJ": "date of joining",
             "Assignment Status Type": "assignment status type",
-            "Final Rating  20-21": "final rating 20-21",
-            "Final Rating  21-22": "final rating 21-22",
-            "Final Rating  22-23": "final rating 22-23",
-            "Final Rating  23-24": "final rating 23-24",
+            "Current Year -4":"cy-4",
+            "Current Year -3":"cy-3",
+            "Current Year -2":"cy-2",
+            "Current Year - 1":"cy-1",
             "Last Promotion date": "last promotion date",
-            "Rating 24-25": "rating 24-25",
+            "Current Year": "current year",
             "Experience Prior to Tata Play": "experience prior to tata play",
             "Tata Play Experience": "tata play experience",
             "Total Yrs Exp": "total years experience",
@@ -265,11 +265,11 @@ REPORT_CONFIG = {
         },
         "NUMERIC_FIELDS":  [
             "employee code",
-            "final rating 20-21",
-            "final rating 21-22",
-            "final rating 22-23",
-            "final rating 23-24",
-            "rating 24-25",
+            "cy-4",
+            "cy-3",
+            "cy-2",
+            "cy-1",
+            "current year",
             "experience prior to tata play",
             "tata play experience",
             "total years experience",
@@ -339,7 +339,7 @@ REPORT_CONFIG = {
         "Reviewer_EMAIL",
         "Assigned Date",
         "Assigned To",
-        "\t\nTask status",
+        "Task status",
         "PIP Doc status"
         ],
         "KEY_RENAMES": {
@@ -366,7 +366,7 @@ REPORT_CONFIG = {
         "Reviewer_EMAIL": "reviewer email",
         "Assigned Date": "assigned date",
         "Assigned To": "assigned to",
-        "\t\nTask status": "task status",
+        "Task status": "task status",
         "PIP Doc status": "pip document status"
         },
         "NUMERIC_FIELDS": [
@@ -375,7 +375,7 @@ REPORT_CONFIG = {
             "rhr employee code",
             "reviewer employee code"
         ],
-        "DATE_FIELDS": ["assigned date", "pip submitted date", "pip completion date"],
+        "DATE_FIELDS": ["assigned date", "pip submitted date", "pip completion date","date of joining"],
         "TARGET_COLLECTION": "pip_transaction_report"
     },
 
@@ -936,5 +936,346 @@ REPORT_CONFIG = {
             ]
         },
         "TARGET_COLLECTION": "offboarding_checklist"
+    },
+
+
+    "assignment_report": {
+        "FIELDS" : [
+            "Person Number",
+            "Name",
+            "Primary Email",
+            "Assignment Status Type",
+            "Person Count",
+            "Job Name",
+            "Business Unit Name",
+            "Department Name",
+            "Parent Department",
+            "Grade Name",
+            "Parent Grade",
+            "Legal Employer Name",
+            "Location Name",
+            "Notice Period",
+            "Notice Period UOM",
+            "User Person Type",
+            "Probation Period",
+            "Probation Unit",
+            "Action Code",
+            "Effective Start Date",
+            "Effective End Date",
+            "Work Location",
+            "Assignment Category",
+            "Employee Category",
+            "Normal Working Hours",
+            "Normal Working Hours Frequency",
+            "Probation End Date",
+            "Hourly/Salaried",
+            "Primary Phone"
+        ],
+        "KEY_RENAMES" : {
+            "Person Number": "employee code",
+            "Name": "name",
+            "Primary Email": "primary email",
+            "Assignment Status Type": "assignment status type",
+            "Person Count": "person count",
+            "Job Name": "designation",
+            "Business Unit Name": "region",
+            "Department Name": "department",
+            "Parent Department": "parent department",
+            "Grade Name": "grade",
+            "Parent Grade": "parent grade",
+            "Legal Employer Name": "legal employer",
+            "Location Name": "location",
+            "Notice Period": "notice period",
+            "Notice Period UOM": "notice period uom",
+            "User Person Type": "user person type",
+            "Probation Period": "probation period",
+            "Probation Unit": "probation unit",
+            "Action Code": "action code",
+            "Effective Start Date": "effective start date",
+            "Effective End Date": "effective end date",
+            "Work Location": "work location",
+            "Assignment Category": "assignment category",
+            "Employee Category": "employee category",
+            "Normal Working Hours": "normal working hours",
+            "Normal Working Hours Frequency": "normal working hours frequency",
+            "Probation End Date": "probation end date",
+            "Hourly/Salaried": "hourly salaried",
+            "Primary Phone": "primary phone"
+        },
+        "NUMERIC_FIELDS": [
+            "employee code",
+            "person count",
+            "notice period",
+            "probation period",
+            "normal working hours"
+        ],
+        "DATE_FIELDS": [
+            "effective start date",
+        "effective end date",
+        "probation end date"
+        ],
+        "TARGET_COLLECTION": "assignment_report"
+    },
+
+    "r&r_ceo_of the_quarter": {
+        "FIELDS" : [
+            "Emp ID",
+            "Name",
+            "Citation",
+            "Grade",
+            "Designation",
+            "Department",
+            "Region",
+            "Quarter",
+            "Award Name",
+            "Award Name Quarter"
+        ],
+        "KEY_RENAMES" : {
+            "Emp ID": "employee code",
+            "Name": "name",
+            "Citation": "citation",
+            "Grade": "grade",
+            "Designation": "designation",
+            "Department": "department",
+            "Region": "region",
+            "Quarter": "quarter",
+            "Award Name": "award name",
+            "Award Name Quarter": "award name quarter"
+        },
+        "NUMERIC_FIELDS": [
+             "employee code",
+
+        ],
+        "DATE_FIELDS": [],
+        "TARGET_COLLECTION": "r&r_ceo_of the_quarter"
+    },
+
+    "r&r_debutant_of_the_qtr": {
+        "FIELDS" : ["Receiver Employee Id",
+        "Receiver Name",
+        "Nominator Employee Id",
+        "Nominator Name",
+        "Citation",
+        "Quarter",
+        "Reward Name",
+        "Nomination Date",
+        "Department",
+        "Region"
+        ],
+        "KEY_RENAMES" : {
+            "Receiver Employee Id": "receiver employee code",
+            "Receiver Name": "receiver name",
+
+            "Nominator Employee Id": "nominator employee code",
+            "Nominator Name": "nominator name",
+
+            "Citation": "citation",
+            "Quarter": "quarter",
+            "Reward Name": "reward name",
+            "Nomination Date": "nomination date",
+            "Department": "department",
+            "Region": "region"
+        },
+        "NUMERIC_FIELDS": [
+            "receiver employee code",
+            "nominator employee code",
+        ],
+        "DATE_FIELDS": [
+            "nomination date"
+        ],
+        "TARGET_COLLECTION": "r&r_debutant_of_the_qtr"
+    },
+
+    "r&r_job_well_done": {
+        "FIELDS" : ["Receiver Employee Id",
+        "Receiver Name",
+        "Nominator Employee Id",
+        "Nominator Name",
+        "Citation",
+        "Quarter",
+        "Reward Name",
+        "Nomination Date",
+        "Department",
+        "Region"
+        ],
+        "KEY_RENAMES" : {
+            "Receiver Employee Id": "receiver employee code",
+            "Receiver Name": "receiver name",
+
+            "Nominator Employee Id": "nominator employee code",
+            "Nominator Name": "nominator name",
+
+            "Citation": "citation",
+            "Quarter": "quarter",
+            "Reward Name": "reward name",
+            "Nomination Date": "nomination date",
+            "Department": "department",
+            "Region": "region"
+        },
+        "NUMERIC_FIELDS": [
+            "receiver employee code",
+            "nominator employee code",
+        ],
+        "DATE_FIELDS": [
+            "nomination date"
+        ],
+        "TARGET_COLLECTION": "r&r_job_well_done"
+    },
+    "r&r_intrafunctional": {
+        "FIELDS" : [
+            "Receiver Employee Id",
+            "Receiver Name",
+            "Nominator Employee Id",
+            "Nominator Name",
+            "Citation",
+            "Quarter",
+            "Reward Name",
+            "Nomination Date",
+            "Department",
+            "Region",
+            "Points"
+        ],
+        "KEY_RENAMES" : {
+           "Receiver Employee Id": "receiver employee code",
+            "Receiver Name": "receiver name",
+
+            "Nominator Employee Id": "nominator employee code",
+            "Nominator Name": "nominator name",
+
+            "Citation": "citation",
+            "Quarter": "quarter",
+            "Reward Name": "reward name",
+            "Nomination Date": "nomination date",
+            "Department": "department",
+            "Region": "region",
+            "Points": "points"
+        },
+        "NUMERIC_FIELDS": [
+             "receiver employee code",
+            "nominator employee code",
+            "points"
+        ],
+        "DATE_FIELDS": [
+            "nomination date"
+        ],
+        "TARGET_COLLECTION": "r&r_intrafunctional"
+    },
+
+    "r&r_intrafunctional": {
+        "FIELDS" : [
+            "Receiver Employee Id",
+            "Receiver Name",
+            "Nominator Employee Id",
+            "Nominator Name",
+            "Citation",
+            "Quarter",
+            "Reward Name",
+            "Nomination Date",
+            "Department",
+            "Region",
+    "Points"
+        ],
+        "KEY_RENAMES" : {
+           "Receiver Employee Id": "receiver employee code",
+            "Receiver Name": "receiver name",
+
+            "Nominator Employee Id": "nominator employee code",
+            "Nominator Name": "nominator name",
+
+            "Citation": "citation",
+            "Quarter": "quarter",
+            "Reward Name": "reward name",
+            "Nomination Date": "nomination date",
+            "Department": "department",
+            "Region": "region",
+            "Points": "points"
+        },
+        "NUMERIC_FIELDS": [
+             "receiver employee code",
+            "nominator employee code",
+            "points"
+        ],
+        "DATE_FIELDS": [
+            "nomination date"
+        ],
+        "TARGET_COLLECTION": "r&r_intrafunctional"
+    },
+
+    "r&r_cross_functional": {
+        "FIELDS" : [
+            "Receiver Employee Id",
+            "Receiver Name",
+            "Nominator Employee Id",
+            "Nominator Name",
+            "Citation",
+            "Quarter",
+            "Reward Name",
+            "Nomination Date",
+            "Department",
+            "Region",
+            "Points"
+        ],
+        "KEY_RENAMES" : {
+           "Receiver Employee Id": "receiver employee code",
+            "Receiver Name": "receiver name",
+
+            "Nominator Employee Id": "nominator employee code",
+            "Nominator Name": "nominator name",
+
+            "Citation": "citation",
+            "Quarter": "quarter",
+            "Reward Name": "reward name",
+            "Nomination Date": "nomination date",
+            "Department": "department",
+            "Region": "region",
+            "Points": "points"
+        },
+        "NUMERIC_FIELDS": [
+            "receiver employee code",
+            "nominator employee code",
+        ],
+        "DATE_FIELDS": [
+            "nomination date"
+        ],
+        "TARGET_COLLECTION": "r&r_cross_functional"
+    },
+
+    "r&r_thank_you": {
+        "FIELDS" : [
+            "Receiver Employee Id",
+            "Receiver Name",
+            "Nominator Employee Id",
+            "Nominator Name",
+            "Citation",
+            "Reward Name",
+            "Nomination Date",
+            "Department",
+            "Region",
+            "Points"
+        ],
+        "KEY_RENAMES" : {
+           "Receiver Employee Id": "receiver employee code",
+            "Receiver Name": "receiver name",
+
+            "Nominator Employee Id": "nominator employee code",
+            "Nominator Name": "nominator name",
+
+            "Citation": "citation",
+            "Reward Name": "reward name",
+            "Nomination Date": "nomination date",
+            "Department": "department",
+            "Region": "region",
+            "Points": "points"
+        },
+        "NUMERIC_FIELDS": [
+            "receiver employee code",
+            "nominator employee code",
+            "points"
+        ],
+        "DATE_FIELDS": [
+            "nomination date"
+        ],
+        "TARGET_COLLECTION": "r&r_thank_you"
     }
+
 }
