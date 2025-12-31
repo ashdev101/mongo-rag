@@ -7,6 +7,7 @@ from memory.memorymanager import push_convo_pair
 from onepager.pdf_generator import generate_one_pager
 from rbac_onepager import rbac_onepager
 from OnePager import OnePager
+from backend.config import get_settings
 
 # =====================================================================
 # Existing processor
@@ -258,6 +259,15 @@ def combined_execute_api(email: str, question: str):
             return str(v)
 
     try:
+        # ===== DEVELOPMENT MODE: EXTRACT EMAIL FROM INPUT =====
+        settings = get_settings()
+        if settings.ENVIRONMENT == "development":
+            useemail_match = re.search(r'/useemail\s+@([\w.@+-]+)\s*\.\s*(.+)', question.strip(), re.IGNORECASE | re.DOTALL)
+            if useemail_match:
+                email = useemail_match.group(1)
+                question = useemail_match.group(2).strip()
+                # print(f"[DEV MODE] Extracted email: {email}")
+                # print(f"[DEV MODE] Extracted message: {question}")
         # ===== /onepager COMMAND =====
         onepager_match = re.search(r'/onepager\s+@(\d+)', question.strip(), re.IGNORECASE)
 
@@ -346,5 +356,3 @@ def combined_execute_api(email: str, question: str):
             type="text",
             content=safe_json({"error": str(e)})
         )
-
-

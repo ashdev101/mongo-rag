@@ -131,8 +131,8 @@ def extract_user_info(token_data: Dict[str, Any]) -> Dict[str, str]:
     """
     return {
         "name": token_data.get("name", ""),
-        "email": token_data.get("email", ""),
-        "upn": token_data.get("upn", ""),
+        "email": token_data.get("preferred_username", ""),
         "oid": token_data.get("oid", ""),
+        "tid": token_data.get("tid", ""),
         "preferred_username": token_data.get("preferred_username", ""),
     }
