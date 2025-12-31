@@ -1116,7 +1116,7 @@
       }
     ]
   },
-  "leave_transaction_with_balance_report_leave_transaction_with_balance_report": {
+  "leave_transaction_with_balance_report": {
     "fields": {
       "_id": "ObjectId",
       "employee code": "Number",

@@ -333,7 +333,7 @@
             ]
         },
         "Leave Transactions": {
-            "collection": "leave_transaction_with_balance_report_leave_transaction_with_balance_report",
+            "collection": "leave_transaction_with_balance_report",
             "key_fields": [
                 "casual leave",
                 "sick leave",

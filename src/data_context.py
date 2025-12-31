@@ -8,7 +8,7 @@ DataContext = {
     "pip_transaction_report": "Captures the ongoing Performance Improvement Plan cases for the current financial year. This report captures the document status, PIP start date , completion date etc.",
     "probation_confirmation": "",
     "performance_360_degree_feedback_participants_status_all": "This process starts in Q2 every year, where self manager and participant feedback is provided for each employee. Once the feedback is given the status gets updated to completed. The Status of each form is captured against each participant entry .",
-    "leave_transaction_with_balance_report_leave_transaction_with_balance_report": "",
+    "leave_transaction_with_balance_report": "",
     "permormance_rating_report": "",
     "historical_ratings_and_other_information": "This captures last 3 years ratings, educational qualification and work experience .",
     "goal_detail_report": "This captures the Individual Development Details for all the employees who have submitted there development plan in the HRMS"

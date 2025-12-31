@@ -64,7 +64,7 @@ class NaturalLanguageToMQL:
                                 CANONICAL_GRADES = CANONICAL_GRADES,
                                 BASE_REPORT_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["base_report"],
                                 OFFBOARDING_CHECKLIST_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["offboarding_checklist"],
-                                LEAVE_TRANSACTION_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["leave_transaction_with_balance_report_leave_transaction_with_balance_report"],
+                                LEAVE_TRANSACTION_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["leave_transaction_with_balance_report"],
                                 PERFORMANCE_GOAL_REPORT_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["performance_goal_report_2025_2026"],
                                 GOAL_SETTING_STATUS_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["goal_setting_status"],
                                 PERMORMANCE_RATING_REPORT_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["permormance_rating_report"],
