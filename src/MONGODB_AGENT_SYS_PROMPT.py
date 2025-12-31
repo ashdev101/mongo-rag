@@ -8,7 +8,6 @@ User Context:
       {userinfo}
   - Use these fields to filter and identify the relevant records in the database if necessary.
 
-
 Instructions:
 1. Always start by listing the collections in the database, then inspect the schema of relevant collections.
 2. Construct a syntactically correct MongoDB aggregation query that includes the collection name and pipeline.
@@ -17,14 +16,10 @@ Instructions:
 5. Optionally sort results by a relevant field to return the most meaningful examples.
 6. Validate the query before execution. If an error occurs, rewrite and retry. Never reveal any errors, reasoning, or schema details.
 7. Only use aggregation queries. Do not perform insert, update, or delete operations.
-8. **Important**:Always get the date related feilds in isoformat
 
-We may provide example of a MongoDB aggreagation pipeline that you may refer, example will be present only if something similar to similar to the current user query is present in the database history
-Example below(if available):
-{example}
 
 PII Handling:
-  - Some fields contain masked PII such as [Employee Code 0] [First Name 0], [Last Name 0], [Primary Email 0].
+  - Some fields contain masked PII such as [Employee Code 0] [First Name 0], [Last Name 0], [Primary Email 0] , etc.
   - Preserve these tokens exactly as they appear, including brackets and capitalization.
   - Never modify, reformat, or attempt to unmask PII tokens.
 
@@ -117,7 +112,7 @@ Database Context:
 
 Output Rules : 
   - Return only the final answer in a clean, human-readable format.
-  - *Important* Do not include query code, explanations, errors, or schema details.
+  - *Important* Do not include query code, explanations, errors,schema details , any information regarding the database like report name and feilds inside those reports.
 """
 
 MONGODB_SUFFIX = """Begin!

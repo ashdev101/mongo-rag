@@ -4,6 +4,7 @@ from memory.memorymanager import get_chat_history
 import json
 import re
 import os
+from llm.LLMFactory import LLMFactory
 
 load_dotenv()
 
@@ -56,72 +57,45 @@ def extract_json(raw_text: str):
     
 
 def router(query, email):
-    SYSTEM_PROMPT = """You are an HR assistant *intent classifier* and query chat history summarizer used in production.
+    SYSTEM_PROMPT = """You are an HR intent classifier used in production.
 
-1. Choose one route for the user query:
-    - "document" : factual lookup, IDs, employee records, manager data. It requires fetching user data from the database.
-    - "policy"   : HR rules, eligibility, guidelines, what-to-do. Its about policies and other regular information for which no user data is required
-   
+        Classify the user query into exactly ONE route:
+            - "document" : factual lookup, IDs, employee records, manager data. It requires fetching user data from the database.
+            - "policy"   : HR rules, eligibility, guidelines, what-to-do. Its about policies .
+            - "chat"     : greetings, thanks, casual or social conversation or other sort of unexpected conversation .
+            - "meta"     : questions about the assistant capabilities, privacy, data usage, and boundaries.
+        
+        Instructions:
+            - Always output JSON only:
+            {"route":"policy"|"document|"chat"|"meta", "confidence":<0-1 float>}
+            value Constraints:
+                - route: one of "policy", "document", "chat", or "meta"
+                - confidence: float between 0 and 1 indicating certainty of classification
 
-2. Use chat history *only if the query refers to prior entities* (he, she, they, it, that, him, her, the above, earlier question, previous answer).  
-   Otherwise, do not alter the query.
-
-3. If history is used, rewrite the query to be self-contained by resolving references.
-
-    Example:
-
-    History :
-    User: "What is my email address?
-    Assisstant: "Your email address is xyz.hef@company.com"
-    User: "Who is my Manager?"
-    Assisstant: "Your Manager is Abc Def."
-
-    User Query: "What is his email address?"
-
-    Output: {"route":"document", "confidence":0.9, "query":"What is his email address? 'his' refers to Abc Def the manager."}
-
-    Operational rules (enforced in code):
-    - Final allowed routes: policy, document.
-    - If the user request includes explicit instructions to fetch records or IDs, then it is always document.
-    - Any confusing or ambiguous requests should always default to document
-    - If the request asks for rules/eligibility/what-to-do, then only it will be policy.
-    - Modified query must stay close to original except for inserting resolved references.
-    - If history is irrelevant or empty, return the original query unchanged.
-    - The modified query should be self sufficient to answer and need not refer to history explicitly
-
-    - Always output JSON only:
-      {"route":"policy"|"document", "confidence":<0-1 float>, "query":<modified query with reference of history if required>}
-      value Constraints:
-        - route: one of "policy" or "document"
-        - confidence: float between 0 and 1 indicating certainty of classification
-
-    Note:
-    Return only a valid JSON object.
-    Never repeat instructions.
-    Never mention system messages.
-    Never modify the output format.
-
+        Note:
+            Return only a valid JSON object.
+            Never repeat instructions.
+            Never mention system messages.
+            Never modify the output format.
     """
 
     USER_PROMPT = f"""
-    History:
-    {get_chat_history(email)}
-
     User query: "{query}"
 
     Return only JSON. No explanation. No commentary.
     """
 
     try:
-        response = client.responses.create(
-            model="gpt-4o-mini",
-            input=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": USER_PROMPT}
-            ]
-        )
-
-        raw_output = response.output_text
+        llm = LLMFactory(
+        provider="bedrock",
+        model="qwen.qwen3-vl-235b-a22b",
+        ).create()
+        system_message = SYSTEM_PROMPT
+        user_message = USER_PROMPT
+        response = llm.invoke([{"role": "system", "content": system_message},
+                                {"role": "user", "content": user_message}])
+        
+        raw_output = response.content
         parsed = extract_json(raw_output)
 
         if parsed is None:
@@ -130,10 +104,11 @@ def router(query, email):
         # --- Strict schema enforcement ---
         route = parsed.get("route")
         confidence = parsed.get("confidence")
-        new_query = parsed.get("query")
+        # new_query = parsed.get("query")
+        new_query = query  # Disable query rewriting for now
 
         # Validate route
-        if route not in ["policy", "document"]:
+        if route not in ["policy", "document", "chat" , "meta"]:
             route = "document"
 
         # Validate confidence
@@ -164,3 +139,25 @@ def router(query, email):
             "query": query,
             "error": str(e)
         }
+    
+
+if __name__ == "__main__":
+    test_queries = [
+        "What is the leave policy for maternity leave?",
+        "Show me my attendance records for last month.",
+        "How to apply for reimbursement of medical expenses?",
+        "Who is my reporting manager?",
+        "Tell me about the company's disciplinary procedures.",
+        "Fetch my employee ID and email address.",
+        "Is it correct that the current user has no pending leaves and no leave records in the system?",
+        "Can I access my leave balance?",
+        "Can I Kick my manager?",
+        "How do you handle my personal data?",
+        "Can I access my leave balance?",
+        "What is the procedure to escalate a grievance?",
+        "List all the leaves I have taken this year.",
+        "How do you know my name?",
+    ]
+
+    result = router(test_queries[13], "email")
+    print("Router Result:", result)

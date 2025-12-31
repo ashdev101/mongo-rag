@@ -14,6 +14,7 @@ from pathlib import Path
 from data_context import DataContext
 from databse_dsitcint_values import CANONICAL_GRADES, CANONICAL_DEPARTMENTS, CANONICAL_REGIONS
 from llm.LLMFactory import LLMFactory
+from memory.memorymanager import get_chat_history
 
 # Load environment variables from .env file
 from dotenv import load_dotenv
@@ -42,7 +43,7 @@ NATURAL_LANGUAGE_QUERY = 'how many people have joined the organisation and resig
 
 
 class NaturalLanguageToMQL:
-    def __init__(self, aggregationRBAC : AggregationRBAC , userid: int , user_query: str = None ,include_collections: list = None):
+    def __init__(self, aggregationRBAC : AggregationRBAC , userid: int , user_query: str = None ,include_collections: list = None , email: str = None):
         # self.llm = ChatOpenAI(model="gpt-5")
         # self.llm = ChatOpenAI(model="gpt-4-turbo") 
         self.SYSTEM_INSTRUCTIONS_MONGODB = DataContext
@@ -211,7 +212,7 @@ if __name__ == "__main__":
                             "grades" : []
                         }
                     )
-    converter = NaturalLanguageToMQL(aggregationRBAC=aggregationRBAC , userid = 7207)
+    converter = NaturalLanguageToMQL(aggregationRBAC=aggregationRBAC , userid = 7207 , email="Shayanta.Chaudhuri@tataplay.com")
     print(converter.get_mongo_prompt())
     # converter.convert_to_mql_and_execute_query(NATURAL_LANGUAGE_QUERY)
     # converter.print_results()

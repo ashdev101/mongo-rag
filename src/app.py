@@ -8,6 +8,9 @@ from onepager.pdf_generator import generate_one_pager
 from rbac_onepager import rbac_onepager
 from OnePager import OnePager
 from backend.config import get_settings
+from meta_system import meta_system
+from chat_system import chat_system
+from conversation_resolver import resolve_conversation
 
 # =====================================================================
 # Existing processor
@@ -181,7 +184,8 @@ def combined_execute(email, question):
                 onepager.close()
 
         # ===== REGULAR ROUTING =====
-        route_result = query_router(question, email)
+        resolve_conversation_result = resolve_conversation(question, email)
+        route_result = query_router(resolve_conversation_result, email)
         router_out_str = safe_json(route_result)
 
         route = route_result.get("route")
@@ -195,9 +199,15 @@ def combined_execute(email, question):
 
         elif route == "policy":
             final_output = run_policy_query(query)
+        
+        elif route == "chat":
+            final_output = chat_system(query , email)
+
+        elif route == "meta":
+            final_output = meta_system(query)
 
         else:
-            final_output = "Router returned invalid route"
+            final_output = "Sorry , I am unable to process your request at the moment."
 
         # Save history
         try:
@@ -235,12 +245,12 @@ import json
 import os
 import re
 from fastapi import HTTPException
-from typing import Any, Optional 
+from typing import Any, Literal, Optional 
 from pydantic import BaseModel
 
 
 class APIResponse(BaseModel):
-    type: str  # "text" | "file"
+    type: Literal["text","file"]  # "text" | "file"
     content: str  # text OR absolute file path
 
 def combined_execute_api(email: str, question: str):
@@ -319,7 +329,8 @@ def combined_execute_api(email: str, question: str):
                 onepager.close()
 
         # ===== REGULAR ROUTING =====
-        route_result = query_router(question, email)
+        resolve_conversation_result = resolve_conversation(question, email)
+        route_result = query_router(resolve_conversation_result, email)
         route = route_result.get("route")
         query = route_result.get("query", "")
 
@@ -329,9 +340,15 @@ def combined_execute_api(email: str, question: str):
 
         elif route == "policy":
             final_output = run_policy_query(query)
+        
+        elif route == "chat":
+            final_output = chat_system(query , email)
+
+        elif route == "meta":
+            final_output = meta_system(query)
 
         else:
-            final_output = "Router returned invalid route"
+            final_output = "Sorry , I am unable to process your request at the moment."
 
         # Save history
         try:
