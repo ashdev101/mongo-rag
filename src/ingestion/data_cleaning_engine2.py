@@ -1,3 +1,4 @@
+
 from datetime import datetime as dt
 from ingestion.config import REPORT_CONFIG, ReportName
 from collections import defaultdict
@@ -672,6 +673,90 @@ def process_and_upload_goal_status_report(file_path):
         session.abort_transaction()
         raise RuntimeError(f"MongoDB transaction failed: {e}")
 
+    finally:
+        session.end_session()
+        client.close()
+    return
+
+
+# --- Offboarding Checklist Automation ---
+def process_and_upload_offboarding_checklist(file_path):
+    """
+    Automated cleaning and upload for Offboarding Checklist, using flattened Core HR fields.
+    Reads the config from ingestion.config.REPORT_CONFIG["offboarding_checklist"].
+    Expects Core HR fields at the top level, not nested.
+    """
+
+    config = REPORT_CONFIG["offboarding_checklist"]
+    FIELDS = config["FIELDS"]
+    KEY_RENAMES = config["KEY_RENAMES"]
+    NUMERIC_FIELDS = config["NUMERIC_FIELDS"]
+    DATE_FIELDS = config["DATE_FIELDS"]
+    #TARGET_COLLECTION = config["TARGET_COLLECTION"]
+    TARGET_COLLECTION = "oc_test"
+    # Read Excel with multi-index columns (for nested sections)
+    df = pd.read_excel(file_path, header=[0, 1])
+    df = df.where(df.notna(), None)
+
+    # Only flatten Core HR fields, keep others nested
+    processed_rows = []
+    core_hr_fields = [k for k in FIELDS if not isinstance(FIELDS[k], list)]
+    nested_sections = [k for k in FIELDS if isinstance(FIELDS[k], list)]
+    for _, row in df.iterrows():
+        doc = {}
+        # Flatten Core HR fields
+        for field in core_hr_fields:
+            try:
+                doc[field] = row[("Core HR", field)]
+            except Exception:
+                doc[field] = None
+        # Keep other sections nested
+        for section in nested_sections:
+            section_dict = {}
+            for field in FIELDS[section]:
+                try:
+                    section_dict[field] = row[(section, field)]
+                except Exception:
+                    section_dict[field] = None
+            doc[section] = section_dict
+        processed_rows.append(doc)
+
+    # Normalize: flatten only Core HR fields, keep others nested
+    normalized_docs = []
+    for doc in processed_rows:
+        # Normalize Core HR fields
+        norm_core_hr = normalize_doc_generic(
+            {k: doc[k] for k in core_hr_fields},
+            core_hr_fields,
+            KEY_RENAMES.get("Core HR", {}),
+            set(NUMERIC_FIELDS.get("Core HR", [])),
+            set(DATE_FIELDS.get("Core HR", [])),
+        )
+        # Normalize nested sections
+        for section in nested_sections:
+            norm_section = normalize_doc_generic(
+                doc[section],
+                FIELDS[section],
+                KEY_RENAMES.get(section, {}),
+                set(NUMERIC_FIELDS.get(section, [])),
+                set(DATE_FIELDS.get(section, [])),
+            )
+            norm_core_hr[section] = norm_section
+        normalized_docs.append(norm_core_hr)
+
+    # MongoDB Transaction
+    client = MongoClient(MONGO_URI)
+    db = client["hr-cleaned"]
+    collection = db[TARGET_COLLECTION]
+    session = client.start_session()
+    try:
+        with session.start_transaction():
+            collection.delete_many({}, session=session)
+            if normalized_docs:
+                collection.insert_many(normalized_docs, session=session)
+    except PyMongoError as e:
+        session.abort_transaction()
+        raise RuntimeError(f"MongoDB transaction failed: {e}")
     finally:
         session.end_session()
         client.close()

@@ -580,21 +580,19 @@ REPORT_CONFIG = {
 
     "offboarding_checklist": {
         "FIELDS": {
-            "Core HR": [
-                "Employee ID",
-                "Employee name",
-                "Grade",
-                "Grade Level",
-                "Designation",
-                "Department",
-                "Sub Department",
-                "Region",
-                "Employee Status",
-                "Reporting Manager",
-                "Date of  Joining",
-                "Date of Resignation",
-                "Date of Leaving",
-            ],
+            "Employee ID": None,
+            "Employee name": None,
+            "Grade": None,
+            "Grade Level": None,
+            "Designation": None,
+            "Department": None,
+            "Sub Department": None,
+            "Region": None,
+            "Employee Status": None,
+            "Reporting Manager": None,
+            "Date of  Joining": None,
+            "Date of Resignation": None,
+            "Date of Leaving": None,
 
             "Status": [
                 " Exit Checklist - Employee",
