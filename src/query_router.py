@@ -61,9 +61,10 @@ def router(query, email):
 
         Classify the user query into exactly ONE route:
             - "document" : factual lookup, IDs, employee records, manager data. It requires fetching user data from the database.
-            - "policy"   : HR rules, eligibility, guidelines, what-to-do. Its about policies .
+            - "policy"   : HR policies, rules, guidelines, eligibility, approvals, compliance, and processes related to performance management, employee benefits, reimbursements, leave, attendance, conduct, grievance, confidentiality, lifecycle (probation, resignation, termination), awards, and volunteering.
             - "chat"     : greetings, thanks, casual or social conversation or other sort of unexpected conversation .
             - "meta"     : questions about the assistant capabilities, privacy, data usage, and boundaries.
+
         
         Instructions:
             - Always output JSON only:

@@ -3,12 +3,33 @@ from databse_dsitcint_values import CANONICAL_GRADES, CANONICAL_DEPARTMENTS, CAN
 
 import re
 
+DEPARTMENT_ACRONYMS = {
+    "hr": "Human Resources",
+    "HR": "Human Resources",
+}
+
 class CanonicalExtractor:
     def __init__(self, grades, departments, regions, score_threshold=80):
         self.grades = [g.lower() for g in grades]
         self.departments = [d.lower() for d in departments]
         self.regions = [r.lower() for r in regions]
         self.score_threshold = score_threshold
+        self.CANONICAL_DEPT_MAP  = {d.lower(): d for d in CANONICAL_DEPARTMENTS}
+
+    def _extract_acronyms(self, words):
+        found = set()
+        for w in words:
+            if w in DEPARTMENT_ACRONYMS:
+                found.add(DEPARTMENT_ACRONYMS[w])
+        return list(found)
+    
+    def _extract_department_acronyms(self, words):
+        acronym_map = {
+            "it": "IT",
+            "hr": "Human Resources",
+        }
+        return {acronym_map[w] for w in words if w in acronym_map}
+
 
     def _clean(self, text: str):
         return re.sub(r"[^a-zA-Z0-9\s]", " ", text).lower()
@@ -62,16 +83,24 @@ class CanonicalExtractor:
         grades = self._find_grades(cleaned)
         phrases = list(self._generate_phrases(words, max_n=4))
 
-        departments = self._fuzzy_best_matches(phrases, self.departments)
-        regions = self._fuzzy_best_matches(phrases, self.regions)
+        departments = set(self._fuzzy_best_matches(phrases, self.departments))
 
+        # acronym detection
+        departments |= {d.lower() for d in self._extract_department_acronyms(words)}
+
+        regions = self._fuzzy_best_matches(phrases, self.regions)
         result = {
             "grades": grades,
-            "departments": [d.title() for d in set(departments)],
-            "regions": [r.title() for r in set(regions)],
+            "departments": [
+                self.CANONICAL_DEPT_MAP[d]
+                for d in departments
+                if d in self.CANONICAL_DEPT_MAP
+            ],
+            "regions": [r.title() for r in regions],
         }
 
-        return CanonicalExtractor.sanitize_result(result)
+        return result
+
 
 
 
@@ -186,6 +215,14 @@ if __name__ == "__main__":
             "expected": {
                 "grades": [],
                 "departments": ["Human Resources"],
+                "regions": []
+            }
+        },
+        {
+            "query": "how many people are in IT department and hr department and sales department",
+            "expected": {
+                "grades": [],
+                "departments": ["IT", "Human Resources", "Sales"],
                 "regions": []
             }
         }

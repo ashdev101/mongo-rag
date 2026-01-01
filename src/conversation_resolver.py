@@ -1,6 +1,7 @@
 import os
 from llm.LLMFactory import LLMFactory
 from memory.memorymanager import get_chat_history
+import json
 
 
 CONVERSATION_RESOLVER_PROMPT = """
@@ -35,13 +36,8 @@ Input handling rules:
 Output format (STRICT JSON ONLY):
 
 {
-  "resolved": true | false,
   "query": "<final query text>"
 }
-
-Definitions:
-- resolved = true → query was rewritten using chat history
-- resolved = false → no rewrite was needed or possible
 
 If you violate any rule above, the output is invalid.
 """
@@ -55,7 +51,7 @@ def resolve_conversation(query, email):
     system_message = CONVERSATION_RESOLVER_PROMPT
     user_message = f"""History:\n{history}\nUser query:\n{query}"""
     response = llm.invoke([{"role": "system", "content": system_message}, {"role": "user", "content": user_message}])
-    return response.content
+    return json.loads(response.content.strip())["query"]
 
 if __name__ == "__main__":
     sample_chat_history_document = {

@@ -44,8 +44,8 @@ class FieldBasedPIIMasker:
 
     def mask(self, data: Any) -> Tuple[Any, Dict[str, str]]:
         """Mask PII in JSON-like dict or list."""
-        self.mapping = {}
-        self.counter = {}
+        # self.mapping = {}
+        # self.counter = {}
         masked = self._mask_recursive(data)
         return masked, self.mapping
 

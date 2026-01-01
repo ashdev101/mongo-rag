@@ -58,7 +58,7 @@ def get_converter_results(converter):
         pass
 
     # 4) nothing worked
-    return "<Unable to retrieve results from NaturalLanguageToMQL. Check implementation.>"
+    return "Sorry , I am unable to process your request at the moment."
 
 class QueryProcessor:
 
