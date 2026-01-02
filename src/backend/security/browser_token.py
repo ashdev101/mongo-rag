@@ -14,8 +14,10 @@ def validate_browser_token(request: Request) -> dict:
     token = request.cookies.get("browser_token")
     if not token:
         raise HTTPException(403, "Missing browser token")
-
-    payload = _verify(token)
+    try :
+        payload = _verify(token)
+    except ValueError:
+        raise HTTPException(403, "Browser token invalid or expired")
 
     if payload["ua"] != request.headers.get("user-agent", ""):
         raise HTTPException(403, "Browser token UA mismatch")
