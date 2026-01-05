@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c:*)",
+      "Bash(python scripts/test_rbac.py:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(python test_user_context.py:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

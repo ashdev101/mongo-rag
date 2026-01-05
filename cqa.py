@@ -442,7 +442,7 @@ Data Access Level:
 No user authentication - Full access to all data (unrestricted mode).
 """
 
-        return SYSTEM_PROMPT_TEMPLATE.format(user_context=user_context)
+        return SYSTEM_PROMPT_TEMPLATE.replace('{user_context}', user_context)
 
     def answer_question(
         self, question: str, verbose: bool = True, use_history: bool = True
