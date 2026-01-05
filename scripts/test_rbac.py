@@ -23,11 +23,11 @@ def main():
     # Initialize RBAC Manager
     try:
         rbac = RBACManager()
-        print("✅ RBAC Manager initialized successfully")
+        print("[OK] RBAC Manager initialized successfully")
         print(f"   Access records loaded: {len(rbac.access_records)}")
         print()
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"[X] Error: {e}")
         return
 
     # Show all authorized users
@@ -55,7 +55,7 @@ def main():
         permissions = rbac.get_user_permissions(emp_code)
 
         if not permissions:
-            print(f"❌ Employee code {emp_code} not found")
+            print(f"[X] Employee code {emp_code} not found")
             print()
             continue
 
@@ -65,7 +65,7 @@ def main():
         print(f"Grade: {permissions['user_grade']}")
         print()
 
-        print(f"Full Access: {'✅ YES' if permissions['full_access'] else '❌ NO'}")
+        print(f"Full Access: {'[OK] YES' if permissions['full_access'] else '[X] NO'}")
         print(f"Accessible Regions: {', '.join(permissions['regions']) if permissions['regions'] else 'All'}")
         print(f"Accessible Grades: {', '.join(permissions['grades']) if permissions['grades'] else 'All'}")
 
@@ -86,10 +86,10 @@ def main():
         rbac_filter = rbac.create_rbac_filter(permissions, collection_schema)
 
         if rbac_filter:
-            print("🔒 RBAC Filter Applied:")
+            print("[LOCKED] RBAC Filter Applied:")
             print(f"   {rbac_filter}")
         else:
-            print("🔓 No RBAC filter (full access)")
+            print("[UNLOCKED] No RBAC filter (full access)")
 
         print()
 
@@ -100,13 +100,13 @@ def main():
 
     invalid_permissions = rbac.get_user_permissions(99999)
     if invalid_permissions:
-        print("❌ Should not have found permissions!")
+        print("[X] Should not have found permissions!")
     else:
-        print("✅ Correctly returned None for invalid employee code")
+        print("[OK] Correctly returned None for invalid employee code")
 
     print()
     print("=" * 80)
-    print("✅ RBAC Test Complete")
+    print("[OK] RBAC Test Complete")
     print("=" * 80)
 
 
