@@ -67,6 +67,7 @@ def main():
     print("  'quit' or 'exit' - Exit the program")
     print("  'clear' or 'reset' - Clear conversation history")
     print("  'history' - Show conversation history")
+    print("  'context' or 'prompt' - Show system prompt with your user context")
     print("=" * 80 + "\n")
 
     question_count = 0
@@ -90,6 +91,14 @@ def main():
                 print("CONVERSATION HISTORY:")
                 print("=" * 80)
                 print(qna.get_history_summary())
+                print("=" * 80)
+                continue
+
+            if question.lower() in ["context", "prompt"]:
+                print("\n" + "=" * 80)
+                print("SYSTEM PROMPT WITH USER CONTEXT:")
+                print("=" * 80)
+                print(qna.get_system_prompt())
                 print("=" * 80)
                 continue
 

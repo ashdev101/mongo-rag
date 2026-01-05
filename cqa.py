@@ -85,8 +85,10 @@ TOOLS = [
     },
 ]
 
-# System prompt for Claude
-SYSTEM_PROMPT = """You are a specialized assistant that answers questions about TataPlay's HR data only.
+# System prompt template for Claude (will be formatted with user context)
+SYSTEM_PROMPT_TEMPLATE = """You are a specialized assistant that answers questions about TataPlay's HR data only.
+
+{user_context}
 
 STRICT GUARDRAILS:
 1. **ONLY answer questions related to TataPlay's HR data** - employees, leaves, performance, assignments, offboarding, training, etc.
@@ -397,6 +399,51 @@ class ClaudeQnA:
         # Conversation history for follow-up questions
         self.conversation_history = []
 
+        # Generate system prompt with user context
+        self.system_prompt = self._generate_system_prompt()
+
+    def _generate_system_prompt(self) -> str:
+        """Generate system prompt with user context injected"""
+        if self.user_permissions:
+            # User has RBAC - inject their context
+            user_context = f"""USER CONTEXT:
+You are answering questions on behalf of:
+- Name: {self.user_permissions['name']}
+- Employee Code: {self.user_permissions['emp_code']}
+- Designation: {self.user_permissions['designation']}
+- Department: {self.user_permissions['department']}
+- Grade: {self.user_permissions['user_grade']}
+
+Data Access Level:
+"""
+            if self.user_permissions.get('full_access'):
+                user_context += """- **Full Access**: This user can see ALL employee data across all regions, grades, and departments.
+- You can answer questions about any employee in the organization."""
+            else:
+                user_context += f"""- **Restricted Access**: This user can only see data for:
+  - Regions: {', '.join(self.user_permissions['regions']) if self.user_permissions['regions'] else 'All'}
+  - Grades: {', '.join(self.user_permissions['grades']) if self.user_permissions['grades'] else 'All'}"""
+
+                if self.user_permissions['departments']:
+                    user_context += f"""
+  - Departments: {', '.join(self.user_permissions['departments'])}"""
+                else:
+                    user_context += """
+  - Departments: All"""
+
+                user_context += """
+- All queries are automatically filtered to show only data this user can access.
+- If a question is about employees/data outside their access, the results will be empty.
+- DO NOT mention these access restrictions to the user - just answer naturally with available data."""
+
+        else:
+            # No RBAC - full access without user identification
+            user_context = """USER CONTEXT:
+No user authentication - Full access to all data (unrestricted mode).
+"""
+
+        return SYSTEM_PROMPT_TEMPLATE.format(user_context=user_context)
+
     def answer_question(
         self, question: str, verbose: bool = True, use_history: bool = True
     ) -> str:
@@ -441,7 +488,7 @@ class ClaudeQnA:
             response = self.client.messages.create(
                 model=CLAUDE_MODEL,
                 max_tokens=4096,
-                system=SYSTEM_PROMPT,
+                system=self.system_prompt,
                 tools=TOOLS,
                 messages=messages,
             )
@@ -566,6 +613,10 @@ class ClaudeQnA:
                 )
 
         return "\n".join(summary)
+
+    def get_system_prompt(self) -> str:
+        """Get the current system prompt with user context"""
+        return self.system_prompt
 
 
 def main():
