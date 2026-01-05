@@ -28,9 +28,32 @@ def main():
     print(f"   AWS Region: {AWS_REGION}")
     print()
 
+    # Ask for employee code (optional RBAC)
+    print("=" * 80)
+    print("RBAC (Role-Based Access Control)")
+    print("=" * 80)
+    print("Enter your employee code for restricted access based on your role.")
+    print("Leave blank for full access (no RBAC).")
+    print()
+
+    user_emp_code = None
+    emp_code_input = input("Employee Code (or press Enter to skip): ").strip()
+    if emp_code_input:
+        try:
+            user_emp_code = int(emp_code_input)
+        except ValueError:
+            print(f"⚠️  Invalid employee code: {emp_code_input}")
+            print("   Continuing without RBAC...")
+    print()
+
     # Initialize QnA system
     try:
-        qna = ClaudeQnA(mongodb_uri=MONGODB_URI, db_name=DB_NAME, aws_region=AWS_REGION)
+        qna = ClaudeQnA(
+            mongodb_uri=MONGODB_URI,
+            db_name=DB_NAME,
+            aws_region=AWS_REGION,
+            user_emp_code=user_emp_code
+        )
         print("✅ System initialized successfully!")
     except Exception as e:
         print(f"❌ Initialization failed: {e}")

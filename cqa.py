@@ -12,11 +12,12 @@ that allows multiple rounds of tool calls until the LLM reaches a final answer.
 
 import os
 import json
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from pymongo import MongoClient
 from bson.json_util import dumps
 from dotenv import load_dotenv
 from anthropic import AnthropicBedrock
+from rbac_manager import RBACManager
 
 # Load environment variables
 load_dotenv()
@@ -222,11 +223,17 @@ OUTPUT FORMAT:
 
 
 class MongoDBToolExecutor:
-    """Executes MongoDB tool calls"""
+    """Executes MongoDB tool calls with RBAC support"""
 
-    def __init__(self, mongodb_uri: str, db_name: str):
+    def __init__(self, mongodb_uri: str, db_name: str, rbac_manager: Optional[RBACManager] = None,
+                 user_permissions: Optional[Dict[str, Any]] = None):
         self.client = MongoClient(mongodb_uri)
         self.db = self.client[db_name]
+        self.rbac_manager = rbac_manager
+        self.user_permissions = user_permissions
+
+        # Cache for collection schemas (used for RBAC field detection)
+        self.schema_cache = {}
 
     def list_collections(self) -> str:
         """List all collections in the database"""
@@ -266,12 +273,17 @@ class MongoDBToolExecutor:
                 "sample_documents": samples,
             }
 
+            # Cache schema for RBAC use
+            self.schema_cache[collection_name] = {
+                "fields": list(all_fields)
+            }
+
             return dumps(result, indent=2)
         except Exception as e:
             return json.dumps({"error": str(e)})
 
     def run_aggregation(self, collection_name: str, pipeline: List[Dict]) -> str:
-        """Run an aggregation pipeline on a collection"""
+        """Run an aggregation pipeline on a collection with RBAC enforcement"""
         try:
             if collection_name not in self.db.list_collection_names():
                 return json.dumps(
@@ -280,13 +292,36 @@ class MongoDBToolExecutor:
 
             collection = self.db[collection_name]
 
-            # Execute aggregation
+            # Apply RBAC filter if enabled
+            original_pipeline = pipeline.copy()
+            if self.rbac_manager and self.user_permissions:
+                # Get schema for this collection (use cached if available)
+                if collection_name not in self.schema_cache:
+                    # Fetch schema if not cached yet
+                    samples = list(collection.find({}).limit(3))
+                    all_fields = set()
+                    for doc in samples:
+                        all_fields.update(doc.keys())
+                    self.schema_cache[collection_name] = {"fields": list(all_fields)}
+
+                # Create RBAC filter based on schema
+                rbac_filter = self.rbac_manager.create_rbac_filter(
+                    self.user_permissions,
+                    self.schema_cache[collection_name]
+                )
+
+                # Inject RBAC filter into pipeline
+                pipeline = self.rbac_manager.inject_rbac_into_pipeline(
+                    pipeline, rbac_filter
+                )
+
+            # Execute aggregation with (possibly modified) pipeline
             results = list(collection.aggregate(pipeline))
 
             return dumps(
                 {
                     "collection": collection_name,
-                    "pipeline": pipeline,
+                    "pipeline": original_pipeline,  # Show original pipeline to LLM
                     "result_count": len(results),
                     "results": results,
                 },
@@ -316,9 +351,10 @@ class MongoDBToolExecutor:
 
 
 class ClaudeQnA:
-    """Sequential tool-calling QnA system using Claude from Bedrock"""
+    """Sequential tool-calling QnA system using Claude from Bedrock with RBAC"""
 
-    def __init__(self, mongodb_uri: str, db_name: str, aws_region: str = "us-east-1"):
+    def __init__(self, mongodb_uri: str, db_name: str, aws_region: str = "us-east-1",
+                 user_emp_code: Optional[int] = None):
         # Initialize Claude Bedrock client
         self.client = AnthropicBedrock(
             aws_region=aws_region,
@@ -326,8 +362,35 @@ class ClaudeQnA:
             aws_secret_key=os.getenv("AWS_S3_USER_SECRET_ACCESS_KEY"),
         )
 
-        # Initialize MongoDB tool executor
-        self.mongo_executor = MongoDBToolExecutor(mongodb_uri, db_name)
+        # Initialize RBAC Manager
+        self.rbac_manager = None
+        self.user_permissions = None
+        self.user_emp_code = user_emp_code
+
+        if user_emp_code:
+            try:
+                self.rbac_manager = RBACManager()
+                self.user_permissions = self.rbac_manager.get_user_permissions(user_emp_code)
+
+                if not self.user_permissions:
+                    print(f"⚠️  Warning: Employee code {user_emp_code} not found in access records.")
+                    print("    Running without RBAC restrictions.")
+                else:
+                    print(f"✅ RBAC enabled for: {self.user_permissions['name']}")
+                    if not self.user_permissions.get('full_access'):
+                        print(f"   Access: {self.rbac_manager.get_user_context_string(self.user_permissions)}")
+            except Exception as e:
+                print(f"⚠️  Warning: Could not load RBAC: {e}")
+                print("    Running without RBAC restrictions.")
+                self.rbac_manager = None
+                self.user_permissions = None
+
+        # Initialize MongoDB tool executor with RBAC
+        self.mongo_executor = MongoDBToolExecutor(
+            mongodb_uri, db_name,
+            rbac_manager=self.rbac_manager,
+            user_permissions=self.user_permissions
+        )
 
         self.max_iterations = 10  # Prevent infinite loops
 
