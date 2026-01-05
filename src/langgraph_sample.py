@@ -15,6 +15,7 @@ import json
 import databse_dsitcint_values
 from memory.memorymanager import get_chat_history
 from CanonicalExtractor import CanonicalExtractor
+from SelfOtherClassifier import SelfOtherClassifier
 # Load environment variables from .env file
 from dotenv import load_dotenv
 app_dir = os.path.join(os.getcwd())
@@ -289,13 +290,9 @@ def classify_query_node(state: AccessState):
     # else:
     #     intent = "unknown"
 
-    # If the user is not hr then the intent should be self and for others it should be 
-    if department == "Human Resources":
-        intent = "others"
-    else :
-        intent = "self"
-
-    return {"intent": intent}
+    classifier = SelfOtherClassifier() 
+    intent = classifier.classify(question)
+    return {"intent": intent if intent == "self" else "others"}
 
 def query_clarifying_agent_node(state: AccessState):
     # Use singleton processor instead of creating new instance every time
@@ -532,7 +529,7 @@ def check_access_node(state: AccessState):
             if dep in department_exceptions:
                 access_denied_departments.append(dep)
     else :
-        departments_to_allow = [x for x in databse_dsitcint_values.CANONICAL_DEPARTMENTS if x not in department_exceptions]
+        departments_to_allow = [x for x in databse_dsitcint_values.CANONICAL_DEPARTMENTS if x not in department_exceptions] if intent == "others" else []
         asked_departments = departments_to_allow
 
     if asked_regions :
@@ -540,14 +537,14 @@ def check_access_node(state: AccessState):
             if reg not in regions_access:
                 access_denied_regions.append(reg)
     else :
-        asked_regions = state["region_access"]
+        asked_regions = state["region_access"] if intent == "others" else []
     
     if asked_grades:
         for grade in asked_grades:
             if grade not in grades_allowed:
                 access_denied_grades.append(grade)
     else :
-        asked_grades = state["grade_allowed"]
+        asked_grades = state["grade_allowed"]  if intent == "others" else []
     
     if access_denied_departments or access_denied_grades or access_denied_regions:
         access_denied = True

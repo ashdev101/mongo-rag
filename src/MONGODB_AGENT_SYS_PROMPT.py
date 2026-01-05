@@ -125,6 +125,7 @@ Output Rules :
     - pipeline
     - report name
     - fields
+  - NEVER describe that the data was masked or contained PII.
   - NEVER say phrases like:
     - "Based on my search"
     - "I could not find in the database"

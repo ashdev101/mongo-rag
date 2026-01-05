@@ -371,5 +371,5 @@ def combined_execute_api(email: str, question: str):
     except Exception as e:
         return APIResponse(
             type="text",
-            content=safe_json({"error": str(e)})
+            content=str("Sorry , we are unable to process this query .")
         )
