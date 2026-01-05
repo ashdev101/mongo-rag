@@ -13,12 +13,19 @@ MODEL_NAME = "gpt-4o-mini"
 
 PROMPT = PromptTemplate(
     template="""
-Context: {context}
+    Context:
+    {context}
 
-Question: {question}
+    Question:
+    {question}
 
-Provide a concise answer based on the context.
-If not enough info, say: "Not enough information in the context."
+    Instructions:
+    - Answer strictly using only the information provided in the Context.
+    - Do NOT add assumptions, interpretations, or external knowledge.
+    - Do NOT mention document names, policy titles, sources, or internal references.
+    - If the Context does not contain sufficient information to answer the question, respond with:
+    "I don’t have enough information in the provided context to answer this question."
+    - Keep the answer concise, factual, and neutral in tone.
 """,
     input_variables=["context", "question"]
 )
@@ -31,7 +38,7 @@ If not enough info, say: "Not enough information in the context."
 
 llm = LLMFactory(
         provider="bedrock",
-        model="qwen.qwen3-235b-a22b-2507-v1:0",
+        model="global.anthropic.claude-sonnet-4-5-20250929-v1:0",
     ).create()
 
 vector_manager = VectorStoreManager()

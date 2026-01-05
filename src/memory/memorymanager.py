@@ -75,3 +75,7 @@ def get_chat_history(email: str):
         return "\n\n".join(formatted_lines)
     except:
         return "Error retreiving Chat History"
+    
+if __name__ == "__main__":
+    test_email = "Shayanta.Chaudhuri@tataplay.com"
+    print(get_chat_history(test_email))

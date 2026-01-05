@@ -1,5 +1,6 @@
 import os
 from llm.LLMFactory import LLMFactory
+from llm.BedrockJSONParser import BedrockResolverOutputParser
 from memory.memorymanager import get_chat_history
 import json
 
@@ -45,72 +46,15 @@ If you violate any rule above, the output is invalid.
 def resolve_conversation(query, email):
     llm = LLMFactory(
         provider="bedrock",
-        model="qwen.qwen3-vl-235b-a22b",
+        model="global.anthropic.claude-sonnet-4-5-20250929-v1:0",
     ).create()
     history = get_chat_history(email)
     system_message = CONVERSATION_RESOLVER_PROMPT
     user_message = f"""History:\n{history}\nUser query:\n{query}"""
     response = llm.invoke([{"role": "system", "content": system_message}, {"role": "user", "content": user_message}])
-    return json.loads(response.content.strip())["query"]
+    return BedrockResolverOutputParser.parse(response.content.strip())["query"]
 
 if __name__ == "__main__":
-    sample_chat_history_document = {
-  "_id": {
-    "$oid": "6955127b77165e96d0a46f68"
-  },
-  "email": "Shayanta.Chaudhuri@tataplay.com",
-  "history": [
-    {
-      "user": "how many leaves i have in balance",
-      "assistant": "Based on the records in the system, there are no leave balance records found for your employee code (7011). This could mean that you have not taken any leaves yet, or the leave balance data has not been recorded in the system.\n\nPlease contact your HR team to get updated information about your leave balance.",
-      "ts": {
-        "$date": "2025-12-31T17:39:30.708Z"
-      }
-    },
-    {
-      "user": "i think i do have taken the leaves ",
-      "assistant": "Based on the search results, **no leave records were found** for your employee code (7011) in the leave transaction system.\n\nThis means either:\n- You have not applied for any leaves yet, or\n- Your leave applications may not have been recorded in the system\n\nIf you believe you have taken leaves, I would recommend reaching out to your HR team to verify your leave records.",
-      "ts": {
-        "$date": "2025-12-31T18:01:17.827Z"
-      }
-    },
-    {
-      "user": "tell me about my pending leaves ",
-      "assistant": "Based on the query results, you currently have **no pending leaves**.\n\nThis means there are no leave requests with \"SUBMITTED\" status or \"AWAITING\" approval status associated with your employee code (7011). \n\nIf you have recently applied for leave, it may have already been approved or processed. Would you like me to check your leave history or leave balance instead?",
-      "ts": {
-        "$date": "2025-12-31T18:05:39.378Z"
-      }
-    },
-    # {
-    #   "user": "who approves it ",
-    #   "assistant": "The HR SPOC or the Reviewer approves it, depending on the approval stage.",
-    #   "ts": {
-    #     "$date": "2025-12-31T18:06:14.755Z"
-    #   }
-    # },
-    # {
-    #   "user": "what is the name of my reviewer",
-    #   "assistant": "Your reviewer's name is **Ashwin Shukla**.",
-    #   "ts": {
-    #     "$date": "2025-12-31T18:07:47.929Z"
-    #   }
-    # },
-    # {
-    #   "user": "what is his email address",
-    #   "assistant": "Your email address is: **Shayanta.Chaudhuri@tataplay.com**",
-    #   "ts": {
-    #     "$date": "2025-12-31T18:10:01.187Z"
-    #   }
-    # }
-  ],
-  "updated_at": {
-    "$date": "2025-12-31T18:10:01.187Z"
-  }
-}
-    chat_history = """User: "Tell me about my goal status and reviewer?
-    Assistant: "Your goal status is APPROVED , and your review is amit sing "
-    User: "Any leaves taken so far by me?"
-    Assistant: "You have in total 10 leaves taken"."""
     user_query = "Is it correct ?"
-    print(resolve_conversation(user_query, sample_chat_history_document["history"]))
+    print(resolve_conversation(user_query, "user-email"))
 

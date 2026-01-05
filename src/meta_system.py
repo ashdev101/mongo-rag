@@ -1,5 +1,7 @@
 from data_context import DataContext
-
+from llm.LLMFactory import LLMFactory
+from llm.BedrockJSONParser import BedrockResolverOutputParser
+import json
 META_SYSTEM_PROMPT = """
 You are Tata Play’s HR virtual assistant.
 
@@ -39,7 +41,6 @@ If the question cannot be answered strictly within these rules, respond with:
 
 """
 
-from llm.LLMFactory import LLMFactory
 def meta_system(query):
     llm = LLMFactory(
         provider="bedrock",
@@ -48,7 +49,7 @@ def meta_system(query):
     system_message = META_SYSTEM_PROMPT.format(data_context=DataContext)
     user_message = f"""User query: "{query}" """
     response = llm.invoke([{"role": "system", "content": system_message}, {"role": "user", "content": user_message}])
-    return response.content
+    return BedrockResolverOutputParser.parse(response.content.strip())
 
 if __name__ == "__main__":
     user_query = "How can I access my leave balance?"

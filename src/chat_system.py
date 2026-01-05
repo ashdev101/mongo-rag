@@ -27,18 +27,19 @@ Do NOT:
 Keep responses short, neutral, and professional.
 """
 from llm.LLMFactory import LLMFactory
+from llm.BedrockJSONParser import BedrockResolverOutputParser
 from memory.memorymanager import get_chat_history
 
 def chat_system(query , email):
     llm = LLMFactory(
         provider="bedrock",
-        model="qwen.qwen3-235b-a22b-2507-v1:0",
+        model="global.anthropic.claude-sonnet-4-5-20250929-v1:0",
     ).create()
     history = get_chat_history(email)
     system_message = CHAT_SYSTEM_PROMPT
     user_message = f"""User query: "{query}" , Conversation history : "{history}" """
     response = llm.invoke([{"role": "system", "content": system_message}, {"role": "user", "content": user_message}])
-    return response.content
+    return BedrockResolverOutputParser.parse(response.content.strip())
 
 if __name__ == "__main__":
     user_query = "Can i kick my manager?"

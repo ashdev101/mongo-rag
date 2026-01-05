@@ -89,12 +89,13 @@ def router(query, email):
     try:
         llm = LLMFactory(
         provider="bedrock",
-        model="qwen.qwen3-vl-235b-a22b",
+        # model="qwen.qwen3-vl-235b-a22b",
+        model="global.anthropic.claude-sonnet-4-5-20250929-v1:0",
         ).create()
         system_message = SYSTEM_PROMPT
         user_message = USER_PROMPT
         response = llm.invoke([{"role": "system", "content": system_message},
-                                {"role": "user", "content": user_message}])
+                                {"role": "user", "content": user_message.format(query=query)}])
         
         raw_output = response.content
         parsed = extract_json(raw_output)
