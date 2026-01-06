@@ -244,7 +244,7 @@ async def secure_query(
     )
 
 @router.post("/api/test/secure-query", response_model=CombinedResponse)
-async def secure_query(
+async def test_secure_query(
     user_message: SharePointMessage,
     request: Request,
 ):
