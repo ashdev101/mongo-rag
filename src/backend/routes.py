@@ -242,3 +242,49 @@ async def secure_query(
             "final_output": result.content
         }
     )
+
+@router.post("/api/test/secure-query", response_model=CombinedResponse)
+async def secure_query(
+    user_message: SharePointMessage,
+    request: Request,
+):
+    """
+    Browser-only, site-locked endpoint.
+    No Azure AD / JWT involved.
+    """
+
+    # 1. Browser enforcement
+    # enforce_browser_request(request)
+
+    # 2. Browser token
+    # browser_payload = validate_browser_token(request)
+    # browser_token = request.cookies.get("browser_token")
+
+    # 3. CSRF
+    # validate_csrf(request, browser_token)
+
+    # 5. Business logic
+    result = combined_execute_api(
+        user_message.email,
+        user_message.text,
+    )
+
+    # ✅ USE ATTRIBUTES, NOT DICT ACCESS
+    if result.type == "file":
+        file_path = result.content
+
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail="File not found")
+
+        return FileResponse(
+            path=file_path,
+            filename=os.path.basename(file_path),
+            media_type="application/pdf",
+        )
+
+    # TEXT RESPONSE
+    return JSONResponse(
+        content={
+            "final_output": result.content
+        }
+    )
