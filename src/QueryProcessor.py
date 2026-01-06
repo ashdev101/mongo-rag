@@ -5,6 +5,7 @@ from langchain_core.messages import HumanMessage, AIMessage
 from langgraph_sample import access_agent
 from CollectionRouter import get_collection
 from aggregation.AggregationRBAC import AggregationRBAC
+import asyncio
 
 # =====================================================================
 # Helper: safely get results from converter.print_results()
@@ -65,7 +66,7 @@ class QueryProcessor:
     def __init__(self):
         self.converter = None  # Will be initialized per query with the actual user query
 
-    def process(self, email: str, nl_query: str):
+    async def process(self, email: str, nl_query: str):
         """
         Runs the access agent, checks permission,
         and converts the natural language query into MQL.
@@ -98,7 +99,7 @@ class QueryProcessor:
         }
 
         # invoke the access agent
-        result = access_agent.invoke(state)
+        result = await access_agent.ainvoke(state)
         print("Access Agent Result:" , result)
 
         needs_clarification = result.get("needs_clarification")
@@ -164,7 +165,7 @@ class QueryProcessor:
 
         # Some converter implementations expect convert_to_mql_and_execute_query to accept None or empty strings:
         try:
-            self.converter.convert_to_mql_and_execute_query(nl_for_converter)
+            await self.converter.convert_to_mql_and_execute_query(nl_for_converter)
         # except TypeError:
         #     # fallback - try calling with no args (if library differs)
         #     try:
@@ -234,6 +235,8 @@ class QueryProcessor:
     
 if __name__ == "__main__":
     querProcessor = QueryProcessor()
-
-    ans = querProcessor.process("Shayanta.Chaudhuri@tataplay.com" , "give me the people who have resigned in the year 2025 with m1 , m2 grades")
-    print(ans)
+    async def main():
+        ans = await querProcessor.process("Shayanta.Chaudhuri@tataplay.com" , "give me the people who have resigned in the year 2025 with m1 , m2 grades")
+        print(ans)
+    
+    asyncio.run(main())

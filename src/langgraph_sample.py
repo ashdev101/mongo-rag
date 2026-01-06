@@ -16,6 +16,9 @@ import databse_dsitcint_values
 from memory.memorymanager import get_chat_history
 from CanonicalExtractor import CanonicalExtractor
 from SelfOtherClassifier import SelfOtherClassifier
+import asyncio
+from motor.motor_asyncio import AsyncIOMotorClient
+
 # Load environment variables from .env file
 from dotenv import load_dotenv
 app_dir = os.path.join(os.getcwd())
@@ -175,13 +178,13 @@ def input_node(state: AccessState):
     return {"question": last_msg}
 
 # connect once (production: use a connection pool)
-client = MongoClient(MONGODB_URI)
+client = AsyncIOMotorClient(MONGODB_URI)
 db = client["hr-cleaned"]
 employees = db["base_report"]
 
-def fetch_role_node(state: AccessState):
+async def fetch_role_node(state: AccessState):
     email = state["email"]
-    record = employees.find_one({"email": email , "assignment status type": "ACTIVE"}, {"_id": 0, "employee code" : 1 , "designation": 1 , "region":1 , "department" : 1})
+    record = await employees.find_one({"email": email , "assignment status type": "ACTIVE"}, {"_id": 0, "employee code" : 1 , "designation": 1 , "region":1 , "department" : 1})
     
     if record and "designation" in record:
         role = record["designation"].lower()
@@ -294,7 +297,7 @@ def classify_query_node(state: AccessState):
     intent = classifier.classify(question)
     return {"intent": intent if intent == "self" else "others"}
 
-def query_clarifying_agent_node(state: AccessState):
+async def query_clarifying_agent_node(state: AccessState):
     # Use singleton processor instead of creating new instance every time
     processor = get_semantic_processor()
     collections = processor.get_collection_routing_list()
@@ -337,7 +340,7 @@ def query_clarifying_agent_node(state: AccessState):
                 current_conversation_parts.append(f"Assistant: {msg.content}")
     
     # Get MongoDB chat history for additional context (from previous sessions)
-    mongo_chat_history = get_chat_history(state.get("email", ""))
+    mongo_chat_history = await get_chat_history(state.get("email", ""))
     
     # Combine: MongoDB history (older) + current conversation (newer)
     # Only add MongoDB history if we have current conversation, to avoid duplication

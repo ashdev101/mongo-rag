@@ -160,18 +160,15 @@ class NaturalLanguageToMQL:
 
         return {"messages": unmasked_messages}
 
-    def convert_to_mql_and_execute_query(self, query: str):
-        # Optional: Mask input query if needed
+    async def convert_to_mql_and_execute_query(self, query: str):
         masked_query, _ = self.pii_masker.mask({"query": query})
         masked_text = masked_query["query"]
 
-        events = self.agent.stream(
-            {"messages": [("user", masked_text)]},
-            stream_mode="values",
+        result = await self.agent.ainvoke(
+            {"messages": [("user", masked_text)]}
         )
 
-        for event in events:
-            self.messages.extend(event["messages"])
+        self.messages.extend(result["messages"])
 
     def print_results(self, return_output: bool = False):
         """

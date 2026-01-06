@@ -122,7 +122,7 @@ async def send_message(
         
         logger.info("Processing sync query from authenticated user")
         
-        result = combined_execute_api(email, user_message.text)
+        result = await combined_execute_api(email, user_message.text)
 
         print(f"Result: {result}")
 
@@ -218,7 +218,7 @@ async def secure_query(
     validate_csrf(request, browser_token)
 
     # 5. Business logic
-    result = combined_execute_api(
+    result = await combined_execute_api(
         user_message.email,
         user_message.text,
     )
@@ -264,7 +264,7 @@ async def secure_query(
     # validate_csrf(request, browser_token)
 
     # 5. Business logic
-    result = combined_execute_api(
+    result = await combined_execute_api(
         user_message.email,
         user_message.text,
     )

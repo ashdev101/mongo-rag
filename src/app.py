@@ -11,6 +11,7 @@ from backend.config import get_settings
 from meta_system import meta_system
 from chat_system import chat_system
 from conversation_resolver import resolve_conversation
+import asyncio
 
 # =====================================================================
 # Existing processor
@@ -18,7 +19,7 @@ from conversation_resolver import resolve_conversation
 processor = QueryProcessor()
 
 
-def run_query(email, question):
+async def run_query(email, question):
     """
     Wrapper for running the main processor.
     """
@@ -27,7 +28,7 @@ def run_query(email, question):
         if not email or not email.strip():
             return "Error", "Please provide a valid email address", None, "Email is required to fetch your employee information and process the query."
         
-        output = processor.process(email.strip(), question.strip())
+        output = await processor.process(email.strip(), question.strip())
         
         status = output["status"]
         agent_output = output["agent_output"]
@@ -64,7 +65,7 @@ def run_policy_query(question):
 # =====================================================================
 # Combined Router
 # =====================================================================
-def router(question):
+async def router(question):
     """
     Decide whether to call:
     - run_query (MQL agent)
@@ -79,7 +80,7 @@ def router(question):
             return f"[ROUTED TO POLICY ENGINE]\n\n{result}"
 
         else:
-            status, agent_out_str, mql, db_results, agg_pipeline = run_query("combined@auto", question)
+            status, agent_out_str, mql, db_results, agg_pipeline = await run_query("combined@auto", question)
 
             return (
                 "[ROUTED TO MQL AGENT]\n\n"
@@ -101,7 +102,7 @@ import json
 import re
 import gradio as gr
 
-def combined_execute(email, question):
+async def combined_execute(email, question):
     """
     Returns:
     1. router_output (text)
@@ -153,7 +154,7 @@ def combined_execute(email, question):
                     # Save history (text only)
                     try:
                         if isinstance(final_output, str) and not os.path.isfile(final_output):
-                            push_convo_pair(email, question, final_output)
+                            await push_convo_pair(email, question, final_output)
                     except Exception as e:
                         print("History save failed:", e)
 
@@ -184,8 +185,8 @@ def combined_execute(email, question):
                 onepager.close()
 
         # ===== REGULAR ROUTING =====
-        resolve_conversation_result = resolve_conversation(question, email)
-        route_result = query_router(resolve_conversation_result, email)
+        resolve_conversation_result = await resolve_conversation(question, email)
+        route_result = await query_router(resolve_conversation_result, email)
         router_out_str = safe_json(route_result)
 
         route = route_result.get("route")
@@ -194,7 +195,7 @@ def combined_execute(email, question):
         final_output = ""
 
         if route == "document":
-            status, agent_out_str, mql, db_results, agg_pipeline = run_query(email, query)
+            status, agent_out_str, mql, db_results, agg_pipeline = await run_query(email, query)
             final_output = db_results
 
         elif route == "policy":
@@ -211,7 +212,7 @@ def combined_execute(email, question):
 
         # Save history
         try:
-            push_convo_pair(email, question, final_output)
+            await push_convo_pair(email, question, final_output)
         except Exception as e:
             print("History save failed:", e)
 
@@ -253,7 +254,7 @@ class APIResponse(BaseModel):
     type: Literal["text","file"]  # "text" | "file"
     content: str  # text OR absolute file path
 
-def combined_execute_api(email: str, question: str):
+async def combined_execute_api(email: str, question: str):
     """
     Returns:
     {
@@ -308,7 +309,7 @@ def combined_execute_api(email: str, question: str):
                 # Save history (TEXT ONLY)
                 if isinstance(final_output, str) and not os.path.isfile(final_output):
                     try:
-                        push_convo_pair(email, question, final_output)
+                        await push_convo_pair(email, question, final_output)
                     except Exception:
                         pass
 
@@ -329,13 +330,13 @@ def combined_execute_api(email: str, question: str):
                 onepager.close()
 
         # ===== REGULAR ROUTING =====
-        resolve_conversation_result = resolve_conversation(question, email)
-        route_result = query_router(resolve_conversation_result, email)
+        resolve_conversation_result = await resolve_conversation(question, email)
+        route_result = await query_router(resolve_conversation_result, email)
         route = route_result.get("route")
         query = route_result.get("query", "")
 
         if route == "document":
-            _, _, _, db_results, _ = run_query(email, query)
+            _, _, _, db_results, _ = await run_query(email, query)
             final_output = db_results
 
         elif route == "policy":
@@ -352,7 +353,7 @@ def combined_execute_api(email: str, question: str):
 
         # Save history
         try:
-            push_convo_pair(email, question, final_output)
+            await push_convo_pair(email, question, final_output)
         except Exception:
             pass
 

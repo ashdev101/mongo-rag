@@ -3,6 +3,7 @@ from llm.LLMFactory import LLMFactory
 from llm.BedrockJSONParser import BedrockResolverOutputParser
 from memory.memorymanager import get_chat_history
 import json
+import asyncio
 
 
 CONVERSATION_RESOLVER_PROMPT = """
@@ -43,15 +44,15 @@ Output format (STRICT JSON ONLY):
 If you violate any rule above, the output is invalid.
 """
 
-def resolve_conversation(query, email):
+async def resolve_conversation(query, email):
     llm = LLMFactory(
         provider="bedrock",
         model="global.anthropic.claude-sonnet-4-5-20250929-v1:0",
     ).create()
-    history = get_chat_history(email)
+    history = await get_chat_history(email)
     system_message = CONVERSATION_RESOLVER_PROMPT
     user_message = f"""History:\n{history}\nUser query:\n{query}"""
-    response = llm.invoke([{"role": "system", "content": system_message}, {"role": "user", "content": user_message}])
+    response = await llm.ainvoke([{"role": "system", "content": system_message}, {"role": "user", "content": user_message}])
     return BedrockResolverOutputParser.parse(response.content.strip())["query"]
 
 if __name__ == "__main__":

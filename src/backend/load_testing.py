@@ -1,15 +1,17 @@
 import requests
 import random
 import time
+import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ==========================
 # CONFIGURATION
 # ==========================
-ENDPOINT_URL = "http://3.111.177.75/api/messages-public"
-TOTAL_REQUESTS = 100        # Total requests to send
-CONCURRENCY = 100            # Number of parallel threads
-REQUEST_TIMEOUT = 200          # seconds
+ENDPOINT_URL = "https://tplay-api.kreedatesting.in/api/test/secure-query"
+TOTAL_REQUESTS = 10
+CONCURRENCY = 10
+REQUEST_TIMEOUT = 200  # seconds
+OUTPUT_FILE = "load_test_results.json"
 
 HEADERS = {
     "Content-Type": "application/json"
@@ -34,11 +36,12 @@ def send_request(request_id):
 
     payload = {
         "email": email,
-        "sender" : "user",
+        "sender": "user",
         "text": question
     }
 
     start_time = time.time()
+
     try:
         response = requests.post(
             ENDPOINT_URL,
@@ -46,17 +49,27 @@ def send_request(request_id):
             headers=HEADERS,
             timeout=REQUEST_TIMEOUT
         )
+
         latency = time.time() - start_time
+
+        # Try to parse JSON response safely
+        try:
+            response_body = response.json()
+        except ValueError:
+            response_body = response.text
 
         return {
             "request_id": request_id,
+            "request": payload,
             "status_code": response.status_code,
-            "latency": latency
+            "latency": latency,
+            "response": response_body
         }
 
     except requests.exceptions.RequestException as e:
         return {
             "request_id": request_id,
+            "request": payload,
             "status_code": "ERROR",
             "error": str(e)
         }
@@ -89,7 +102,8 @@ def run_load_test():
                 print(
                     f"[OK] Req {result['request_id']} "
                     f"Status={result['status_code']} "
-                    f"Latency={result['latency']:.2f}s"
+                    f"Latency={result['latency']:.2f}s "
+                    f"Email={result['request']['email']}"
                 )
 
     total_time = time.time() - start_time
@@ -109,6 +123,14 @@ def run_load_test():
     print(f"Failed Req      : {error_count}")
     print(f"Avg Latency     : {avg_latency:.2f}s")
     print(f"Throughput      : {TOTAL_REQUESTS / total_time:.2f} req/sec")
+
+    # ==========================
+    # SAVE RESULTS
+    # ==========================
+    with open(OUTPUT_FILE, "w") as f:
+        json.dump(results, f, indent=2)
+
+    print(f"\n📁 Results saved to: {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     run_load_test()

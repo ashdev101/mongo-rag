@@ -2,6 +2,7 @@ import os
 from pymongo import MongoClient
 from datetime import datetime
 from dotenv import load_dotenv
+from motor.motor_asyncio import AsyncIOMotorClient
 
 
 load_dotenv()
@@ -11,17 +12,17 @@ MONGODB_URI = os.getenv("MONGODB_URI")
 if not MONGODB_URI:
     raise RuntimeError("MONGODB_URI is not set in the environment.")
 
-client = MongoClient(MONGODB_URI)
+client = AsyncIOMotorClient(MONGODB_URI)
 db = client["test-saptarshi"]                   
-collection = db["chat-history"]       
+collection = db["chat-history"]
 
-def push_convo_pair(email: str, user_msg: str, bot_msg: str):
+async def push_convo_pair(email: str, user_msg: str, bot_msg: str):
     """
     Push the latest conversation pair and keep only the last 10 items.
     """
     try:
         print("Updating History for",email)
-        collection.update_one(
+        await collection.update_one(
             {"email": email},
             {
                 "$push": {
@@ -44,13 +45,13 @@ def push_convo_pair(email: str, user_msg: str, bot_msg: str):
     except:
         print("Failed to Update History for",email)
 
-def get_chat_history(email: str):
+async def get_chat_history(email: str):
     """
     Retrieve the last conversation turns (up to 10), remove `ts`,
     format them with newline separation, and return as a single string.
     """
     try:
-        doc = collection.find_one(
+        doc = await collection.find_one(
             {"email": email},
             {"_id": 0, "history": 1}
         )

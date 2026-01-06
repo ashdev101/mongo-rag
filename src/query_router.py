@@ -56,7 +56,7 @@ def extract_json(raw_text: str):
         return None
     
 
-def router(query, email):
+async def router(query, email):
     SYSTEM_PROMPT = """You are an HR intent classifier used in production.
 
         Classify the user query into exactly ONE route:
@@ -94,7 +94,7 @@ def router(query, email):
         ).create()
         system_message = SYSTEM_PROMPT
         user_message = USER_PROMPT
-        response = llm.invoke([{"role": "system", "content": system_message},
+        response = await llm.ainvoke([{"role": "system", "content": system_message},
                                 {"role": "user", "content": user_message.format(query=query)}])
         
         raw_output = response.content

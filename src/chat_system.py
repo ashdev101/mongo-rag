@@ -30,15 +30,15 @@ from llm.LLMFactory import LLMFactory
 from llm.BedrockJSONParser import BedrockResolverOutputParser
 from memory.memorymanager import get_chat_history
 
-def chat_system(query , email):
+async def chat_system(query , email):
     llm = LLMFactory(
         provider="bedrock",
         model="global.anthropic.claude-sonnet-4-5-20250929-v1:0",
     ).create()
-    history = get_chat_history(email)
+    history = await get_chat_history(email)
     system_message = CHAT_SYSTEM_PROMPT
     user_message = f"""User query: "{query}" , Conversation history : "{history}" """
-    response = llm.invoke([{"role": "system", "content": system_message}, {"role": "user", "content": user_message}])
+    response = await llm.ainvoke([{"role": "system", "content": system_message}, {"role": "user", "content": user_message}])
     return BedrockResolverOutputParser.parse(response.content.strip())
 
 if __name__ == "__main__":
