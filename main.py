@@ -188,5 +188,6 @@ if __name__ == "__main__":
         "main:app",
         host=settings.HOST,
         port=settings.PORT,
-        reload=settings.ENVIRONMENT == "development",  # Auto-reload only in development
+        reload=False,  # Auto-reload only in development
     )
+    

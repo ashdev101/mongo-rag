@@ -3,12 +3,12 @@ name = "rag"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = "==3.12.12"
 dependencies = [
     "cryptography>=41.0.0",
     "dotenv>=0.9.9",
     "faker>=37.11.0",
-    "en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl",
+    "en-core-web-sm @ file:///home/hrchatbot/mongo-rag/models/spacy.en_core_web_sm/en_core_web_sm-3.7.1-py3-none-any.whl",
     "fastapi>=0.104.0",
     "gradio>=5.23.1",
     "langchain>=0.3.27",
@@ -34,9 +34,12 @@ dependencies = [
     "sse-starlette>=1.6.0",
     "uvicorn[standard]>=0.24.0",
     "xlrd>=2.0.2",
-    "spacy>=3.8.11",
+    "spacy<=3.8.0",
     "langchain-aws>=0.2.35",
     "tiktoken>=0.12.0",
     "reportlab>=4.4.7",
     "gunicorn>=23.0.0",
 ]
+[[tool.uv.index]]
+url = "https://nexus-devsecops:Rainyday%402025@cloud-nexus.tataplay.com/repository/python-proxy/simple"
+default = true

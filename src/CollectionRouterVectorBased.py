@@ -5,7 +5,7 @@ from sentence_transformers import SentenceTransformer
 
 
 class CollectionRouterVectorBased:
-    def __init__(self, embedding_file="./json_repo/routing_embeddings.json", model_name="BAAI/bge-small-en-v1.5"):
+    def __init__(self, embedding_file="./json_repo/routing_embeddings.json", model_name="./models/BAAI.bge-small-en-v1.5"):
         self.model = SentenceTransformer(model_name)
         self.collection_data = self._load_embeddings(embedding_file)
 
