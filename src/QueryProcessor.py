@@ -6,6 +6,12 @@ from langgraph_sample import access_agent
 from CollectionRouter import get_collection
 from aggregation.AggregationRBAC import AggregationRBAC
 import asyncio
+from utils.QueueFileLogger import QueueFileLogger
+import logging
+
+logger = QueueFileLogger(
+level=logging.INFO,
+).get_logger()
 
 # =====================================================================
 # Helper: safely get results from converter.print_results()
@@ -128,6 +134,7 @@ class QueryProcessor:
                 #     # Use memorymanager's push_convo_pair function
                 #     #push_convo_pair(email, user_msg, assistant_msg or clarification_question or "")
         except Exception as e:
+            logger.exception("Error saving chat history for email: %s and question: %s", email, nl_query)
             print(f"Warning: Could not save chat history: {e}")
 
         if needs_clarification:
@@ -178,6 +185,7 @@ class QueryProcessor:
         #             "db_results": f"Converter execution failed: {e}"
         #         }
         except Exception as e:
+            logger.exception("Error in convert_to_mql_and_execute_query for question: %s", nl_for_converter)
             return {
                 "status": "Error",
                 "agent_output": result,
@@ -236,7 +244,7 @@ class QueryProcessor:
 if __name__ == "__main__":
     querProcessor = QueryProcessor()
     async def main():
-        ans = await querProcessor.process("Shayanta.Chaudhuri@tataplay.com" , "give me the people who have resigned in the year 2025 with m1 , m2 grades")
+        ans = await querProcessor.process("sangram.chavan@tataplay.com" , "my goal status with weigths")
         print(ans)
     
     asyncio.run(main())
