@@ -160,7 +160,7 @@ class NaturalLanguageToMQL:
 
         return {"messages": unmasked_messages}
 
-    async def convert_to_mql_and_execute_query(self, query: str):
+    def convert_to_mql_and_execute_query(self, query: str):
         masked_query, _ = self.pii_masker.mask({"query": query})
         masked_text = masked_query["query"]
 
