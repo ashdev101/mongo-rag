@@ -349,13 +349,13 @@ async def combined_execute_api(email: str, question: str):
             final_output = db_results
 
         elif route == "policy":
-            final_output = run_policy_query(query)
+            final_output = await run_policy_query(query)
         
         elif route == "chat":
-            final_output = chat_system(query , email)
+            final_output = await chat_system(query , email)
 
         elif route == "meta":
-            final_output = meta_system(query)
+            final_output = await meta_system(query)
 
         else:
             logger.info(f"Unknown route '{route}' for email '{email}' and question '{question}'")
