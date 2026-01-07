@@ -172,7 +172,7 @@ class QueryProcessor:
 
         # Some converter implementations expect convert_to_mql_and_execute_query to accept None or empty strings:
         try:
-            await self.converter.convert_to_mql_and_execute_query(nl_for_converter)
+            self.converter.convert_to_mql_and_execute_query(nl_for_converter)
         # except TypeError:
         #     # fallback - try calling with no args (if library differs)
         #     try:

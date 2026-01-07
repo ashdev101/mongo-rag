@@ -164,11 +164,12 @@ class NaturalLanguageToMQL:
         masked_query, _ = self.pii_masker.mask({"query": query})
         masked_text = masked_query["query"]
 
-        result = await self.agent.ainvoke(
+        result = self.agent.invoke(
             {"messages": [("user", masked_text)]}
         )
 
-        self.messages.extend(result["messages"])
+        for msg in result["messages"]:
+            self.messages.append(msg)
 
     def print_results(self, return_output: bool = False):
         """
