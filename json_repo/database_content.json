@@ -1,0 +1,269 @@
+{
+  "collections": [
+    {
+      "name": "base_report",
+      "purpose": "Primary employee master data and demographic information",
+      "key_entities": [
+        "employee code",
+        "employee name",
+        "email",
+        "designation",
+        "grade",
+        "department",
+        "region",
+        "date of joining",
+        "manager information",
+        "assignment status"
+      ],
+      "important_rules": [
+        "Only employees with assignment status = ACTIVE should be considered by default",
+        "INACTIVE employees should be included only if explicitly requested",
+        "This is the source of truth for employee existence and status"
+      ],
+      "common_intents": [
+        "employee lookup",
+        "employee demographics",
+        "active headcount",
+        "manager or department mapping",
+        "new joiners or exited employees"
+      ],
+      "example_queries": [
+        "List all active employees in Sales",
+        "Who is the manager of employee John Doe?",
+        "Show new joiners for last month",
+        "How many active employees are there in Bangalore region?"
+      ]
+    },
+    {
+      "name": "leave_transaction",
+      "purpose": "Employee leave usage and leave type tracking",
+      "key_entities": [
+        "employee",
+        "sick leave",
+        "casual leave",
+        "paid leave"
+      ],
+      "important_rules": [
+        "Total leaves = Sick Leave + Casual Leave + Paid Leave",
+        "If no record exists, the employee has not taken any leaves"
+      ],
+      "common_intents": [
+        "leave balance",
+        "leave usage",
+        "total leaves taken"
+      ],
+      "example_queries": [
+        "How many leaves has employee A taken?",
+        "Total sick leaves taken by an employee",
+        "Employees with highest leave usage"
+      ]
+    },
+    {
+      "name": "offboarding_checklist",
+      "purpose": "Employee exit and offboarding task tracking",
+      "key_entities": [
+        "employee",
+        "exit checklist",
+        "task status"
+      ],
+      "important_rules": [
+        "All exit formalities are complete when status.all task status = Completed",
+        "If status.all task status = Pending, some exit formalities are still incomplete",
+        "Pending exit tasks are identified by individual fields marked as Pending"
+      ],
+      "common_intents": [
+        "resignation status",
+        "offboarding progress",
+        "pending exit formalities"
+      ],
+      "example_queries": [
+        "Is the offboarding completed for employee X?",
+        "Which exit tasks are pending for employee Y?",
+        "Employees with incomplete exit formalities"
+      ]
+    },
+    {
+      "name": "performance_goal_report_2025_2026",
+      "purpose": "Approved performance goals for employees for FY 2025–2026",
+      "key_entities": [
+        "employee",
+        "goal plan name",
+        "goal description",
+        "goal weightage"
+      ],
+      "important_rules": [
+        "An employee can have multiple goals",
+        "Total goal weightage per employee must sum to 100"
+      ],
+      "common_intents": [
+        "employee goals",
+        "goal distribution",
+        "goal weightage analysis"
+      ],
+      "example_queries": [
+        "What are the goals assigned to employee X?",
+        "Show goal weightage breakup for employee Y",
+        "List employees with incomplete goal weightage"
+      ]
+    },
+    {
+      "name": "goal_setting_status",
+      "purpose": "Tracks the status of performance goal setting and approvals",
+      "key_entities": [
+        "employee",
+        "goal setting status",
+        "manager",
+        "reviewer"
+      ],
+      "important_rules": [
+        "Status reflects the current stage of goal approval workflow",
+        "Possible values include APPROVED, DRAFT, Pending with Employee, Pending with Manager, Pending with Reviewer, REJECTED, CANCELLED"
+      ],
+      "common_intents": [
+        "goal approval status",
+        "pending goal actions",
+        "manager or reviewer pending items"
+      ],
+      "example_queries": [
+        "Which employees have not submitted their goals?",
+        "Goals pending with manager approval",
+        "List employees whose goals are approved"
+      ]
+    },
+    {
+      "name": "permormance_rating_report_year_2025_2026",
+      "purpose": "Final performance ratings for employees for FY 2025–2026",
+      "key_entities": [
+        "employee",
+        "performance rating",
+        "final status"
+      ],
+      "important_rules": [
+        "Final status can be Approved, Completed, In progress, or Submitted"
+      ],
+      "common_intents": [
+        "performance ratings",
+        "rating completion status"
+      ],
+      "example_queries": [
+        "What is the rating of employee X?",
+        "Employees whose ratings are approved",
+        "Performance ratings distribution"
+      ]
+    },
+    {
+      "name": "pip_transaction_report",
+      "purpose": "Performance Improvement Plan (PIP) tracking",
+      "key_entities": [
+        "employee",
+        "PIP task status",
+        "start date",
+        "completion date"
+      ],
+      "important_rules": [
+        "PIP task status can be ASSIGNED, INITIAL, or COMPLETE"
+      ],
+      "common_intents": [
+        "employees under PIP",
+        "PIP status tracking"
+      ],
+      "example_queries": [
+        "Which employees are on PIP?",
+        "Is employee X PIP completed?",
+        "Active PIP cases this year"
+      ]
+    },
+    {
+      "name": "pms_task_status_report_all",
+      "purpose": "Performance management document workflow status",
+      "key_entities": [
+        "employee",
+        "employee evaluation status",
+        "manager evaluation status",
+        "reviewer status",
+        "final status"
+      ],
+      "important_rules": [
+        "Final status DOCUMENT APPROVED means the PMS cycle is complete",
+        "Pending statuses indicate where the document is stuck"
+      ],
+      "common_intents": [
+        "PMS completion status",
+        "pending performance reviews",
+        "approval tracking"
+      ],
+      "example_queries": [
+        "Is PMS completed for employee X?",
+        "PMS pending with manager",
+        "Employees with approved PMS documents"
+      ]
+    },
+    {
+      "name": "performance_360_degree_feedback_participants_status_all",
+      "purpose": "360-degree feedback participation and completion tracking",
+      "key_entities": [
+        "employee",
+        "participant",
+        "participation status"
+      ],
+      "important_rules": [
+        "Participation status can be Awaiting Reply, Not Started, In progress, or Completed"
+      ],
+      "common_intents": [
+        "360 feedback completion",
+        "pending feedback participants"
+      ],
+      "example_queries": [
+        "Is 360 feedback completed for employee X?",
+        "List pending 360 feedback participants"
+      ]
+    },
+    {
+      "name": "historical_ratings_and_other_information",
+      "purpose": "Historical performance ratings, education, and work experience",
+      "key_entities": [
+        "employee",
+        "cy-1 rating",
+        "cy-2 rating",
+        "cy-3 rating",
+        "education",
+        "prior experience",
+        "tata play experience",
+        "previous company"
+      ],
+      "important_rules": [
+        "Historical ratings cover last three years (cy-1, cy-2, cy-3)"
+      ],
+      "common_intents": [
+        "historical performance",
+        "employee experience",
+        "career background"
+      ],
+      "example_queries": [
+        "Show last 3 years ratings for employee X",
+        "What is the total experience of employee Y?",
+        "Previous company of employee Z"
+      ]
+    },
+    {
+      "name": "goal_detail_report",
+      "purpose": "Individual Development Plan (IDP) details for employees",
+      "key_entities": [
+        "employee",
+        "development goal",
+        "development goal status"
+      ],
+      "important_rules": [
+        "Development goal status can be COMPLETED, IN_PROGRESS, NOT_STARTED, or NA"
+      ],
+      "common_intents": [
+        "development plan status",
+        "IDP tracking"
+      ],
+      "example_queries": [
+        "What is the development plan status for employee X?",
+        "Employees with incomplete development goals"
+      ]
+    }
+  ]
+}
