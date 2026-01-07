@@ -156,7 +156,7 @@ class QueryProcessor:
         nl_for_converter = modified_query if modified_query else result.get("question")
 
         # know which collections to use to resolve the query
-        collections = get_collection(nl_for_converter , use_rule_based_first=False)
+        collections = await get_collection(nl_for_converter , use_rule_based_first=False)
         print("Collections to use for query:", collections)
         aggregationRBAC = AggregationRBAC(
                             user={

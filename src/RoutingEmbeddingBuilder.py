@@ -6,7 +6,8 @@ from SemanticDictionaryProcessor import SemanticDictionaryProcessor
 
 class RoutingEmbeddingBuilder:
     def __init__(self, model_name: str = "BAAI/bge-small-en-v1.5"):
-        self.model = SentenceTransformer(model_name)
+        # self.model = SentenceTransformer(model_name)
+        pass
 
     def generate_embeddings(self, routing_data: List[Dict]):
         result = {}

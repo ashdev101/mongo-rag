@@ -10,7 +10,7 @@ class CollectionRouterAgent:
         self.use_rule_based_first = use_rule_based_first
         self.include_default_collection = include_default_collection
     
-    def route_query(self, user_query: str):
+    async def route_query(self, user_query: str):
         """
         Returns ALL collections that match the user query based on routing keywords.
 
@@ -30,7 +30,7 @@ class CollectionRouterAgent:
         # If collections matched size is 1, use vector-based routing as fallback
         if not matched_collections or len(matched_collections) <= 1:
             print("Using vector-based routing as fallback...")
-            vector_match = self.collectionRouterVector.top_k_collections(user_query)
+            vector_match = await self.collectionRouterVector.top_k_collections(user_query)
             if vector_match:
                 for match in vector_match:
                     if match["collection_name"] not in matched_collections:
@@ -38,14 +38,14 @@ class CollectionRouterAgent:
 
         return matched_collections
     
-def get_collection(query : str , use_rule_based_first : bool = True) -> list:
+async def get_collection(query : str , use_rule_based_first : bool = True) -> list:
     processor = SemanticDictionaryProcessor("./json_repo/database_summary.json")
     defualt_collections = processor.get_default_collections()
     collections = processor.get_collection_routing_list()
     collectionRouterRuleBased = CollectionRouterRuleBased(collections , defualt_collections)
     collectionRouterVectorBased = CollectionRouterVectorBased()
     router = CollectionRouterAgent(processor , collectionRouterRuleBased , collectionRouterVectorBased , use_rule_based_first)
-    return router.route_query(query)
+    return await router.route_query(query)
     
 if __name__ == "__main__":
     matches = get_collection("last promotion date for ashish" , use_rule_based_first=False)
