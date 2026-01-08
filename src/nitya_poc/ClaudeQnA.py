@@ -1,8 +1,8 @@
 import os
 from dotenv import load_dotenv
 from anthropic import AnthropicBedrock
-from nitya_poc.MongoDBToolExecutor import MongoDBToolExecutor
-from nitya_poc.SYSTEM_PROMPT_TEMPLATE import SYSTEM_PROMPT_TEMPLATE
+from src.nitya_poc.MongoDBToolExecutor import MongoDBToolExecutor
+from src.nitya_poc.SYSTEM_PROMPT_TEMPLATE import SYSTEM_PROMPT_TEMPLATE
 import json
 
 CLAUDE_MODEL = os.getenv(
