@@ -349,7 +349,7 @@ async def combined_execute_api(email: str, question: str):
             final_output = db_results
 
         elif route == "policy":
-            final_output = await run_policy_query(query)
+            final_output =  run_policy_query(query)
         
         elif route == "chat":
             final_output = await chat_system(query , email)

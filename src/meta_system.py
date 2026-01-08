@@ -41,14 +41,14 @@ If the question cannot be answered strictly within these rules, respond with:
 
 """
 
-def meta_system(query):
+async def meta_system(query):
     llm = LLMFactory(
         provider="bedrock",
         model="global.anthropic.claude-sonnet-4-5-20250929-v1:0",
     ).create()
     system_message = META_SYSTEM_PROMPT.format(data_context=DataContext)
     user_message = f"""User query: "{query}" """
-    response = llm.invoke([{"role": "system", "content": system_message}, {"role": "user", "content": user_message}])
+    response = await llm.ainvoke([{"role": "system", "content": system_message}, {"role": "user", "content": user_message}])
     return BedrockResolverOutputParser.parse(response.content.strip())
 
 if __name__ == "__main__":
