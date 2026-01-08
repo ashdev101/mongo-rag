@@ -1,8 +1,8 @@
 import os
 from dotenv import load_dotenv
-from anthropic import AnthropicBedrock
-from src.nitya_poc.MongoDBToolExecutor import MongoDBToolExecutor
-from src.nitya_poc.SYSTEM_PROMPT_TEMPLATE import SYSTEM_PROMPT_TEMPLATE
+from anthropic import AsyncAnthropicBedrock
+from nitya_poc.MongoDBToolExecutor import MongoDBToolExecutor
+from nitya_poc.SYSTEM_PROMPT_TEMPLATE import SYSTEM_PROMPT_TEMPLATE
 import json
 
 CLAUDE_MODEL = os.getenv(
@@ -70,7 +70,7 @@ class ClaudeQnA:
         user_context: dict,
         aws_region: str = "ap-south-1",
     ):
-        self.client = AnthropicBedrock(
+        self.client = AsyncAnthropicBedrock(
             aws_region=aws_region,
             aws_access_key=os.getenv("AWS_S3_USER_ACCESS_KEY"),
             aws_secret_key=os.getenv("AWS_S3_USER_SECRET_ACCESS_KEY"),
@@ -89,7 +89,7 @@ class ClaudeQnA:
 
 )
 
-    def answer_question(
+    async def answer_question(
         self,
         question: str,
         verbose: bool = False,
@@ -111,7 +111,7 @@ class ClaudeQnA:
         while iteration < self.max_iterations:
             iteration += 1
 
-            response = self.client.messages.create(
+            response = await self.client.messages.create(
                 model=CLAUDE_MODEL,
                 max_tokens= 4096,
                 system=self.system_prompt,

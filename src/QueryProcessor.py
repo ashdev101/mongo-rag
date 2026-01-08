@@ -205,10 +205,10 @@ class QueryProcessor:
         # Some converter implementations expect convert_to_mql_and_execute_query to accept None or empty strings:
         try:
             # self.converter.convert_to_mql_and_execute_query(nl_for_converter)
-            answer = self.agent.answer_question(
+            answer = await self.agent.answer_question(
                     nl_for_converter,
                     verbose=True,
-                    use_history=True,
+                    use_history=False,
                     )
         # except TypeError:
         #     # fallback - try calling with no args (if library differs)
