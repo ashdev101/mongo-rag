@@ -1,17 +1,29 @@
 import io
+import os
 import contextlib
 from Mongo import NaturalLanguageToMQL
 from langchain_core.messages import HumanMessage, AIMessage
+from RegexPIIMasker import FieldBasedPIIMasker
 from langgraph_sample import access_agent
 from CollectionRouter import get_collection
 from aggregation.AggregationRBAC import AggregationRBAC
 import asyncio
+from nitya_poc.ClaudeQnA import ClaudeQnA
+from nitya_poc.MongoDBToolExecutor import MongoDBToolExecutor
 from utils.QueueFileLogger import QueueFileLogger
 import logging
+from MongoDbDatabseLocalContextAndPiiMasking import MongoDBDatabasePIIToolkit
 
 logger = QueueFileLogger(
 level=logging.INFO,
 ).get_logger()
+
+from dotenv import load_dotenv
+app_dir = os.path.join(os.getcwd())
+load_dotenv(os.path.join(app_dir, ".env"))
+
+MONGODB_URI = os.getenv('MONGODB_URI')
+DB_NAME = 'hr-cleaned'
 
 # =====================================================================
 # Helper: safely get results from converter.print_results()
@@ -156,8 +168,8 @@ class QueryProcessor:
         nl_for_converter = modified_query if modified_query else result.get("question")
 
         # know which collections to use to resolve the query
-        collections = await get_collection(nl_for_converter , use_rule_based_first=False)
-        print("Collections to use for query:", collections)
+        # collections = await get_collection(nl_for_converter , use_rule_based_first=False)
+        # print("Collections to use for query:", collections)
         aggregationRBAC = AggregationRBAC(
                             user={
                                     "isHR" : result["department"] == "Human Resources",
@@ -168,11 +180,36 @@ class QueryProcessor:
                                 }
                             )
         # Initialize converter with current query to generate relevant example
-        self.converter = NaturalLanguageToMQL(user_query=nl_for_converter, include_collections = collections , aggregationRBAC= aggregationRBAC , userid=result["employee_code"])
+        # self.converter = NaturalLanguageToMQL(user_query=nl_for_converter, include_collections = collections , aggregationRBAC= aggregationRBAC , userid=result["employee_code"])
+        pii_masker= FieldBasedPIIMasker()
+        db_wrapper = MongoDBDatabasePIIToolkit.from_connection_string(
+            MONGODB_URI,
+            database=DB_NAME,
+            schema= "./json_repo/mongo_schema_report.json",
+            pii_masker= FieldBasedPIIMasker(),
+            aggregationRBAC= aggregationRBAC,
+        )
+        
+        mongo_executor = MongoDBToolExecutor(
+            db_wrapper=db_wrapper,
+            aggregationRBAC=aggregationRBAC,
+        )
+        self.agent = ClaudeQnA(
+                        mongo_executor=mongo_executor,
+                        pii_masker=pii_masker,
+                        user_context={
+                            "employeeCode" : result["employee_code"],
+                        }
+        )
 
         # Some converter implementations expect convert_to_mql_and_execute_query to accept None or empty strings:
         try:
-            self.converter.convert_to_mql_and_execute_query(nl_for_converter)
+            # self.converter.convert_to_mql_and_execute_query(nl_for_converter)
+            answer = self.agent.answer_question(
+                    nl_for_converter,
+                    verbose=True,
+                    use_history=True,
+                    )
         # except TypeError:
         #     # fallback - try calling with no args (if library differs)
         #     try:
@@ -194,7 +231,11 @@ class QueryProcessor:
             }
 
         # obtain results robustly
-        db_output = get_converter_results(self.converter)
+        # db_output = get_converter_results(self.converter)
+        db_output = {
+            "unmasked_output": answer,
+            "agg_pipeline": None
+        }
 
         # Debug info: show what we received and whether the db wrapper holds a pipeline
         # author: saptarshi-> can delete the following used to debug
@@ -235,7 +276,7 @@ class QueryProcessor:
             "status": "Allowed",
             "agent_output": result,
             "mql": nl_for_converter,
-             "db_results": db_results,
+            "db_results": db_results,
             "agg_pipeline": agg_pipeline,
         }
         print("Final Output:" , output)

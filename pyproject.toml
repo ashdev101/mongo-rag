@@ -40,4 +40,5 @@ dependencies = [
     "reportlab>=4.4.7",
     "gunicorn>=23.0.0",
     "motor>=3.7.1",
+    "anthropic>=0.75.0",
 ]

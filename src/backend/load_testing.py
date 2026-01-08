@@ -8,8 +8,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 # CONFIGURATION
 # ==========================
 ENDPOINT_URL = "https://tplay-api.kreedatesting.in/api/test/secure-query"
-TOTAL_REQUESTS = 10
-CONCURRENCY = 10
+TOTAL_REQUESTS = 20
+CONCURRENCY = 20
 REQUEST_TIMEOUT = 200  # seconds
 OUTPUT_FILE = "load_test_results.json"
 

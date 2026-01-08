@@ -1,5 +1,8 @@
+import asyncio
 import re
 import spacy
+from llm.LLMFactory import LLMFactory
+from llm.BedrockJSONParser import BedrockResolverOutputParser
 
 # ------------------ Load spaCy model ------------------
 # For stable semantic similarity, use 'en_core_web_md' instead of 'sm'
@@ -50,6 +53,7 @@ SELF_SEMANTIC = [
     "my manager's phone number",
     "information about myself",
     "details about me",
+    "my goal status and weights",
 ]
 
 
@@ -129,15 +133,34 @@ class SelfOtherClassifier:
 
         return "self" if self_score > other_score else "other"
 
+    async def fallback_classify(self, text):
+        SystemPrompt_TEMPLATE = """
+        You are an expert classifier that classifies user queries into three categories: 'self', 'other'.
+        - 'self': Queries about the user's own information and data.If the question is about the user’s own actions or decisions,classify it as "self" unless answering it requires sensitive information about another person
+        - 'other': Queries about other employees or collective groups within the organization.
+        
+        Output Format:
+        {"classification": "<self/other>"}
+        """
+
+        # Call LLM with prompt and get classification
+        llm = LLMFactory(
+        provider="bedrock",
+        model="global.anthropic.claude-sonnet-4-5-20250929-v1:0",
+        ).create()
+        user_message = f"""User query: "{text}"" """
+        response = await llm.ainvoke([{"role": "system", "content": SystemPrompt_TEMPLATE}, {"role": "user", "content": user_message}])
+        return BedrockResolverOutputParser.parse(response.content.strip())["classification"]
+    
     # ---------- MAIN ----------
-    def classify(self, text):
+    async def classify(self, text):
         text = text.strip()
         doc = nlp(text)
 
         # Step 1: Rules
         result = self.rule_based(text)
-        if result:
-            return result
+        if result == "generic":
+            return await self.fallback_classify(text) # use fallback if generic
 
         # Step 2: Syntax
         result = self.dependency_based(doc)
@@ -146,6 +169,10 @@ class SelfOtherClassifier:
 
         # Step 3: Semantic fallback
         return self.semantic_based(doc)
+
+
+    
+
 
 # ------------------ TESTING ------------------
 if __name__ == "__main__":
@@ -161,6 +188,7 @@ if __name__ == "__main__":
         "details about myself",
         "my goal status",
         "my manager's email address",
+        "my goal status and weights",
 
         # OTHER
         "how many people are there in my department",
@@ -182,5 +210,11 @@ if __name__ == "__main__":
         "goal status",
     ]
 
-    for text in tests:
-        print(f"{text:<50} → {classifier.classify(text)}")
+    # for text in tests:
+    #     print(f"{text:<50} → {classifier.classify(text)}")
+
+    async def main():
+        result =  await classifier.classify("my goal status and weights")
+        print(result)
+
+    asyncio.run(main())

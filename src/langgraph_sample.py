@@ -220,7 +220,7 @@ async def fetch_role_node(state: AccessState):
     return {"designation": role  , "employee_code" : employees_code, "region": region , "department" : department , "region_access": region_access , "department_exception": department_exception , "grade_allowed": grade_allowed , "isSpecialHRUser": special_hr_user} 
 
 
-def classify_query_node(state: AccessState):
+async def classify_query_node(state: AccessState):
     question = state["question"]
     department = state["department"]
     email = state["email"]
@@ -294,7 +294,7 @@ def classify_query_node(state: AccessState):
     #     intent = "unknown"
 
     classifier = SelfOtherClassifier() 
-    intent = classifier.classify(question)
+    intent = await classifier.classify(question)
     return {"intent": intent if intent == "self" else "others"}
 
 async def query_clarifying_agent_node(state: AccessState):
