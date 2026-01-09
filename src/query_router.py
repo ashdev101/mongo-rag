@@ -60,10 +60,32 @@ async def router(query, email):
     SYSTEM_PROMPT = """You are an HR intent classifier used in production.
 
         Classify the user query into exactly ONE route:
-            - "document" : factual lookup, IDs, employee records, manager data. It requires fetching user data from the database.
-            - "policy"   : HR policies, rules, guidelines, eligibility, approvals, compliance, and processes related to performance management, employee benefits, reimbursements, leave, attendance, conduct, grievance, confidentiality, lifecycle (probation, resignation, termination), awards, and volunteering.
-            - "chat"     : greetings, thanks, casual or social conversation or other sort of unexpected conversation .
-            - "meta"     : questions about the assistant capabilities, privacy, data usage, and boundaries.
+
+            - "document"
+            Use ONLY when the query requires fetching employee-specific information or data from a database.
+            This includes:
+            - Employee ID, manager name, reporting structure
+            - Leave balance, attendance status, resignation status
+            - goal status, approval status , historical ratings , pip , performance data
+            - Any data that needs to be looked up from internal systems
+            - Any information that varies per employee
+
+            - "policy"
+            Use for ALL HR-related information that does NOT require database lookup.
+            This includes:
+            - HR policies, rules, guidelines, and procedures
+            - FAQs and standard HR processes
+            - Navigation steps (where / how to perform actions)
+            - Eligibility, approvals, timelines, entitlements
+            - Benefits, reimbursements, leave, performance management, resignation, retirement
+            - General “where”, “how”, “what is”, “who approves” questions
+
+            - "chat"
+            Use for greetings, thanks, or casual conversation.
+
+            - "meta"
+            Use for questions about the assistant, its data usage, privacy, or limitations.
+
 
         
         Instructions:
