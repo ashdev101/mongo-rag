@@ -61,14 +61,21 @@ llm = LLMFactory(
 
 vector_manager = VectorStoreManager()
 
-def query_main_store(question):
+def retrieve_docs(question: str):
     store = vector_manager.get_default_store()
+    retriever = store.as_retriever()
+    return retriever.get_relevant_documents(question)
 
-    qa = RetrievalQA.from_chain_type(
-        llm=llm,
-        chain_type="stuff",
-        retriever=store.as_retriever(),
-        chain_type_kwargs={"prompt": PROMPT}
+async def query_main_store(question: str) -> str:
+    docs = retrieve_docs(question)
+
+    context = "\n\n".join(doc.page_content for doc in docs)
+
+    prompt = PROMPT.format(
+        context=context,
+        question=question
     )
 
-    return qa.run(question)
+    response = await llm.ainvoke(prompt)
+
+    return response.content

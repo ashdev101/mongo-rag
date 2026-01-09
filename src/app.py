@@ -61,9 +61,9 @@ async def run_query(email, question):
 # =====================================================================
 # Policy Q&A function
 # =====================================================================
-def run_policy_query(question):
+async def run_policy_query(question):
     try:
-        response = query_main_store(question)
+        response = await query_main_store(question)
         return str(response)
     except Exception as e:
         logger.exception("Error in run_policy_query for question: %s", question)
@@ -84,7 +84,7 @@ async def router(question):
 
     try:
         if "policy" in q_lower or "regulation" in q_lower:
-            result = run_policy_query(question)
+            result = await run_policy_query(question)
             return f"[ROUTED TO POLICY ENGINE]\n\n{result}"
 
         else:
@@ -208,7 +208,7 @@ async def combined_execute(email, question):
             final_output = db_results
 
         elif route == "policy":
-            final_output = run_policy_query(query)
+            final_output = await run_policy_query(query)
         
         elif route == "chat":
             final_output = chat_system(query , email)
@@ -349,7 +349,7 @@ async def combined_execute_api(email: str, question: str):
             final_output = db_results
 
         elif route == "policy":
-            final_output =  run_policy_query(query)
+            final_output =  await run_policy_query(query)
         
         elif route == "chat":
             final_output = await chat_system(query , email)
