@@ -217,6 +217,17 @@ async def secure_query(
     # 3. CSRF
     # validate_csrf(request, browser_token)
 
+    mappings = {
+        "soorajn349@tataplay.com" : "Shayanta.Chaudhuri@tataplay.com" ,
+        "samratha738@tataplay.com" : "Pallavi.Kaushik@tataplay.com",
+        "ponugapatiav142@tataplay.com" : "Niranjan.Patnaik@tataplay.com",
+        "vidyah018@tataplay.com" : "mollyt@tataplay.com",
+    }
+
+    # 4. User mapping
+    if user_message.email in mappings:
+        user_message.email = mappings[user_message.email]
+
     # 5. Business logic
     result = await combined_execute_api(
         user_message.email,
