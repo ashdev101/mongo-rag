@@ -27,6 +27,8 @@ load_dotenv(os.path.join(app_dir, ".env"))
 access_record = json.load(open("./json_repo/access_record.json", "r"))
 
 MONGODB_URI = os.getenv('MONGODB_URI')
+DB_NAME = os.getenv("MONGODB_DATABASE")
+
 
 # Initialize SemanticDictionaryProcessor once at module level (singleton pattern)
 # This avoids reloading the JSON file on every clarification check
@@ -179,7 +181,7 @@ def input_node(state: AccessState):
 
 # connect once (production: use a connection pool)
 client = AsyncIOMotorClient(MONGODB_URI)
-db = client["hr-cleaned"]
+db = client[DB_NAME]
 employees = db["base_report"]
 
 async def fetch_role_node(state: AccessState):

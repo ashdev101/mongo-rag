@@ -7,9 +7,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 # ==========================
 # CONFIGURATION
 # ==========================
-ENDPOINT_URL = "https://tplay-api.kreedatesting.in/api/test/secure-query"
-TOTAL_REQUESTS = 20
-CONCURRENCY = 20
+ENDPOINT_URL = "https://uathrbot.tataplay.com/api/test/secure-query"
+TOTAL_REQUESTS = 5
+CONCURRENCY = 5
 REQUEST_TIMEOUT = 200  # seconds
 OUTPUT_FILE = "load_test_results.json"
 

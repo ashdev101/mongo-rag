@@ -10,7 +10,7 @@ app_dir = os.path.join(os.getcwd())
 load_dotenv(os.path.join(app_dir, ".env"))
 
 MONGODB_URI = os.getenv('MONGODB_URI')
-DB_NAME = 'hr-cleaned'
+DB_NAME = os.getenv("MONGODB_DATABASE")
 
 client = MongoClient(MONGODB_URI)
 db = client[DB_NAME]

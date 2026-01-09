@@ -10,9 +10,10 @@ load_dotenv(os.path.join(app_dir, ".env"))
 access_record = json.load(open("./json_repo/access_record.json", "r"))
 
 MONGODB_URI = os.getenv('MONGODB_URI')
+DB_NAME = os.getenv("MONGODB_DATABASE")
 
 client = MongoClient(MONGODB_URI)
-db = client["hr-cleaned"]
+db = client[DB_NAME]
 employees = db["base_report"]
 
 def fetch_user(email: Optional[str] , employee_code: Optional[int]) -> dict:
