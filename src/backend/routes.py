@@ -211,11 +211,11 @@ async def secure_query(
     # enforce_browser_request(request)
 
     # 2. Browser token
-    browser_payload = validate_browser_token(request)
-    browser_token = request.cookies.get("browser_token")
+    # browser_payload = validate_browser_token(request)
+    # browser_token = request.cookies.get("browser_token")
 
     # 3. CSRF
-    validate_csrf(request, browser_token)
+    # validate_csrf(request, browser_token)
 
     # 5. Business logic
     result = await combined_execute_api(
