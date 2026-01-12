@@ -9,8 +9,8 @@ load_dotenv()
 
 MONGODB_URI = os.getenv("MONGODB_URI")
 DB_NAME = os.getenv("MONGODB_DATABASE_VECTOR")
-COLLECTION_NAME = os.getenv("MONGODB_COLLECTION_VECTOR")
-INDEX_NAME = "vector_index"
+COLLECTION_NAME = "Sample_Vector"
+INDEX_NAME = "vector-test"
 
 class MongoVectorStoreManager:
     def __init__(self):
@@ -26,19 +26,25 @@ class MongoVectorStoreManager:
         self.store = MongoDBAtlasVectorSearch(
             collection=self.collection,
             embedding=self.embeddings,
-            index_name="vector_index"
+            index_name="vector-test"
         )
 
-    def add_texts(self, texts):
-        """
-        Same semantics as Chroma:
-        - auto-generate embeddings
-        - store in vector DB
-        """
-        return self.store.add_texts(texts)
+    def add_texts(self, texts, metadatas=None):
+        return self.store.add_texts(texts=texts, metadatas=metadatas)
+
 
     def get_retriever(self, k=5):
-        return self.store.as_retriever(search_kwargs={"k": k})
+        chunks =  self.store.as_retriever(
+            search_type="similarity",
+            search_kwargs={
+                "k": k,
+                "score_threshold": 0.15
+            }
+        )
+
+        print("chunks" , chunks)
+        return chunks
+
 
     def similarity_search(self, query, k=5):
         return self.store.similarity_search(query, k=k)

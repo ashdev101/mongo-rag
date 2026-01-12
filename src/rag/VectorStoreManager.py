@@ -13,11 +13,11 @@ class VectorStoreManager:
     def __init__(self, persist_base=CHROMA_BASE_DIR, default_collection=DEFAULT_COLLECTION):
         self.persist_base = persist_base
         self.default_collection = default_collection
-        # self.embeddings = BedrockEmbeddings(
-        #                     model_id = "amazon.titan-embed-text-v2:0",
-        #                     region_name = os.getenv("AWS_REGION")
-        #                 )
-        self.embeddings = OpenAIEmbeddings()
+        self.embeddings = BedrockEmbeddings(
+                            model_id = "amazon.titan-embed-text-v2:0",
+                            region_name = os.getenv("AWS_REGION")
+                        )
+        # self.embeddings = OpenAIEmbeddings()
 
     def get_default_store(self):
         dir_path = os.path.join(self.persist_base, self.default_collection)

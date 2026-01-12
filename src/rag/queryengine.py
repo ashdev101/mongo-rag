@@ -57,7 +57,7 @@ PROMPT = PromptTemplate(
 
 llm = LLMFactory(
         provider="bedrock",
-        model="global.anthropic.claude-opus-4-5-20251101-v1:0",
+        model="global.anthropic.claude-sonnet-4-5-20250929-v1:0",
     ).create()
 
 vector_manager = MongoVectorStoreManager()
