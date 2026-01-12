@@ -10,13 +10,13 @@ from aggregation.AggregationRBAC import AggregationRBAC
 import asyncio
 from nitya_poc.ClaudeQnA import ClaudeQnA
 from nitya_poc.MongoDBToolExecutor import MongoDBToolExecutor
-from utils.QueueFileLogger import QueueFileLogger
+# from utils.QueueFileLogger import QueueFileLogger
 import logging
 from MongoDbDatabseLocalContextAndPiiMasking import MongoDBDatabasePIIToolkit
 
-logger = QueueFileLogger(
-level=logging.INFO,
-).get_logger()
+# logger = QueueFileLogger(
+# level=logging.INFO,
+# ).get_logger()
 
 from dotenv import load_dotenv
 app_dir = os.path.join(os.getcwd())
@@ -146,7 +146,7 @@ class QueryProcessor:
                 #     # Use memorymanager's push_convo_pair function
                 #     #push_convo_pair(email, user_msg, assistant_msg or clarification_question or "")
         except Exception as e:
-            logger.exception("Error saving chat history for email: %s and question: %s", email, nl_query)
+            # logger.exception("Error saving chat history for email: %s and question: %s", email, nl_query)
             print(f"Warning: Could not save chat history: {e}")
 
         if needs_clarification:
@@ -222,7 +222,7 @@ class QueryProcessor:
         #             "db_results": f"Converter execution failed: {e}"
         #         }
         except Exception as e:
-            logger.exception("Error in convert_to_mql_and_execute_query for question: %s", nl_for_converter)
+            # logger.exception("Error in convert_to_mql_and_execute_query for question: %s", nl_for_converter)
             return {
                 "status": "Error",
                 "agent_output": result,

@@ -1,9 +1,10 @@
 import os
 from loaders import load_document
-from VectorStoreManager import VectorStoreManager
+# from VectorStoreManager import VectorStoreManager
 from text_splitter import chunk_text
+from MongoVectorStoreManager import MongoVectorStoreManager
 
-vector_manager = VectorStoreManager()
+vector_manager = MongoVectorStoreManager()
 
 SUPPORTED_EXTENSIONS = [".pdf", ".docx", ".pptx"]
 

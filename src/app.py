@@ -12,16 +12,16 @@ from meta_system import meta_system
 from chat_system import chat_system
 from conversation_resolver import resolve_conversation
 import asyncio
-from utils.QueueFileLogger import QueueFileLogger
+# from utils.QueueFileLogger import QueueFileLogger
 import logging
 
 # =====================================================================
 # Existing processor
 # =====================================================================
 processor = QueryProcessor()
-logger = QueueFileLogger(
-level=logging.INFO,
-).get_logger()
+# logger = QueueFileLogger(
+# level=logging.INFO,
+# ).get_logger()
 
 
 async def run_query(email, question):
@@ -48,13 +48,13 @@ async def run_query(email, question):
         try:
             agent_out_str = json.dumps(agent_output, indent=2, default=str)
         except Exception:
-            logger.exception("Failed to serialize agent_output")
+            # logger.exception("Failed to serialize agent_output")
             agent_out_str = str(agent_output)
 
         return status, agent_out_str, mql, db_results, agg_pipeline
 
     except Exception as e:
-        logger.exception("Error processing query for email: %s, question: %s", email, question)
+        # logger.exception("Error processing query for email: %s, question: %s", email, question)
         return "Error", str(e), None, None, None
 
 
@@ -66,7 +66,7 @@ async def run_policy_query(question):
         response = await query_main_store(question)
         return str(response)
     except Exception as e:
-        logger.exception("Error in run_policy_query for question: %s", question)
+        # logger.exception("Error in run_policy_query for question: %s", question)
         return f"Error: {e}"
 
 
@@ -122,7 +122,7 @@ async def combined_execute(email, question):
         try:
             return json.dumps(v, indent=2, default=str)
         except Exception:
-            logger.exception("Failed to serialize agent_output")
+            # logger.exception("Failed to serialize agent_output")
             return str(v)
 
     try:
@@ -358,7 +358,7 @@ async def combined_execute_api(email: str, question: str):
             final_output = await meta_system(query)
 
         else:
-            logger.info(f"Unknown route '{route}' for email '{email}' and question '{question}'")
+            # logger.info(f"Unknown route '{route}' for email '{email}' and question '{question}'")
             final_output = "Sorry , I am unable to process your request at the moment."
 
         # Save history
@@ -380,7 +380,7 @@ async def combined_execute_api(email: str, question: str):
         )
 
     except Exception as e:
-        logger.exception("Error in combined_execute_api email: %s, question: %s", email, question)
+        # logger.exception("Error in combined_execute_api email: %s, question: %s", email, question)
         return APIResponse(
             type="text",
             content=str("Sorry , we are unable to process this query .")
