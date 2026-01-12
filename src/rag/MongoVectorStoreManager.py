@@ -14,11 +14,11 @@ INDEX_NAME = "vector_index"
 
 class MongoVectorStoreManager:
     def __init__(self):
-        # self.embeddings = BedrockEmbeddings(
-        #                     model_id = "amazon.titan-embed-text-v2:0",
-        #                     region_name = os.getenv("AWS_REGION")
-                        # )
-        self.embeddings = OpenAIEmbeddings()
+        self.embeddings = BedrockEmbeddings(
+                            model_id = "amazon.titan-embed-text-v2:0",
+                            region_name = os.getenv("AWS_REGION")
+                        )
+        # self.embeddings = OpenAIEmbeddings()
 
         self.client = MongoClient(os.getenv("MONGODB_URI"))
         self.collection = self.client[DB_NAME][COLLECTION_NAME]
