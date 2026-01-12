@@ -37,5 +37,8 @@ class MongoVectorStoreManager:
         """
         return self.store.add_texts(texts)
 
+    def get_retriever(self, k=5):
+        return self.store.as_retriever(search_kwargs={"k": k})
+
     def similarity_search(self, query, k=5):
         return self.store.similarity_search(query, k=k)

@@ -1,7 +1,8 @@
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 # from langchain_openai import ChatOpenAI
-from rag.VectorStoreManager import VectorStoreManager
+# from rag.VectorStoreManager import VectorStoreManager
+from rag.MongoVectorStoreManager import MongoVectorStoreManager #VectorStoreManager
 from llm.LLMFactory import LLMFactory
 from dotenv import load_dotenv
 import os
@@ -59,15 +60,19 @@ llm = LLMFactory(
         model="global.anthropic.claude-sonnet-4-5-20250929-v1:0",
     ).create()
 
-vector_manager = VectorStoreManager()
+vector_manager = MongoVectorStoreManager()
 
-def retrieve_docs(question: str):
-    store = vector_manager.get_default_store()
-    retriever = store.as_retriever()
-    return retriever.get_relevant_documents(question)
+# def retrieve_docs(question: str):
+#     retriever = vector_manager.store.as_retriever()
+#     return retriever.get_relevant_documents(question)
+
+async def retrieve_docs(question: str):
+    retriever = vector_manager.get_retriever()
+    return await retriever.ainvoke(question)
+
 
 async def query_main_store(question: str) -> str:
-    docs = retrieve_docs(question)
+    docs = await retrieve_docs(question)
 
     context = "\n\n".join(doc.page_content for doc in docs)
 
