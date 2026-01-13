@@ -4,6 +4,7 @@ from pymongo import MongoClient
 import databse_dsitcint_values
 import json
 from dotenv import load_dotenv
+from langgraph_sample import checkisSpecialHRUser
 app_dir = os.path.join(os.getcwd())
 load_dotenv(os.path.join(app_dir, ".env"))
 
@@ -59,7 +60,7 @@ def rbac_onepager(hremail : str , employee_code: str) -> bool:
     #get the users info from database
     role_info = fetch_user(hremail , None)
 
-    if role_info["department"] != "Human Resources":
+    if role_info["department"] != "Human Resources" or checkisSpecialHRUser(role_info):
         return False
 
     #fetch info about the employee from database

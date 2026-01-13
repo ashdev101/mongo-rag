@@ -172,7 +172,7 @@ class QueryProcessor:
         # print("Collections to use for query:", collections)
         aggregationRBAC = AggregationRBAC(
                             user={
-                                    "isHR" : result["department"] == "Human Resources",
+                                    "isHR" : result["isSpecialHRUser"],
                                     "employeeCode" : result["employee_code"],
                                     "region" : result.get("requested_region" , []),
                                     "department" : result.get("requested_department" , []),

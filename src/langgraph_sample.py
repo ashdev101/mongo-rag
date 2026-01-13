@@ -184,17 +184,25 @@ client = AsyncIOMotorClient(MONGODB_URI)
 db = client[DB_NAME]
 employees = db["base_report"]
 
+def checkisSpecialHRUser(record):
+    for rec in access_record:
+        # print(rec["Emp Code"], record["employee_code"])
+        if rec["Emp Code"] == record["employee code"]:
+            return True
+        else :
+            return False
+
 async def fetch_role_node(state: AccessState):
     email = state["email"]
     record = await employees.find_one({"email": email , "assignment status type": "ACTIVE"}, {"_id": 0, "employee code" : 1 , "designation": 1 , "region":1 , "department" : 1})
-    
+
     if record and "designation" in record:
         role = record["designation"].lower()
         region = record["region"]
         department = record["department"]
-        region_access = [region] if record["department"] == "Human Resources" else [] #instantiate with single region by default
-        department_exception = [] if record["department"] == "Human Resources" else databse_dsitcint_values.CANONICAL_DEPARTMENTS #no exception by default
-        grade_allowed = databse_dsitcint_values.CANONICAL_GRADES if record["department"] == "Human Resources" else [] #all grades by default
+        region_access = [region] if record["department"] == "Human Resources" and checkisSpecialHRUser(record)  else [] #instantiate with single region by default
+        department_exception = [] if record["department"] == "Human Resources" and checkisSpecialHRUser(record) else databse_dsitcint_values.CANONICAL_DEPARTMENTS #no exception by default
+        grade_allowed = databse_dsitcint_values.CANONICAL_GRADES if record["department"] == "Human Resources" and checkisSpecialHRUser(record) else [] #all grades by default
         employees_code = record["employee code"]
         special_hr_user = False
 
