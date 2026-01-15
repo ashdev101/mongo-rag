@@ -391,6 +391,6 @@ if __name__ == "__main__":
     import asyncio
 
     async def main():
-        result = await combined_execute_api("sangram.chavan@tataplay.com" , "my goal status with weigths")
+        result = await combined_execute_api("Shayanta.Chaudhuri@tataplay.com" , "/useemail @Shayanta.Chaudhuri@tataplay.com ./onepager @7011")
         print(result)
     asyncio.run(main())
