@@ -6,13 +6,14 @@ import os
 from pymongo import MongoClient
 # Load environment variables from .env file
 from dotenv import load_dotenv
+from db.mongo import mongoClient
 app_dir = os.path.join(os.getcwd())
 load_dotenv(os.path.join(app_dir, ".env"))
 
 MONGODB_URI = os.getenv('MONGODB_URI')
 DB_NAME = os.getenv("MONGODB_DATABASE")
 
-client = MongoClient(MONGODB_URI)
+client = mongoClient
 db = client[DB_NAME]
 
 class MongoDBToolExecutor:
@@ -57,7 +58,7 @@ class MongoDBToolExecutor:
         except Exception as e:
             return json.dumps({"error": str(e)})
 
-    def run_aggregation(self, collection_name: str, pipeline: List[Dict]) -> str:
+    async def run_aggregation(self, collection_name: str, pipeline: List[Dict]) -> str:
         """Run an aggregation pipeline on a collection with RBAC enforcement"""
         try:
             if collection_name not in self.db.get_usable_collection_names():
@@ -75,7 +76,7 @@ class MongoDBToolExecutor:
             print("RBAC-enforced pipeline:", pipeline)
 
             # Execute aggregation with (possibly modified) pipeline
-            results = list(db[collection_name].aggregate(pipeline))
+            results = await db[collection_name].aggregate(pipeline).to_list(length=None)
 
             print("Aggregation results:", results)
 
@@ -93,7 +94,7 @@ class MongoDBToolExecutor:
                 {"error": str(e), "collection": collection_name, "pipeline": pipeline}
             )
 
-    def execute_tool(self, tool_name: str, tool_input: Dict[str, Any]) -> str:
+    async def execute_tool(self, tool_name: str, tool_input: Dict[str, Any]) -> str:
         print("Executing tool:", tool_name)
         if tool_name == "list_collections":
             return self.list_collections()
@@ -103,7 +104,7 @@ class MongoDBToolExecutor:
                 tool_input.get("sample_size", 3),
             )
         elif tool_name == "run_aggregation":
-            return self.run_aggregation(
+            return await self.run_aggregation(
                 tool_input["collection_name"],
                 tool_input["pipeline"],
             )

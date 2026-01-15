@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
-from anthropic import AsyncAnthropicBedrock
+# from anthropic import AsyncAnthropicBedrock
+from llm.anthropic import anthropic_client
 from nitya_poc.MongoDBToolExecutor import MongoDBToolExecutor
 from nitya_poc.SYSTEM_PROMPT_TEMPLATE import SYSTEM_PROMPT_TEMPLATE
 import json
@@ -70,11 +71,7 @@ class ClaudeQnA:
         user_context: dict,
         aws_region: str = "ap-south-1",
     ):
-        self.client = AsyncAnthropicBedrock(
-            aws_region=aws_region,
-            aws_access_key=os.getenv("AWS_S3_USER_ACCESS_KEY"),
-            aws_secret_key=os.getenv("AWS_S3_USER_SECRET_ACCESS_KEY"),
-        )
+        self.client = anthropic_client
 
 
         self.mongo_executor = mongo_executor
@@ -147,7 +144,7 @@ class ClaudeQnA:
                 tool_results = []
                 for block in response.content:
                     if block.type == "tool_use":
-                        result = self.mongo_executor.execute_tool(
+                        result = await self.mongo_executor.execute_tool(
                             block.name, block.input
                         )
                         tool_results.append(

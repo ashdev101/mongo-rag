@@ -53,7 +53,7 @@ def fetch_user(email: Optional[str] , employee_code: Optional[int]) -> dict:
         grade = "unknown"
 
     print(f"Fetched role for {email}: {role}")
-    return {"designation": role  , "employee_code" : employees_code, "region": region , "department" : department , "region_access": region_access , "department_exception": department_exception , "grade_allowed": grade_allowed , "grade": grade} 
+    return {"designation": role  , "employee code" : employees_code, "region": region , "department" : department , "region_access": region_access , "department_exception": department_exception , "grade_allowed": grade_allowed , "grade": grade} 
 
 def rbac_onepager(hremail : str , employee_code: str) -> bool:
     print(f"RBAC check for {hremail} to access onepager of employee code {employee_code}")

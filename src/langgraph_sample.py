@@ -17,7 +17,7 @@ from memory.memorymanager import get_chat_history
 from CanonicalExtractor import CanonicalExtractor
 from SelfOtherClassifier import SelfOtherClassifier
 import asyncio
-from motor.motor_asyncio import AsyncIOMotorClient
+from db.mongo import mongoClient
 
 # Load environment variables from .env file
 from dotenv import load_dotenv
@@ -180,7 +180,7 @@ def input_node(state: AccessState):
     return {"question": last_msg}
 
 # connect once (production: use a connection pool)
-client = AsyncIOMotorClient(MONGODB_URI)
+client = mongoClient
 db = client[DB_NAME]
 employees = db["base_report"]
 

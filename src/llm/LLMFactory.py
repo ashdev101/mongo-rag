@@ -2,6 +2,7 @@ import os
 from typing import Literal, Optional, Dict, Any
 from langchain_aws import ChatBedrockConverse 
 from langchain_openai import ChatOpenAI
+from llm.bedrock import bedrock_runtime_client
 from dotenv import load_dotenv
 app_dir = os.path.join(os.getcwd())
 load_dotenv(os.path.join(app_dir, ".env"))
@@ -62,6 +63,7 @@ class LLMFactory:
         return ChatBedrockConverse(
             model_id=self.model,
             region_name=region,
+            client=bedrock_runtime_client,
             # Enable when supported
             # model_kwargs={
             #     "temperature": self.temperature,
