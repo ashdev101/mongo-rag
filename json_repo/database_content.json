@@ -219,33 +219,6 @@
       ]
     },
     {
-      "name": "historical_ratings_and_other_information",
-      "purpose": "Historical performance ratings, education, and work experience",
-      "key_entities": [
-        "employee",
-        "cy-1 rating",
-        "cy-2 rating",
-        "cy-3 rating",
-        "education",
-        "prior experience",
-        "tata play experience",
-        "previous company"
-      ],
-      "important_rules": [
-        "Historical ratings cover last three years (cy-1, cy-2, cy-3)"
-      ],
-      "common_intents": [
-        "historical performance",
-        "employee experience",
-        "career background"
-      ],
-      "example_queries": [
-        "Show last 3 years ratings for employee X",
-        "What is the total experience of employee Y?",
-        "Previous company of employee Z"
-      ]
-    },
-    {
       "name": "goal_detail_report",
       "purpose": "Individual Development Plan (IDP) details for employees",
       "key_entities": [
