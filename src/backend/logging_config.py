@@ -107,14 +107,16 @@ def setup_logging(
     if environment == "development":
         # Use colored formatter in development
         console_format = ColoredFormatter(
-            fmt='%(asctime)s | %(levelname)s | %(name)s:%(funcName)s:%(lineno)d | %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
+            fmt='%(asctime)s | %(levelname)s | [%(request_id)s] | %(name)s:%(funcName)s:%(lineno)d | %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S',
+            defaults={'request_id': '-'}
         )
     else:
         # Use simple formatter in production
         console_format = logging.Formatter(
-            fmt='%(asctime)s | %(levelname)s | %(name)s | %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
+            fmt='%(asctime)s | %(levelname)s | [%(request_id)s] | %(name)s | %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S',
+            defaults={'request_id': '-'}
         )
     console_handler.setFormatter(console_format)
     console_handler.setLevel(numeric_level)
@@ -134,8 +136,9 @@ def setup_logging(
     else:
         # Human-readable format for development
         file_format = logging.Formatter(
-            fmt='%(asctime)s | %(levelname)s | %(process)d | %(name)s:%(funcName)s:%(lineno)d | %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
+            fmt='%(asctime)s | %(levelname)s | [%(request_id)s] | %(process)d | %(name)s:%(funcName)s:%(lineno)d | %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S',
+            defaults={'request_id': '-'}
         )
         file_handler.setFormatter(file_format)
     file_handler.setLevel(numeric_level)
@@ -154,8 +157,9 @@ def setup_logging(
         error_handler.setFormatter(JSONFormatter())
     else:
         error_format = logging.Formatter(
-            fmt='%(asctime)s | %(levelname)s | %(process)d | %(name)s:%(funcName)s:%(lineno)d | %(message)s\n%(exc_info)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
+            fmt='%(asctime)s | %(levelname)s | [%(request_id)s] | %(process)d | %(name)s:%(funcName)s:%(lineno)d | %(message)s\n%(exc_info)s',
+            datefmt='%Y-%m-%d %H:%M:%S',
+            defaults={'request_id': '-'}
         )
         error_handler.setFormatter(error_format)
     root_logger.addHandler(error_handler)
@@ -178,15 +182,33 @@ def setup_logging(
     access_logger = logging.getLogger("access")
     access_logger.setLevel(logging.INFO)
     access_logger.propagate = False
+    # Clear any existing handlers to prevent duplicates
+    access_logger.handlers.clear()
     access_logger.addHandler(access_handler)
-    # Also log to console in development
+    # Also log to console in development with a separate handler
     if environment == "development":
-        access_logger.addHandler(console_handler)
+        access_console_handler = logging.StreamHandler(sys.stdout)
+        access_console_format = ColoredFormatter(
+            fmt='%(asctime)s | %(levelname)s | [%(request_id)s] | %(name)s | %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S',
+            defaults={'request_id': '-'}
+        )
+        access_console_handler.setFormatter(access_console_format)
+        access_console_handler.setLevel(numeric_level)
+        access_logger.addHandler(access_console_handler)
     
     # Suppress noisy third-party loggers
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.getLogger("asyncio").setLevel(logging.WARNING)
     logging.getLogger("multipart").setLevel(logging.WARNING)
+    logging.getLogger("pymongo").setLevel(logging.WARNING)
+    logging.getLogger("pymongo.topology").setLevel(logging.WARNING)
+    logging.getLogger("pymongo.connection").setLevel(logging.WARNING)
+    logging.getLogger("pymongo.serverSelection").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore.connection").setLevel(logging.WARNING)
+    logging.getLogger("httpcore.http11").setLevel(logging.WARNING)
     
     # Log startup message
     root_logger.info(f"Logging system initialized - Environment: {environment}, Level: {log_level}")
@@ -222,7 +244,42 @@ def log_with_context(
         logger: Logger instance
         level: Log level (logging.INFO, logging.ERROR, etc.)
         message: Log message
-        **context: Additional context to log
+        **context: Additional context to log (request_id, user_email, etc.)
     """
     extra = {"extra_data": context}
+    # Extract request_id if provided in context
+    if "request_id" in context:
+        extra["request_id"] = context["request_id"]
+    logger.log(level, message, extra=extra)
+
+
+def log_with_request(
+    logger: logging.Logger,
+    level: int,
+    message: str,
+    request_id: str,
+    **context: Any
+) -> None:
+    """
+    Log a message with request ID and additional context.
+    
+    Args:
+        logger: Logger instance
+        level: Log level (logging.INFO, logging.ERROR, etc.)
+        message: Log message
+        request_id: Request ID to track the request
+        **context: Additional context to log
+    """
+    extra = {"request_id": request_id, "extra_data": context}
+    # Extract other standard fields
+    if "user_email" in context:
+        extra["user_email"] = context["user_email"]
+    if "endpoint" in context:
+        extra["endpoint"] = context["endpoint"]
+    if "method" in context:
+        extra["method"] = context["method"]
+    if "status_code" in context:
+        extra["status_code"] = context["status_code"]
+    if "duration" in context:
+        extra["duration"] = context["duration"]
     logger.log(level, message, extra=extra)

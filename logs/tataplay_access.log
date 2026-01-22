@@ -1,0 +1,4 @@
+2026-01-22 09:54:07 | INFO | 19056 | access:log_requests:85 | Incoming request: GET /api/me
+2026-01-22 09:54:07 | INFO | 19056 | access:log_requests:108 | Request completed: GET /api/me - Status: 401
+2026-01-22 09:56:25 | INFO | 19056 | access:log_requests:85 | Incoming request: GET /api/me
+2026-01-22 09:56:25 | INFO | 19056 | access:log_requests:108 | Request completed: GET /api/me - Status: 401

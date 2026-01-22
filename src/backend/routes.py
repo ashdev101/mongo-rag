@@ -1,5 +1,6 @@
 """API route handlers."""
 import os
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Request, status , Response
 from fastapi.responses import FileResponse, JSONResponse
 from typing import Dict, Any
@@ -15,7 +16,7 @@ from backend.config import Settings
 from backend.security.browser import enforce_browser_request
 from backend.security.browser_token import issue_browser_token , validate_browser_token
 from backend.security.csrf import issue_csrf, validate_csrf
-from backend.logging_config import get_logger, log_with_context
+from backend.logging_config import get_logger, log_with_context, log_with_request
 
 from rbac_onepager import rbac_onepager
 
@@ -118,36 +119,36 @@ async def send_message(
         email = user_info.get("email") or user_info.get("upn") or user_info.get("preferred_username", "")
 
         if not email:
-            logger.warning(f"[{request_id}] Could not extract email from token")
+            log_with_request(logger, logging.WARNING, "Could not extract email from token", request_id)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Could not extract email from user info"
             )
         
-        logger.info(f"[{request_id}] Processing message from user: {email}")
-        logger.debug(f"[{request_id}] Message text: {user_message.text[:100]}...")
+        log_with_request(logger, logging.INFO, f"Processing message from user: {email}", request_id, user_email=email)
+        log_with_request(logger, logging.DEBUG, f"Message text: {user_message.text[:100]}...", request_id)
         
         start_time = time.time()
         result = await combined_execute_api(email, user_message.text)
         processing_time = time.time() - start_time
 
-        logger.info(
-            f"[{request_id}] Message processed successfully",
-            extra={
-                "user_email": email,
-                "result_type": result.type,
-                "processing_time": round(processing_time, 3)
-            }
+        log_with_request(
+            logger, logging.INFO,
+            "Message processed successfully",
+            request_id,
+            user_email=email,
+            result_type=result.type,
+            duration=round(processing_time, 3)
         )
 
         # Handle file response
         if result.type == "file":
             file_path = result.content
             if not os.path.exists(file_path):
-                logger.error(f"[{request_id}] File not found: {file_path}")
+                log_with_request(logger, logging.ERROR, f"File not found: {file_path}", request_id)
                 raise HTTPException(status_code=404, detail="File not found")
             
-            logger.info(f"[{request_id}] Returning file response: {os.path.basename(file_path)}")
+            log_with_request(logger, logging.INFO, f"Returning file response: {os.path.basename(file_path)}", request_id)
             return FileResponse(
                 path=file_path,
                 filename=os.path.basename(file_path),
@@ -162,10 +163,11 @@ async def send_message(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(
-            f"[{request_id}] Error in send_message: {str(e)}",
-            exc_info=True,
-            extra={"user_email": email if 'email' in locals() else "unknown"}
+        log_with_request(
+            logger, logging.ERROR,
+            f"Error in send_message: {str(e)}",
+            request_id,
+            user_email=email if 'email' in locals() else "unknown"
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

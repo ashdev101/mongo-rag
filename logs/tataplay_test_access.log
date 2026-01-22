@@ -1,4 +1,0 @@
-2026-01-22 07:20:11 | INFO | 10264 | access:test_access_logging:102 | Request: POST /api/messages - Status: 200
-2026-01-22 07:20:11 | INFO | 10264 | access:test_access_logging:102 | Request: GET /api/health - Status: 200
-2026-01-22 07:20:11 | INFO | 10264 | access:test_access_logging:102 | Request: POST /api/secure-query - Status: 200
-2026-01-22 07:20:11 | INFO | 10264 | access:test_access_logging:102 | Request: POST /api/messages - Status: 500

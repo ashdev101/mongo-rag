@@ -1,0 +1,77 @@
+2026-01-22 09:53:51 | [32mINFO[0m | 19056 | root:setup_logging:201 | Logging system initialized - Environment: development, Level: DEBUG
+2026-01-22 09:53:51 | [32mINFO[0m | 19056 | root:setup_logging:202 | Log files location: C:\Users\basit\OneDrive\Desktop\Kreeda-Projects\TataPlay\mongo-rag\logs
+2026-01-22 09:53:51 | [32mINFO[0m | 19056 | root:setup_logging:203 |   - Application logs: logs\tataplay_app.log
+2026-01-22 09:53:51 | [32mINFO[0m | 19056 | root:setup_logging:204 |   - Error logs: logs\tataplay_error.log
+2026-01-22 09:53:51 | [32mINFO[0m | 19056 | root:setup_logging:205 |   - Access logs: logs\tataplay_access.log
+2026-01-22 09:53:51 | [36mDEBUG[0m | 19056 | httpcore.connection:trace:47 | connect_tcp.started host='api.gradio.app' port=443 local_address=None timeout=3 socket_options=None
+2026-01-22 09:53:51 | [32mINFO[0m | 19056 | __main__:<module>:261 | Starting server on port 8000
+2026-01-22 09:53:51 | [32mINFO[0m | 19056 | __main__:<module>:262 | Environment: development
+2026-01-22 09:53:51 | [32mINFO[0m | 19056 | __main__:<module>:263 | Server ready - check /docs for API documentation
+2026-01-22 09:53:51 | [36mDEBUG[0m | 19056 | httpcore.connection:trace:47 | connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000023E50A63230>
+2026-01-22 09:53:51 | [36mDEBUG[0m | 19056 | httpcore.connection:trace:47 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000023E50BA2FD0> server_hostname='api.gradio.app' timeout=3
+2026-01-22 09:53:51 | [32mINFO[0m | 19056 | root:setup_logging:201 | Logging system initialized - Environment: development, Level: DEBUG
+2026-01-22 09:53:51 | [32mINFO[0m | 19056 | root:setup_logging:202 | Log files location: C:\Users\basit\OneDrive\Desktop\Kreeda-Projects\TataPlay\mongo-rag\logs
+2026-01-22 09:53:51 | [32mINFO[0m | 19056 | root:setup_logging:203 |   - Application logs: logs\tataplay_app.log
+2026-01-22 09:53:51 | [32mINFO[0m | 19056 | root:setup_logging:204 |   - Error logs: logs\tataplay_error.log
+2026-01-22 09:53:51 | [32mINFO[0m | 19056 | root:setup_logging:205 |   - Access logs: logs\tataplay_access.log
+2026-01-22 09:53:51 | [36mDEBUG[0m | 19056 | httpcore.connection:trace:47 | connect_tcp.started host='api.gradio.app' port=443 local_address=None timeout=3 socket_options=None
+2026-01-22 09:53:52 | [32mINFO[0m | 19056 | main:lifespan:46 | ============================================================
+2026-01-22 09:53:52 | [32mINFO[0m | 19056 | main:lifespan:47 | Tata Play Chat Backend Starting (v2.0)...
+2026-01-22 09:53:52 | [32mINFO[0m | 19056 | main:lifespan:48 | Authentication and API routes configured
+2026-01-22 09:53:52 | [32mINFO[0m | 19056 | main:lifespan:49 | ============================================================
+2026-01-22 09:53:52 | [36mDEBUG[0m | 19056 | httpcore.connection:trace:47 | connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000023E510B9700>
+2026-01-22 09:53:52 | [36mDEBUG[0m | 19056 | httpcore.connection:trace:47 | start_tls.started ssl_context=<ssl.SSLContext object at 0x0000023E50F9F5D0> server_hostname='api.gradio.app' timeout=3
+2026-01-22 09:53:52 | [36mDEBUG[0m | 19056 | httpcore.connection:trace:47 | start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000023E50F00B90>
+2026-01-22 09:53:52 | [36mDEBUG[0m | 19056 | httpcore.http11:trace:47 | send_request_headers.started request=<Request [b'GET']>
+2026-01-22 09:53:52 | [36mDEBUG[0m | 19056 | httpcore.http11:trace:47 | send_request_headers.complete
+2026-01-22 09:53:52 | [36mDEBUG[0m | 19056 | httpcore.http11:trace:47 | send_request_body.started request=<Request [b'GET']>
+2026-01-22 09:53:52 | [36mDEBUG[0m | 19056 | httpcore.http11:trace:47 | send_request_body.complete
+2026-01-22 09:53:52 | [36mDEBUG[0m | 19056 | httpcore.http11:trace:47 | receive_response_headers.started request=<Request [b'GET']>
+2026-01-22 09:53:52 | [36mDEBUG[0m | 19056 | httpcore.http11:trace:47 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 22 Jan 2026 09:53:52 GMT'), (b'Content-Type', b'application/json'), (b'Content-Length', b'21'), (b'Connection', b'keep-alive'), (b'Server', b'nginx/1.18.0'), (b'Access-Control-Allow-Origin', b'*')])
+2026-01-22 09:53:52 | [32mINFO[0m | 19056 | httpx:_send_single_request:1025 | HTTP Request: GET https://api.gradio.app/pkg-version "HTTP/1.1 200 OK"
+2026-01-22 09:53:52 | [36mDEBUG[0m | 19056 | httpcore.http11:trace:47 | receive_response_body.started request=<Request [b'GET']>
+2026-01-22 09:53:52 | [36mDEBUG[0m | 19056 | httpcore.http11:trace:47 | receive_response_body.complete
+2026-01-22 09:53:52 | [36mDEBUG[0m | 19056 | httpcore.http11:trace:47 | response_closed.started
+2026-01-22 09:53:52 | [36mDEBUG[0m | 19056 | httpcore.http11:trace:47 | response_closed.complete
+2026-01-22 09:53:52 | [36mDEBUG[0m | 19056 | httpcore.connection:trace:47 | close.started
+2026-01-22 09:53:52 | [36mDEBUG[0m | 19056 | httpcore.connection:trace:47 | close.complete
+2026-01-22 09:53:52 | [36mDEBUG[0m | 19056 | httpcore.connection:trace:47 | start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x0000023E510B9640>
+2026-01-22 09:53:52 | [36mDEBUG[0m | 19056 | httpcore.http11:trace:47 | send_request_headers.started request=<Request [b'GET']>
+2026-01-22 09:53:52 | [36mDEBUG[0m | 19056 | httpcore.http11:trace:47 | send_request_headers.complete
+2026-01-22 09:53:52 | [36mDEBUG[0m | 19056 | httpcore.http11:trace:47 | send_request_body.started request=<Request [b'GET']>
+2026-01-22 09:53:52 | [36mDEBUG[0m | 19056 | httpcore.http11:trace:47 | send_request_body.complete
+2026-01-22 09:53:52 | [36mDEBUG[0m | 19056 | httpcore.http11:trace:47 | receive_response_headers.started request=<Request [b'GET']>
+2026-01-22 09:53:53 | [36mDEBUG[0m | 19056 | httpcore.http11:trace:47 | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Date', b'Thu, 22 Jan 2026 09:53:52 GMT'), (b'Content-Type', b'application/json'), (b'Content-Length', b'21'), (b'Connection', b'keep-alive'), (b'Server', b'nginx/1.18.0'), (b'Access-Control-Allow-Origin', b'*')])
+2026-01-22 09:53:53 | [32mINFO[0m | 19056 | httpx:_send_single_request:1025 | HTTP Request: GET https://api.gradio.app/pkg-version "HTTP/1.1 200 OK"
+2026-01-22 09:53:53 | [36mDEBUG[0m | 19056 | httpcore.http11:trace:47 | receive_response_body.started request=<Request [b'GET']>
+2026-01-22 09:53:53 | [36mDEBUG[0m | 19056 | httpcore.http11:trace:47 | receive_response_body.complete
+2026-01-22 09:53:53 | [36mDEBUG[0m | 19056 | httpcore.http11:trace:47 | response_closed.started
+2026-01-22 09:53:53 | [36mDEBUG[0m | 19056 | httpcore.http11:trace:47 | response_closed.complete
+2026-01-22 09:53:53 | [36mDEBUG[0m | 19056 | httpcore.connection:trace:47 | close.started
+2026-01-22 09:53:53 | [36mDEBUG[0m | 19056 | httpcore.connection:trace:47 | close.complete
+2026-01-22 09:54:07 | [33mWARNING[0m | 19056 | backend.auth:verify_token:80 | Token has expired
+2026-01-22 09:56:25 | [33mWARNING[0m | 19056 | backend.auth:verify_token:80 | Token has expired
+2026-01-22 09:56:29 | [32mINFO[0m | 19056 | main:lifespan:52 | Tata Play Chat Backend Shutting Down...
+2026-01-22 09:57:09 | [32mINFO[0m | [-] | 17952 | root:setup_logging:210 | Logging system initialized - Environment: development, Level: DEBUG
+2026-01-22 09:57:09 | [32mINFO[0m | [-] | 17952 | root:setup_logging:211 | Log files location: C:\Users\basit\OneDrive\Desktop\Kreeda-Projects\TataPlay\mongo-rag\logs
+2026-01-22 09:57:09 | [32mINFO[0m | [-] | 17952 | root:setup_logging:212 |   - Application logs: logs\tataplay_app.log
+2026-01-22 09:57:09 | [32mINFO[0m | [-] | 17952 | root:setup_logging:213 |   - Error logs: logs\tataplay_error.log
+2026-01-22 09:57:09 | [32mINFO[0m | [-] | 17952 | root:setup_logging:214 |   - Access logs: logs\tataplay_access.log
+2026-01-22 09:57:10 | [36mDEBUG[0m | [-] | 17952 | httpcore.connection:trace:47 | connect_tcp.started host='api.gradio.app' port=443 local_address=None timeout=3 socket_options=None
+2026-01-22 09:57:10 | [32mINFO[0m | [-] | 17952 | __main__:<module>:261 | Starting server on port 8000
+2026-01-22 09:57:10 | [32mINFO[0m | [-] | 17952 | __main__:<module>:262 | Environment: development
+2026-01-22 09:57:10 | [32mINFO[0m | [-] | 17952 | __main__:<module>:263 | Server ready - check /docs for API documentation
+2026-01-22 09:57:10 | [32mINFO[0m | [-] | 17952 | root:setup_logging:210 | Logging system initialized - Environment: development, Level: DEBUG
+2026-01-22 09:57:10 | [32mINFO[0m | [-] | 17952 | root:setup_logging:211 | Log files location: C:\Users\basit\OneDrive\Desktop\Kreeda-Projects\TataPlay\mongo-rag\logs
+2026-01-22 09:57:10 | [32mINFO[0m | [-] | 17952 | root:setup_logging:212 |   - Application logs: logs\tataplay_app.log
+2026-01-22 09:57:10 | [32mINFO[0m | [-] | 17952 | root:setup_logging:213 |   - Error logs: logs\tataplay_error.log
+2026-01-22 09:57:10 | [32mINFO[0m | [-] | 17952 | root:setup_logging:214 |   - Access logs: logs\tataplay_access.log
+2026-01-22 09:57:10 | [36mDEBUG[0m | [-] | 17952 | httpcore.connection:trace:47 | connect_tcp.started host='api.gradio.app' port=443 local_address=None timeout=3 socket_options=None
+2026-01-22 09:57:10 | [32mINFO[0m | [-] | 17952 | main:lifespan:46 | ============================================================
+2026-01-22 09:57:10 | [32mINFO[0m | [-] | 17952 | main:lifespan:47 | Tata Play Chat Backend Starting (v2.0)...
+2026-01-22 09:57:10 | [32mINFO[0m | [-] | 17952 | main:lifespan:48 | Authentication and API routes configured
+2026-01-22 09:57:10 | [32mINFO[0m | [-] | 17952 | main:lifespan:49 | ============================================================
+2026-01-22 09:57:10 | [36mDEBUG[0m | [-] | 17952 | httpcore.connection:trace:47 | connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x000002703DD49250>
+2026-01-22 09:57:10 | [36mDEBUG[0m | [-] | 17952 | httpcore.connection:trace:47 | start_tls.started ssl_context=<ssl.SSLContext object at 0x000002703DCAB250> server_hostname='api.gradio.app' timeout=3
+2026-01-22 09:57:10 | [36mDEBUG[0m | [-] | 17952 | httpcore.connection:trace:47 | connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x000002703E13E270>
+2026-01-22 09:57:10 | [36mDEBUG[0m | [-] | 17952 | httpcore.connection:trace:47 | start_tls.started ssl_context=<ssl.SSLContext object at 0x000002703E09FA50> server_hostname='api.gradio.app' timeout=3
