@@ -94,15 +94,6 @@ Database Context:
     - This collection contains Status of 360 feedback form completion
     - It contains fields like
       - "participation status" which can be 'Awaiting Reply', 'Completed', 'In progress', 'Not Started'
-
-  - Collection Name: historical_ratings_and_other_information
-    - {HISTORICAL_RATINGS_AND_OTHER_INFORMATION_DESCRIPTION}
-    - This collection contains Last 5 year performance ratings, Educational Qualification, No. of Years spent, Work Experience  .
-    - The last three years are (cy means current year , and -1 means previous year , so cy-1 means current year minus 1 i.e previous year) : cy-1, cy-2, cy-3
-    - It contains fields like
-      - "experience prior to tata play" which is the work experience prior to joining tata play
-      - "tata play experience" which is the work experience in tata play
-      - "previous company" which is the previous company of the employee
  
   - Collection Name: goal_detail_report
     - {GOAL_DETAIL_REPORT_DESCRIPTION}
