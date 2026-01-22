@@ -5,7 +5,6 @@ from fastapi.responses import FileResponse, JSONResponse
 from typing import Dict, Any
 from datetime import datetime
 import re
-import logging
 import json
 import time
 
@@ -16,10 +15,11 @@ from backend.config import Settings
 from backend.security.browser import enforce_browser_request
 from backend.security.browser_token import issue_browser_token , validate_browser_token
 from backend.security.csrf import issue_csrf, validate_csrf
+from backend.logging_config import get_logger, log_with_context
 
 from rbac_onepager import rbac_onepager
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -103,6 +103,7 @@ async def validate_token(token_data: Dict[str, Any] = Depends(verify_token)):
 @router.post("/api/messages", response_model=CombinedResponse)
 async def send_message(
     user_message: Message,
+    request: Request,
     token_data: Dict[str, Any] = Depends(verify_token)
 ):
     """
@@ -110,27 +111,43 @@ async def send_message(
     This endpoint calls combined_execute from app.py as the entry point.
     Token is validated via dependency.
     """
+    request_id = getattr(request.state, "request_id", "unknown")
+    
     try:
         user_info = extract_user_info(token_data)
         email = user_info.get("email") or user_info.get("upn") or user_info.get("preferred_username", "")
 
         if not email:
+            logger.warning(f"[{request_id}] Could not extract email from token")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Could not extract email from user info"
             )
         
-        logger.info("Processing sync query from authenticated user")
+        logger.info(f"[{request_id}] Processing message from user: {email}")
+        logger.debug(f"[{request_id}] Message text: {user_message.text[:100]}...")
         
+        start_time = time.time()
         result = await combined_execute_api(email, user_message.text)
+        processing_time = time.time() - start_time
 
-        print(f"Result: {result}")
+        logger.info(
+            f"[{request_id}] Message processed successfully",
+            extra={
+                "user_email": email,
+                "result_type": result.type,
+                "processing_time": round(processing_time, 3)
+            }
+        )
 
         # Handle file response
         if result.type == "file":
             file_path = result.content
             if not os.path.exists(file_path):
+                logger.error(f"[{request_id}] File not found: {file_path}")
                 raise HTTPException(status_code=404, detail="File not found")
+            
+            logger.info(f"[{request_id}] Returning file response: {os.path.basename(file_path)}")
             return FileResponse(
                 path=file_path,
                 filename=os.path.basename(file_path),
@@ -145,7 +162,11 @@ async def send_message(
     except HTTPException:
         raise
     except Exception as e:
-        logger.exception("Error in send_message")
+        logger.error(
+            f"[{request_id}] Error in send_message: {str(e)}",
+            exc_info=True,
+            extra={"user_email": email if 'email' in locals() else "unknown"}
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Server error: {str(e)}"
@@ -206,6 +227,7 @@ async def secure_query(
     Browser-only, site-locked endpoint.
     No Azure AD / JWT involved.
     """
+    request_id = getattr(request.state, "request_id", "unknown")
 
     # 1. Browser enforcement
     # enforce_browser_request(request)
@@ -224,14 +246,30 @@ async def secure_query(
         "vidyah018@tataplay.com" : "mollyt@tataplay.com",
     }
 
+    original_email = user_message.email
     # 4. User mapping
     if user_message.email in mappings:
         user_message.email = mappings[user_message.email]
+        logger.info(f"[{request_id}] Email mapped: {original_email} -> {user_message.email}")
+
+    logger.info(f"[{request_id}] Processing secure query from: {user_message.email}")
+    logger.debug(f"[{request_id}] Query: {user_message.text[:100]}...")
 
     # 5. Business logic
+    start_time = time.time()
     result = await combined_execute_api(
         user_message.email,
         user_message.text,
+    )
+    processing_time = time.time() - start_time
+    
+    logger.info(
+        f"[{request_id}] Secure query processed",
+        extra={
+            "user_email": user_message.email,
+            "result_type": result.type,
+            "processing_time": round(processing_time, 3)
+        }
     )
 
     # ✅ USE ATTRIBUTES, NOT DICT ACCESS
@@ -239,8 +277,10 @@ async def secure_query(
         file_path = result.content
 
         if not os.path.exists(file_path):
+            logger.error(f"[{request_id}] File not found: {file_path}")
             raise HTTPException(status_code=404, detail="File not found")
 
+        logger.info(f"[{request_id}] Returning file: {os.path.basename(file_path)}")
         return FileResponse(
             path=file_path,
             filename=os.path.basename(file_path),

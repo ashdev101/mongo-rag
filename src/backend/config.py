@@ -45,6 +45,11 @@ class Settings:
     HOST: str = os.getenv("HOST", "0.0.0.0")
     PORT: int = int(os.getenv("PORT", "8000"))
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+    
+    # Logging Configuration
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+    LOG_DIR: str = os.getenv("LOG_DIR", "logs")
+    LOG_FORMAT: str = os.getenv("LOG_FORMAT", "json" if os.getenv("ENVIRONMENT", "development") == "production" else "text")
 
 
 @lru_cache()

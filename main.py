@@ -10,24 +10,31 @@ src_path = Path(__file__).parent / "src"
 sys.path.insert(0, str(src_path))
 
 import gradio as gr
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-import logging
+import time
+import uuid
 
 from app import QueryProcessor
 from backend.config import get_settings
 from backend.routes import router
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="[%(levelname)s] %(name)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
+from backend.logging_config import setup_logging, get_logger
 
 # Get application settings
 settings = get_settings()
+
+# Setup production-ready logging
+setup_logging(
+    environment=settings.ENVIRONMENT,
+    log_level=settings.LOG_LEVEL,
+    log_dir=settings.LOG_DIR,
+    app_name="tataplay"
+)
+
+# Get loggers
+logger = get_logger(__name__)
+access_logger = get_logger("access")
 
 # =====================================================================
 # FastAPI Application Setup
@@ -62,6 +69,77 @@ app.add_middleware(
     expose_headers=["*"],
     max_age=600,
 )
+
+# Add request logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Log all incoming requests and responses with structured logging."""
+    request_id = str(uuid.uuid4())
+    start_time = time.time()
+    
+    # Extract user info if available
+    user_email = "anonymous"
+    auth_header = request.headers.get("authorization", "")
+    
+    # Log incoming request
+    access_logger.info(
+        f"Incoming request: {request.method} {request.url.path}",
+        extra={
+            "request_id": request_id,
+            "method": request.method,
+            "endpoint": request.url.path,
+            "url": str(request.url),
+            "client_host": request.client.host if request.client else "unknown",
+            "user_agent": request.headers.get("user-agent", "unknown"),
+            "content_type": request.headers.get("content-type", ""),
+            "user_email": user_email,
+        }
+    )
+    
+    # Store request_id in request state for use in routes
+    request.state.request_id = request_id
+    
+    # Process the request
+    try:
+        response = await call_next(request)
+        process_time = time.time() - start_time
+        
+        # Log response
+        access_logger.info(
+            f"Request completed: {request.method} {request.url.path} - Status: {response.status_code}",
+            extra={
+                "request_id": request_id,
+                "method": request.method,
+                "endpoint": request.url.path,
+                "status_code": response.status_code,
+                "duration": round(process_time, 3),
+                "user_email": user_email,
+            }
+        )
+        
+        # Add custom headers
+        response.headers["X-Request-ID"] = request_id
+        response.headers["X-Process-Time"] = str(round(process_time, 3))
+        
+        return response
+        
+    except Exception as e:
+        process_time = time.time() - start_time
+        
+        # Log error
+        logger.error(
+            f"Request failed: {request.method} {request.url.path} - Error: {str(e)}",
+            exc_info=True,
+            extra={
+                "request_id": request_id,
+                "method": request.method,
+                "endpoint": request.url.path,
+                "duration": round(process_time, 3),
+                "user_email": user_email,
+                "error": str(e),
+            }
+        )
+        raise
 
 # Include API routes
 app.include_router(router)

@@ -1,0 +1,23 @@
+2026-01-22 07:20:11 | [32mINFO[0m | 10264 | root:setup_logging:192 | Logging system initialized - Environment: development, Level: DEBUG
+2026-01-22 07:20:11 | [32mINFO[0m | 10264 | root:setup_logging:193 | Log files location: C:\Users\basit\OneDrive\Desktop\Kreeda-Projects\TataPlay\mongo-rag\logs
+2026-01-22 07:20:11 | [32mINFO[0m | 10264 | root:setup_logging:194 |   - Application logs: logs\tataplay_test_app.log
+2026-01-22 07:20:11 | [32mINFO[0m | 10264 | root:setup_logging:195 |   - Error logs: logs\tataplay_test_error.log
+2026-01-22 07:20:11 | [32mINFO[0m | 10264 | root:setup_logging:196 |   - Access logs: logs\tataplay_test_access.log
+2026-01-22 07:20:11 | [36mDEBUG[0m | 10264 | test.basic:test_basic_logging:25 | This is a DEBUG message - detailed diagnostic info
+2026-01-22 07:20:11 | [32mINFO[0m | 10264 | test.basic:test_basic_logging:26 | This is an INFO message - general information
+2026-01-22 07:20:11 | [33mWARNING[0m | 10264 | test.basic:test_basic_logging:27 | This is a WARNING message - something unusual happened
+2026-01-22 07:20:11 | [31mERROR[0m | 10264 | test.basic:test_basic_logging:28 | This is an ERROR message - an error occurred
+2026-01-22 07:20:11 | [35mCRITICAL[0m | 10264 | test.basic:test_basic_logging:29 | This is a CRITICAL message - serious problem
+2026-01-22 07:20:11 | [32mINFO[0m | 10264 | test.context:log_with_context:228 | User action performed
+2026-01-22 07:20:11 | [33mWARNING[0m | 10264 | test.context:log_with_context:228 | API rate limit approaching
+2026-01-22 07:20:11 | [31mERROR[0m | 10264 | test.exception:test_exception_logging:73 | An error occurred in calculation
+Traceback (most recent call last):
+  File "C:\Users\basit\OneDrive\Desktop\Kreeda-Projects\TataPlay\mongo-rag\test_logging.py", line 71, in test_exception_logging
+    result = 1 / 0
+             ~~^~~
+ZeroDivisionError: division by zero
+2026-01-22 07:20:11 | [31mERROR[0m | 10264 | test.exception:log_with_context:228 | Division error: division by zero
+2026-01-22 07:20:11 | [32mINFO[0m | 10264 | test.performance:log_with_context:228 | Database query completed
+2026-01-22 07:20:12 | [32mINFO[0m | 10264 | test.performance:log_with_context:228 | API call completed
+2026-01-22 07:20:12 | [32mINFO[0m | 10264 | test.performance:log_with_context:228 | Data processing completed
+2026-01-22 07:20:12 | [32mINFO[0m | 10264 | test.performance:log_with_context:228 | Response generation completed
