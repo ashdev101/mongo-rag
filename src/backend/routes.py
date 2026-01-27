@@ -253,17 +253,17 @@ async def secure_query(
 
     original_email = user_info.get("email") or user_info.get("upn") or user_info.get("preferred_username", "")
     # 4. User mapping
-    if user_message.email in mappings:
-        user_message.email = mappings[user_message.email]
-        logger.info(f"[{request_id}] Email mapped: {original_email} -> {user_message.email}")
+    if original_email in mappings:
+        original_email = mappings[original_email]
+        logger.info(f"[{request_id}] Email mapped: {original_email} -> {original_email}")
 
-    logger.info(f"[{request_id}] Processing secure query from: {user_message.email}")
+    logger.info(f"[{request_id}] Processing secure query from: {original_email}")
     logger.debug(f"[{request_id}] Query: {user_message.text[:100]}...")
 
     # 5. Business logic
     start_time = time.time()
     result = await combined_execute_api(
-        user_message.email,
+        original_email,
         user_message.text,
     )
     processing_time = time.time() - start_time
@@ -271,7 +271,7 @@ async def secure_query(
     logger.info(
         f"[{request_id}] Secure query processed",
         extra={
-            "user_email": user_message.email,
+            "user_email": original_email,
             "result_type": result.type,
             "processing_time": round(processing_time, 3)
         }
@@ -321,7 +321,7 @@ async def test_secure_query(
 
     # 5. Business logic
     result = await combined_execute_api(
-        user_message.email,
+        original_email,
         user_message.text,
     )
 
