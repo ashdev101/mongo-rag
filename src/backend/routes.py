@@ -224,12 +224,15 @@ async def query_sync(
 async def secure_query(
     user_message: SharePointMessage,
     request: Request,
+    token_data: Dict[str, Any] = Depends(verify_token)
 ):
     """
     Browser-only, site-locked endpoint.
     No Azure AD / JWT involved.
     """
     request_id = getattr(request.state, "request_id", "unknown")
+    
+    user_info = extract_user_info(token_data)
 
     # 1. Browser enforcement
     # enforce_browser_request(request)
@@ -248,7 +251,7 @@ async def secure_query(
         "vidyah018@tataplay.com" : "mollyt@tataplay.com",
     }
 
-    original_email = user_message.email
+    original_email = user_info.get("email") or user_info.get("upn") or user_info.get("preferred_username", "")
     # 4. User mapping
     if user_message.email in mappings:
         user_message.email = mappings[user_message.email]
