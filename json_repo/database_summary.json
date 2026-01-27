@@ -291,7 +291,7 @@
             ]
         },
         "360 Feedback Participation": {
-            "collection": "performance_360_degree_feedback_participants_status_all",
+            "collection": "performance_360_feedback_participants_status_all",
             "key_fields": [
                 "performance document name",
                 "participant name",
