@@ -13,6 +13,11 @@ class SharePointMessage(BaseModel):
     text: str
     # email: str
 
+class TestSharePointMessage(BaseModel):
+    """Message request model for Sharepoint."""
+    text: str
+    email: str
+
 
 class MessageResponse(BaseModel):
     """Message response model."""

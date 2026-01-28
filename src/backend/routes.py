@@ -9,7 +9,7 @@ import re
 import json
 import time
 
-from backend.models import Message, TokenValidationResponse, HealthResponse, CombinedResponse , SharePointMessage
+from backend.models import Message, TestSharePointMessage, TokenValidationResponse, HealthResponse, CombinedResponse , SharePointMessage
 from backend.auth import verify_token, extract_user_info
 from app import combined_execute , combined_execute_api
 from backend.config import Settings
@@ -301,7 +301,7 @@ async def secure_query(
 
 @router.post("/api/test/secure-query", response_model=CombinedResponse)
 async def test_secure_query(
-    user_message: SharePointMessage,
+    user_message: TestSharePointMessage,
     request: Request,
 ):
     """
@@ -321,7 +321,7 @@ async def test_secure_query(
 
     # 5. Business logic
     result = await combined_execute_api(
-        original_email,
+        user_message.email,
         user_message.text,
     )
 
