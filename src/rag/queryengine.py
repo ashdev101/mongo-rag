@@ -45,6 +45,12 @@ PROMPT = PromptTemplate(
     Tone & style:
     - Professional, helpful, and HR-appropriate.
     - Concise but supportive.
+
+    Response Closing Requirement:
+    - Always end with: "If you have any more questions or need further assistance, feel free to ask!"
+    - Use variations of this closing line to maintain a natural tone, but ensure the offer for further assistance is always included.
+    - The closing sentence must be generic and must not reference the previous query.
+    
 """,
     input_variables=["context", "question"]
 )
@@ -73,6 +79,8 @@ async def retrieve_docs(question: str):
 
 async def query_main_store(question: str) -> str:
     docs = await retrieve_docs(question)
+
+    # print("docs" , docs)
 
     context = "\n\n".join(doc.page_content for doc in docs)
 
