@@ -19,6 +19,10 @@ employees = db["base_report"]
 
 def fetch_user(email: Optional[str] , employee_code: Optional[int]) -> dict:
     record = employees.find_one({"email": email , "assignment status type": "ACTIVE"}, {"_id": 0, "employee code" : 1 , "designation": 1 , "region":1 , "department" : 1 , "grade":1}) if email else employees.find_one({"employee code": employee_code , "assignment status type": "ACTIVE"}, {"_id": 0, "employee code" : 1 , "designation": 1 , "region":1 , "department" : 1 , "grade":1})
+
+    if not record:
+        # this can happen if the user email address is stored in all lower case then as expected in db 
+        record = employees.find_one({"email": email.lower() , "assignment status type": "ACTIVE"}, {"_id": 0, "employee code" : 1 , "designation": 1 , "region":1 , "department" : 1 , "grade":1}) if email else employees.find_one({"employee code": employee_code , "assignment status type": "ACTIVE"}, {"_id": 0, "employee code" : 1 , "designation": 1 , "region":1 , "department" : 1 , "grade":1})
     
     if record and "designation" in record:
         role = record["designation"].lower()
