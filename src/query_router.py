@@ -86,6 +86,8 @@ async def router(query, email):
             - "meta"
             Use for questions about the assistant, its data usage, privacy, or limitations.
 
+        Exceptions:
+            - If the user ask for who is my hr or who is my regional hr , route to "policy" instead of "document" since it's a common question that can be answered with a policy document or a static FAQ.
 
         
         Instructions:
