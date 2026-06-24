@@ -1,21 +1,16 @@
 """API route handlers."""
 import os
 import logging
-from fastapi import APIRouter, Depends, HTTPException, Request, status , Response
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import FileResponse, JSONResponse
 from typing import Dict, Any
 from datetime import datetime
-import re
 import json
 import time
 
 from backend.models import Message, TestSharePointMessage, TokenValidationResponse, HealthResponse, CombinedResponse , SharePointMessage
 from backend.auth import verify_token, extract_user_info
 from app import combined_execute , combined_execute_api
-from backend.config import Settings
-from backend.security.browser import enforce_browser_request
-from backend.security.browser_token import issue_browser_token , validate_browser_token
-from backend.security.csrf import issue_csrf, validate_csrf
 from backend.logging_config import get_logger, log_with_context, log_with_request
 
 from rbac_onepager import rbac_onepager
@@ -53,34 +48,6 @@ async def get_current_user(token_data: Dict[str, Any] = Depends(verify_token)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve user information: {str(e)}"
         )
-
-@router.get("/api/init")    
-async def init(request: Request, response: Response):
-    # enforce_browser_request(request)
-
-    browser_token = issue_browser_token(request)
-    csrf_token = issue_csrf(browser_token)
-
-    response.set_cookie(
-        key="browser_token",
-        value=browser_token,
-        httponly=True,
-        secure=True,
-        samesite="none",
-        path="/"
-    )
-
-    response.set_cookie(
-        key="csrf_token",
-        value=csrf_token,
-        httponly=True,
-        secure=True,
-        samesite="none",
-        path="/"
-    )
-
-    return {"token":csrf_token }
-
 
 @router.post("/api/validate-token", response_model=TokenValidationResponse)
 async def validate_token(token_data: Dict[str, Any] = Depends(verify_token)):
@@ -234,16 +201,6 @@ async def secure_query(
     
     user_info = extract_user_info(token_data)
 
-    # 1. Browser enforcement
-    # enforce_browser_request(request)
-
-    # 2. Browser token
-    # browser_payload = validate_browser_token(request)
-    # browser_token = request.cookies.get("browser_token")
-
-    # 3. CSRF
-    # validate_csrf(request, browser_token)
-
     mappings = {
         "soorajn349@tataplay.com" : "Shayanta.Chaudhuri@tataplay.com" ,
         "samratha738@tataplay.com" : "Pallavi.Kaushik@tataplay.com",
@@ -308,16 +265,6 @@ async def test_secure_query(
     Browser-only, site-locked endpoint.
     No Azure AD / JWT involved.
     """
-
-    # 1. Browser enforcement
-    # enforce_browser_request(request)
-
-    # 2. Browser token
-    # browser_payload = validate_browser_token(request)
-    # browser_token = request.cookies.get("browser_token")
-
-    # 3. CSRF
-    # validate_csrf(request, browser_token)
 
     # 5. Business logic
     result = await combined_execute_api(
