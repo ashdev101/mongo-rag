@@ -11,6 +11,7 @@ import time
 from backend.models import Message, TestSharePointMessage, TokenValidationResponse, HealthResponse, CombinedResponse , SharePointMessage
 from backend.auth import verify_token, extract_user_info
 from app import combined_execute , combined_execute_api
+from backend.validation import get_validated_email
 from backend.logging_config import get_logger, log_with_context, log_with_request
 
 from rbac_onepager import rbac_onepager
@@ -83,14 +84,7 @@ async def send_message(
     
     try:
         user_info = extract_user_info(token_data)
-        email = user_info.get("email") or user_info.get("upn") or user_info.get("preferred_username", "")
-
-        if not email:
-            log_with_request(logger, logging.WARNING, "Could not extract email from token", request_id)
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Could not extract email from user info"
-            )
+        email = get_validated_email(user_info)
         
         log_with_request(logger, logging.INFO, f"Processing message from user: {email}", request_id, user_email=email)
         log_with_request(logger, logging.DEBUG, f"Message text: {user_message.text[:100]}...", request_id)
@@ -154,13 +148,7 @@ async def query_sync(
     """
     try:
         user_info = extract_user_info(token_data)
-        email = user_info.get("email") or user_info.get("upn") or user_info.get("preferred_username", "")
-        
-        if not email:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Could not extract email from user info"
-            )
+        email = get_validated_email(user_info)
         
         logger.info(f"Processing sync query from authenticated user")
         
@@ -208,7 +196,7 @@ async def secure_query(
         "vidyah018@tataplay.com" : "mollyt@tataplay.com",
     }
 
-    original_email = user_info.get("email") or user_info.get("upn") or user_info.get("preferred_username", "")
+    original_email = get_validated_email(user_info)
     # 4. User mapping
     if original_email in mappings:
         original_email = mappings[original_email]
@@ -267,8 +255,9 @@ async def test_secure_query(
     """
 
     # 5. Business logic
+    email = get_validated_email({"email": user_message.email})
     result = await combined_execute_api(
-        user_message.email,
+        email,
         user_message.text,
     )
 
