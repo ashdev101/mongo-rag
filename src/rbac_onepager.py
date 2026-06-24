@@ -1,10 +1,13 @@
 import os
+import logging
 from typing import Optional
 from pymongo import MongoClient
 import databse_dsitcint_values
 import json
 from dotenv import load_dotenv
 from langgraph_sample import checkisSpecialHRUser
+
+logger = logging.getLogger(__name__)
 app_dir = os.path.join(os.getcwd())
 load_dotenv(os.path.join(app_dir, ".env"))
 from db.common_operations import findUser
@@ -53,11 +56,11 @@ def fetch_user(email: Optional[str] , employee_code: Optional[int]) -> dict:
         grade_allowed = []
         grade = "unknown"
 
-    print(f"Fetched role for {email}: {role}")
+    logger.debug("Fetched role for user")
     return {"designation": role  , "employee code" : employees_code, "region": region , "department" : department , "region_access": region_access , "department_exception": department_exception , "grade_allowed": grade_allowed , "grade": grade} 
 
 def rbac_onepager(hremail : str , employee_code: str) -> bool:
-    print(f"RBAC check for {hremail} to access onepager of employee code {employee_code}")
+    logger.debug("RBAC check for onepager access")
     #get the users info from database
     role_info = fetch_user(hremail , None)
 

@@ -77,10 +77,6 @@ async def log_requests(request: Request, call_next):
     request_id = str(uuid.uuid4())
     start_time = time.time()
     
-    # Extract user info if available
-    user_email = "anonymous"
-    auth_header = request.headers.get("authorization", "")
-    
     # Log incoming request
     access_logger.info(
         f"Incoming request: {request.method} {request.url.path}",
@@ -88,11 +84,8 @@ async def log_requests(request: Request, call_next):
             "request_id": request_id,
             "method": request.method,
             "endpoint": request.url.path,
-            "url": str(request.url),
-            "client_host": request.client.host if request.client else "unknown",
             "user_agent": request.headers.get("user-agent", "unknown"),
             "content_type": request.headers.get("content-type", ""),
-            "user_email": user_email,
         }
     )
     
@@ -113,7 +106,6 @@ async def log_requests(request: Request, call_next):
                 "endpoint": request.url.path,
                 "status_code": response.status_code,
                 "duration": round(process_time, 3),
-                "user_email": user_email,
             }
         )
         
@@ -128,15 +120,13 @@ async def log_requests(request: Request, call_next):
         
         # Log error
         logger.error(
-            f"Request failed: {request.method} {request.url.path} - Error: {str(e)}",
+            f"Request failed: {request.method} {request.url.path}",
             exc_info=True,
             extra={
                 "request_id": request_id,
                 "method": request.method,
                 "endpoint": request.url.path,
                 "duration": round(process_time, 3),
-                "user_email": user_email,
-                "error": str(e),
             }
         )
         raise

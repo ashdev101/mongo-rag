@@ -15,6 +15,8 @@ import asyncio
 # from utils.QueueFileLogger import QueueFileLogger
 import logging
 
+logger = logging.getLogger(__name__)
+
 # =====================================================================
 # Existing processor
 # =====================================================================
@@ -41,9 +43,7 @@ async def run_query(email, question):
         db_results = output["db_results"]
         agg_pipeline = output.get("agg_pipeline")
 
-        print("===="*10,"app.py","===="*10)
-        print("User Question:",agent_output["question"])
-        print("Generated Output:",output["db_results"])
+        logger.debug("Query processed by app.py")
 
         try:
             agent_out_str = json.dumps(agent_output, indent=2, default=str)
@@ -342,7 +342,7 @@ async def combined_execute_api(email: str, question: str):
         resolve_conversation_result = await resolve_conversation(question, email)
         route_result = await query_router(resolve_conversation_result, email)
         route = route_result.get("route")
-        print(f"Resolved route: {route} for email: {email} and question: {question}")
+        logger.debug(f"Resolved route: {route}")
         query = route_result.get("query", "")
 
         if route == "document":

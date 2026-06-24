@@ -12,6 +12,7 @@ from backend.models import Message, TestSharePointMessage, TokenValidationRespon
 from backend.auth import verify_token, extract_user_info
 from app import combined_execute , combined_execute_api
 from backend.validation import get_validated_email
+from backend.redaction import mask_filepath
 from backend.logging_config import get_logger, log_with_context, log_with_request
 
 from rbac_onepager import rbac_onepager
@@ -86,8 +87,8 @@ async def send_message(
         user_info = extract_user_info(token_data)
         email = get_validated_email(user_info)
         
-        log_with_request(logger, logging.INFO, f"Processing message from user: {email}", request_id, user_email=email)
-        log_with_request(logger, logging.DEBUG, f"Message text: {user_message.text[:100]}...", request_id)
+        log_with_request(logger, logging.INFO, "Processing message from user", request_id)
+        log_with_request(logger, logging.DEBUG, f"Query received ({len(user_message.text)} chars)", request_id)
         
         start_time = time.time()
         result = await combined_execute_api(email, user_message.text)
@@ -97,7 +98,6 @@ async def send_message(
             logger, logging.INFO,
             "Message processed successfully",
             request_id,
-            user_email=email,
             result_type=result.type,
             duration=round(processing_time, 3)
         )
@@ -106,7 +106,7 @@ async def send_message(
         if result.type == "file":
             file_path = result.content
             if not os.path.exists(file_path):
-                log_with_request(logger, logging.ERROR, f"File not found: {file_path}", request_id)
+                log_with_request(logger, logging.ERROR, f"File not found: {mask_filepath(file_path)}", request_id)
                 raise HTTPException(status_code=404, detail="File not found")
             
             log_with_request(logger, logging.INFO, f"Returning file response: {os.path.basename(file_path)}", request_id)
@@ -126,9 +126,8 @@ async def send_message(
     except Exception as e:
         log_with_request(
             logger, logging.ERROR,
-            f"Error in send_message: {str(e)}",
+            f"Error in send_message",
             request_id,
-            user_email=email if 'email' in locals() else "unknown"
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -200,10 +199,10 @@ async def secure_query(
     # 4. User mapping
     if original_email in mappings:
         original_email = mappings[original_email]
-        logger.info(f"[{request_id}] Email mapped: {original_email} -> {original_email}")
+        logger.info(f"[{request_id}] Email mapped")
 
-    logger.info(f"[{request_id}] Processing secure query from: {original_email}")
-    logger.debug(f"[{request_id}] Query: {user_message.text[:100]}...")
+    logger.info(f"[{request_id}] Processing secure query")
+    logger.debug(f"[{request_id}] Query received ({len(user_message.text)} chars)")
 
     # 5. Business logic
     start_time = time.time()
@@ -216,7 +215,6 @@ async def secure_query(
     logger.info(
         f"[{request_id}] Secure query processed",
         extra={
-            "user_email": original_email,
             "result_type": result.type,
             "processing_time": round(processing_time, 3)
         }
@@ -227,7 +225,7 @@ async def secure_query(
         file_path = result.content
 
         if not os.path.exists(file_path):
-            logger.error(f"[{request_id}] File not found: {file_path}")
+            logger.error(f"[{request_id}] File not found: {mask_filepath(file_path)}")
             raise HTTPException(status_code=404, detail="File not found")
 
         logger.info(f"[{request_id}] Returning file: {os.path.basename(file_path)}")
