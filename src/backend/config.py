@@ -33,6 +33,7 @@ class Settings:
             "https://localhost:53000"
         ).split(",")
     )
+    ALLOWED_METHODS: list = ["GET", "POST"]
     
     # Server Configuration
     HOST: str = os.getenv("HOST", "0.0.0.0")

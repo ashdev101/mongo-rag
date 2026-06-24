@@ -64,11 +64,22 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=settings.ALLOWED_METHODS,
     allow_headers=["*"],
     expose_headers=["*"],
     max_age=600,
 )
+
+# Restrict HTTP methods middleware
+@app.middleware("http")
+async def restrict_methods(request: Request, call_next):
+    if request.method not in settings.ALLOWED_METHODS and request.method != "OPTIONS":
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=405,
+            content={"detail": f"Method {request.method} not allowed"}
+        )
+    return await call_next(request)
 
 # Add request logging middleware
 @app.middleware("http")
