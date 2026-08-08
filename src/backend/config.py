@@ -19,13 +19,6 @@ class Settings:
     AUTHORITY: str = f"https://login.microsoftonline.com/{TENANT_ID}"
     JWKS_URL: str = f"{AUTHORITY}/discovery/v2.0/keys"
     APP_ID_URI: str = os.getenv("APP_ID_URI", f"api://{CLIENT_ID}")
-    BROWSER_TOKEN_SECRET : str = os.getenv("BROWSER_TOKEN_SECRET", "CHANGE_ME_STRONG_RANDOM")
-    BROWSER_TOKEN_TTL : str = int(os.getenv("BROWSER_TOKEN_TTL", 600)) 
-    CSRF_TOKEN_TTL : str = int(os.getenv("CSRF_TOKEN_TTL", 300)) 
-    SECRET_KEY: bytes = os.getenv(
-                            "SECRET_KEY",
-                            "CHANGE_ME_SUPER_SECRET"
-                            ).encode("utf-8")
 
     # Allowed audiences and issuers for token validation
     ALLOWED_AUDIENCES: list = [CLIENT_ID, APP_ID_URI]
@@ -40,11 +33,17 @@ class Settings:
             "https://localhost:53000"
         ).split(",")
     )
+    ALLOWED_METHODS: list = ["GET", "POST"]
     
     # Server Configuration
     HOST: str = os.getenv("HOST", "0.0.0.0")
     PORT: int = int(os.getenv("PORT", "8000"))
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+    
+    # Logging Configuration
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+    LOG_DIR: str = os.getenv("LOG_DIR", "logs")
+    LOG_FORMAT: str = os.getenv("LOG_FORMAT", "json" if os.getenv("ENVIRONMENT", "development") == "production" else "text")
 
 
 @lru_cache()

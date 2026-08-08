@@ -1,8 +1,11 @@
 import os
+import logging
 from pymongo import MongoClient
 from datetime import datetime
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
+
+logger = logging.getLogger(__name__)
 
 
 load_dotenv()
@@ -21,7 +24,7 @@ async def push_convo_pair(email: str, user_msg: str, bot_msg: str):
     Push the latest conversation pair and keep only the last 10 items.
     """
     try:
-        print("Updating History for",email)
+        logger.debug("Updating chat history")
         await collection.update_one(
             {"email": email},
             {
@@ -43,7 +46,7 @@ async def push_convo_pair(email: str, user_msg: str, bot_msg: str):
         )
         return
     except:
-        print("Failed to Update History for",email)
+        logger.exception("Failed to update chat history")
 
 async def get_chat_history(email: str):
     """

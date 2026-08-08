@@ -7,6 +7,7 @@ from pymongo import MongoClient
 # Load environment variables from .env file
 from dotenv import load_dotenv
 from db.mongo import mongoClient
+from datetime import date, datetime, timezone
 app_dir = os.path.join(os.getcwd())
 load_dotenv(os.path.join(app_dir, ".env"))
 
@@ -15,6 +16,12 @@ DB_NAME = os.getenv("MONGODB_DATABASE")
 
 client = mongoClient
 db = client[DB_NAME]
+
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        return super().default(obj)
 
 class MongoDBToolExecutor:
     """
@@ -27,6 +34,22 @@ class MongoDBToolExecutor:
         self.db = db_wrapper
         self.aggregationRBAC = aggregationRBAC
         self.schema_cache = {}
+
+    
+    def normalize_dates(obj):
+        if isinstance(obj, dict):
+            if set(obj.keys()) == {"$date"}:
+                return datetime.fromisoformat(
+                    obj["$date"].replace("Z", "+00:00")
+                ).astimezone(timezone.utc)
+
+            return {k: MongoDBToolExecutor.normalize_dates(v) for k, v in obj.items()}
+
+        elif isinstance(obj, list):
+            return [MongoDBToolExecutor.normalize_dates(i) for i in obj]
+
+        return obj
+
 
     def list_collections(self) -> str:
         try:
@@ -70,10 +93,15 @@ class MongoDBToolExecutor:
             print("Original pipeline:", pipeline)
             print("Using collection:", collection_name)
             original_pipeline = pipeline.copy()
+
+            # Normalize dates
+            pipeline = MongoDBToolExecutor.normalize_dates(pipeline)
+
             # Enforce RBAC on the pipeline
             print("Enforcing RBAC on pipeline...")
             pipeline = self.aggregationRBAC.enforce(pipeline)
             print("RBAC-enforced pipeline:", pipeline)
+
 
             # Execute aggregation with (possibly modified) pipeline
             results = await db[collection_name].aggregate(pipeline).to_list(length=None)
@@ -83,11 +111,12 @@ class MongoDBToolExecutor:
             return json.dumps(
                 {
                     "collection": collection_name,
-                    "pipeline": original_pipeline,  # Show original pipeline to LLM
+                    "pipeline": original_pipeline, 
                     "result_count": len(results),
-                    "results": results,
+                    "results": results,           
                 },
                 indent=2,
+                cls=DateTimeEncoder
             )
         except Exception as e:
             return json.dumps(

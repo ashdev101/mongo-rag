@@ -1203,7 +1203,7 @@
       }
     ]
   },
-  "performance_360_degree_feedback_participants_status_all": {
+  "performance_360_feedback_participants_status_all": {
     "fields": {
       "_id": "ObjectId",
       "employee code": "Number",
@@ -1261,123 +1261,6 @@
         "role": "Peer",
         "role status": "Active",
         "participation status": "Awaiting Reply"
-      }
-    ]
-  },
-  "historical_ratings_and_other_information": {
-    "fields": {
-      "_id": "ObjectId",
-      "employee code": "Number",
-      "first name": "String",
-      "last name": "String",
-      "grade": "Timestamp",
-      "grade level": "String",
-      "designation": "String",
-      "department": "String",
-      "sub department": "String",
-      "location": "String",
-      "office": "String",
-      "region": "String",
-      "date of joining": "Timestamp",
-      "assignment status type": "String",
-      "cy-4": "Number",
-      "cy-3": "Number",
-      "cy-2": "Number",
-      "cy-1": "Number",
-      "last promotion date": [
-        "Timestamp",
-        "Null"
-      ],
-      "current year": "Number",
-      "experience prior to tata play": "Number",
-      "tata play experience": "Number",
-      "total years experience": "Number",
-      "previous company": "String",
-      "mt batch": "Null",
-      "highest qualification": "String",
-      "university name": "String"
-    },
-    "indexes": {
-      "_id_": {
-        "v": 2,
-        "key": [
-          [
-            "_id",
-            1
-          ]
-        ]
-      }
-    },
-    "samples": [
-      {
-        "_id": {
-          "$oid": "69413427ff97ca4b8ad8b073"
-        },
-        "employee code": 1252,
-        "first name": "Soumya",
-        "last name": "Swamy",
-        "grade": "M4",
-        "grade level": "M4b",
-        "designation": "Manager - Field Service Delivery",
-        "department": "Field Service Delivery",
-        "sub department": "Field Service Delivery - General",
-        "location": "Bangalore",
-        "office": "Hebbal",
-        "region": "South",
-        "date of joining": {
-          "$date": "2006-04-24T00:00:00Z"
-        },
-        "assignment status type": "ACTIVE",
-        "cy-4": 3,
-        "cy-3": 3,
-        "cy-2": 3,
-        "cy-1": 3,
-        "last promotion date": {
-          "$date": "2019-04-01T00:00:00Z"
-        },
-        "current year": 3,
-        "experience prior to tata play": 3,
-        "tata play experience": 19,
-        "total years experience": 22,
-        "previous company": "Bharti Televentures Ltd.",
-        "mt batch": null,
-        "highest qualification": "B. Sc",
-        "university name": "Bangalore University"
-      },
-      {
-        "_id": {
-          "$oid": "69413427ff97ca4b8ad8b07d"
-        },
-        "employee code": 1423,
-        "first name": "Ashok",
-        "last name": "Kumar Thakur",
-        "grade": "M3",
-        "grade level": "M3b",
-        "designation": "Assistant General Manager - Supply Chain Services",
-        "department": "Finance",
-        "sub department": "Supply Chain Services",
-        "location": "Lucknow",
-        "office": "Lucknow",
-        "region": "North",
-        "date of joining": {
-          "$date": "2006-05-15T00:00:00Z"
-        },
-        "assignment status type": "ACTIVE",
-        "cy-4": 4,
-        "cy-3": 3,
-        "cy-2": 3,
-        "cy-1": 3,
-        "last promotion date": {
-          "$date": "2024-04-01T00:00:00Z"
-        },
-        "current year": 3,
-        "experience prior to tata play": 12,
-        "tata play experience": 19,
-        "total years experience": 31,
-        "previous company": "Adonis Electronics Pvt. Ltd.",
-        "mt batch": null,
-        "highest qualification": "BA",
-        "university name": "Karnataka State Open University"
       }
     ]
   },

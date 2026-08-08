@@ -1,30 +1,28 @@
 """API route handlers."""
 import os
-from fastapi import APIRouter, Depends, HTTPException, Request, status , Response
+import logging
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import FileResponse, JSONResponse
 from typing import Dict, Any
 from datetime import datetime
-import re
-import logging
 import json
 import time
 
-from backend.models import Message, TokenValidationResponse, HealthResponse, CombinedResponse , SharePointMessage
+from backend.models import Message, TestSharePointMessage, TokenValidationResponse, HealthResponse, CombinedResponse , SharePointMessage
 from backend.auth import verify_token, extract_user_info
 from app import combined_execute , combined_execute_api
-from backend.config import Settings
-from backend.security.browser import enforce_browser_request
-from backend.security.browser_token import issue_browser_token , validate_browser_token
-from backend.security.csrf import issue_csrf, validate_csrf
+from backend.validation import get_validated_email
+from backend.redaction import mask_filepath
+from backend.logging_config import get_logger, log_with_context, log_with_request
 
 from rbac_onepager import rbac_onepager
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 router = APIRouter()
 
 
-@router.get("/health", response_model=HealthResponse)
+@router.get("/api/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint."""
     return {
@@ -53,34 +51,6 @@ async def get_current_user(token_data: Dict[str, Any] = Depends(verify_token)):
             detail=f"Failed to retrieve user information: {str(e)}"
         )
 
-@router.get("/api/init")    
-async def init(request: Request, response: Response):
-    # enforce_browser_request(request)
-
-    browser_token = issue_browser_token(request)
-    csrf_token = issue_csrf(browser_token)
-
-    response.set_cookie(
-        key="browser_token",
-        value=browser_token,
-        httponly=True,
-        secure=True,
-        samesite="none",
-        path="/"
-    )
-
-    response.set_cookie(
-        key="csrf_token",
-        value=csrf_token,
-        httponly=True,
-        secure=True,
-        samesite="none",
-        path="/"
-    )
-
-    return {"token":csrf_token }
-
-
 @router.post("/api/validate-token", response_model=TokenValidationResponse)
 async def validate_token(token_data: Dict[str, Any] = Depends(verify_token)):
     """
@@ -103,6 +73,7 @@ async def validate_token(token_data: Dict[str, Any] = Depends(verify_token)):
 @router.post("/api/messages", response_model=CombinedResponse)
 async def send_message(
     user_message: Message,
+    request: Request,
     token_data: Dict[str, Any] = Depends(verify_token)
 ):
     """
@@ -110,27 +81,35 @@ async def send_message(
     This endpoint calls combined_execute from app.py as the entry point.
     Token is validated via dependency.
     """
+    request_id = getattr(request.state, "request_id", "unknown")
+    
     try:
         user_info = extract_user_info(token_data)
-        email = user_info.get("email") or user_info.get("upn") or user_info.get("preferred_username", "")
-
-        if not email:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Could not extract email from user info"
-            )
+        email = get_validated_email(user_info)
         
-        logger.info("Processing sync query from authenticated user")
+        log_with_request(logger, logging.INFO, "Processing message from user", request_id)
+        log_with_request(logger, logging.DEBUG, f"Query received ({len(user_message.text)} chars)", request_id)
         
+        start_time = time.time()
         result = await combined_execute_api(email, user_message.text)
+        processing_time = time.time() - start_time
 
-        print(f"Result: {result}")
+        log_with_request(
+            logger, logging.INFO,
+            "Message processed successfully",
+            request_id,
+            result_type=result.type,
+            duration=round(processing_time, 3)
+        )
 
         # Handle file response
         if result.type == "file":
             file_path = result.content
             if not os.path.exists(file_path):
+                log_with_request(logger, logging.ERROR, f"File not found: {mask_filepath(file_path)}", request_id)
                 raise HTTPException(status_code=404, detail="File not found")
+            
+            log_with_request(logger, logging.INFO, f"Returning file response: {os.path.basename(file_path)}", request_id)
             return FileResponse(
                 path=file_path,
                 filename=os.path.basename(file_path),
@@ -145,7 +124,11 @@ async def send_message(
     except HTTPException:
         raise
     except Exception as e:
-        logger.exception("Error in send_message")
+        log_with_request(
+            logger, logging.ERROR,
+            f"Error in send_message",
+            request_id,
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Server error: {str(e)}"
@@ -164,13 +147,7 @@ async def query_sync(
     """
     try:
         user_info = extract_user_info(token_data)
-        email = user_info.get("email") or user_info.get("upn") or user_info.get("preferred_username", "")
-        
-        if not email:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Could not extract email from user info"
-            )
+        email = get_validated_email(user_info)
         
         logger.info(f"Processing sync query from authenticated user")
         
@@ -201,21 +178,15 @@ async def query_sync(
 async def secure_query(
     user_message: SharePointMessage,
     request: Request,
+    token_data: Dict[str, Any] = Depends(verify_token)
 ):
     """
     Browser-only, site-locked endpoint.
     No Azure AD / JWT involved.
     """
-
-    # 1. Browser enforcement
-    # enforce_browser_request(request)
-
-    # 2. Browser token
-    # browser_payload = validate_browser_token(request)
-    # browser_token = request.cookies.get("browser_token")
-
-    # 3. CSRF
-    # validate_csrf(request, browser_token)
+    request_id = getattr(request.state, "request_id", "unknown")
+    
+    user_info = extract_user_info(token_data)
 
     mappings = {
         "soorajn349@tataplay.com" : "Shayanta.Chaudhuri@tataplay.com" ,
@@ -224,14 +195,29 @@ async def secure_query(
         "vidyah018@tataplay.com" : "mollyt@tataplay.com",
     }
 
+    original_email = get_validated_email(user_info)
     # 4. User mapping
-    if user_message.email in mappings:
-        user_message.email = mappings[user_message.email]
+    if original_email in mappings:
+        original_email = mappings[original_email]
+        logger.info(f"[{request_id}] Email mapped")
+
+    logger.info(f"[{request_id}] Processing secure query")
+    logger.debug(f"[{request_id}] Query received ({len(user_message.text)} chars)")
 
     # 5. Business logic
+    start_time = time.time()
     result = await combined_execute_api(
-        user_message.email,
+        original_email,
         user_message.text,
+    )
+    processing_time = time.time() - start_time
+    
+    logger.info(
+        f"[{request_id}] Secure query processed",
+        extra={
+            "result_type": result.type,
+            "processing_time": round(processing_time, 3)
+        }
     )
 
     # ✅ USE ATTRIBUTES, NOT DICT ACCESS
@@ -239,8 +225,10 @@ async def secure_query(
         file_path = result.content
 
         if not os.path.exists(file_path):
+            logger.error(f"[{request_id}] File not found: {mask_filepath(file_path)}")
             raise HTTPException(status_code=404, detail="File not found")
 
+        logger.info(f"[{request_id}] Returning file: {os.path.basename(file_path)}")
         return FileResponse(
             path=file_path,
             filename=os.path.basename(file_path),
@@ -256,7 +244,7 @@ async def secure_query(
 
 @router.post("/api/test/secure-query", response_model=CombinedResponse)
 async def test_secure_query(
-    user_message: SharePointMessage,
+    user_message: TestSharePointMessage,
     request: Request,
 ):
     """
@@ -264,19 +252,10 @@ async def test_secure_query(
     No Azure AD / JWT involved.
     """
 
-    # 1. Browser enforcement
-    # enforce_browser_request(request)
-
-    # 2. Browser token
-    # browser_payload = validate_browser_token(request)
-    # browser_token = request.cookies.get("browser_token")
-
-    # 3. CSRF
-    # validate_csrf(request, browser_token)
-
     # 5. Business logic
+    email = get_validated_email({"email": user_message.email})
     result = await combined_execute_api(
-        user_message.email,
+        email,
         user_message.text,
     )
 

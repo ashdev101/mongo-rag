@@ -73,7 +73,7 @@ class NaturalLanguageToMQL:
                                 PMS_TASK_STATUS_REPORT_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["pms_task_status_report_all"],
                                 # PMS_Q2_25_26_RATING_REPORT_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["pms_q2_25_26_rating_report_all"],
                                 PERFORMANCE_360_DEGREE_FEEDBACK_PARTICIPANTS_STATUS_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["performance_360_degree_feedback_participants_status_all"],
-                                HISTORICAL_RATINGS_AND_OTHER_INFORMATION_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["historical_ratings_and_other_information"],
+                                #HISTORICAL_RATINGS_AND_OTHER_INFORMATION_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["historical_ratings_and_other_information"],
                                 GOAL_DETAIL_REPORT_DESCRIPTION = self.SYSTEM_INSTRUCTIONS_MONGODB["goal_detail_report"],
                             )
         self.pii_masker = FieldBasedPIIMasker()

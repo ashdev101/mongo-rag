@@ -6,6 +6,7 @@ from rag.MongoVectorStoreManager import MongoVectorStoreManager #VectorStoreMana
 from llm.LLMFactory import LLMFactory
 from dotenv import load_dotenv
 import os
+from db.common_operations import findUser
 
 app_dir = os.path.join(os.getcwd())
 load_dotenv(os.path.join(app_dir, ".env"))
@@ -19,6 +20,10 @@ PROMPT = PromptTemplate(
 
     Question:
     {question}
+
+    User Info :
+    {user_info}
+
 
     You are Tata Play's official HR Helpdesk Assistant.
 
@@ -45,6 +50,12 @@ PROMPT = PromptTemplate(
     Tone & style:
     - Professional, helpful, and HR-appropriate.
     - Concise but supportive.
+
+    Response Closing Requirement:
+    - Always end with: "If you have any more questions or need further assistance, feel free to ask!"
+    - Use variations of this closing line to maintain a natural tone, but ensure the offer for further assistance is always included.
+    - The closing sentence must be generic and must not reference the previous query.
+    
 """,
     input_variables=["context", "question"]
 )
@@ -71,14 +82,17 @@ async def retrieve_docs(question: str):
     return await retriever.ainvoke(question)
 
 
-async def query_main_store(question: str) -> str:
+async def query_main_store(question: str , email: str) -> str:
     docs = await retrieve_docs(question)
+    user_info = findUser(email=email, employee_code=None)
+    # print("docs" , docs)
 
     context = "\n\n".join(doc.page_content for doc in docs)
 
     prompt = PROMPT.format(
         context=context,
-        question=question
+        question=question,
+        user_info=user_info
     )
 
     response = await llm.ainvoke(prompt)

@@ -35,7 +35,7 @@ async def stream_combined_response(
             yield "data: [DONE]\n\n"
             return
         
-        logger.info(f"Processing query for {email}: {query}")
+        logger.info(f"Processing query ({len(query)} chars)")
         
         # Call combined_execute function from app.py
         router_output, final_output = combined_execute(email, query)
@@ -110,7 +110,7 @@ async def stream_event_generator(
             yield {"data": "[DONE]"}
             return
         
-        logger.info(f"Processing query for {email}: {query}")
+        logger.info(f"Processing query ({len(query)} chars)")
         
         # Call combined_execute function from app.py
         router_output, final_output = combined_execute(email, query)

@@ -10,24 +10,31 @@ src_path = Path(__file__).parent / "src"
 sys.path.insert(0, str(src_path))
 
 import gradio as gr
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-import logging
+import time
+import uuid
 
 from app import QueryProcessor
 from backend.config import get_settings
 from backend.routes import router
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="[%(levelname)s] %(name)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
+from backend.logging_config import setup_logging, get_logger
 
 # Get application settings
 settings = get_settings()
+
+# Setup production-ready logging
+setup_logging(
+    environment=settings.ENVIRONMENT,
+    log_level=settings.LOG_LEVEL,
+    log_dir=settings.LOG_DIR,
+    app_name="tataplay"
+)
+
+# Get loggers
+logger = get_logger(__name__)
+access_logger = get_logger("access")
 
 # =====================================================================
 # FastAPI Application Setup
@@ -57,11 +64,83 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=settings.ALLOWED_METHODS,
     allow_headers=["*"],
     expose_headers=["*"],
     max_age=600,
 )
+
+# Restrict HTTP methods middleware
+@app.middleware("http")
+async def restrict_methods(request: Request, call_next):
+    if request.method not in settings.ALLOWED_METHODS and request.method != "OPTIONS":
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=405,
+            content={"detail": f"Method {request.method} not allowed"}
+        )
+    return await call_next(request)
+
+# Add request logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Log all incoming requests and responses with structured logging."""
+    request_id = str(uuid.uuid4())
+    start_time = time.time()
+    
+    # Log incoming request
+    access_logger.info(
+        f"Incoming request: {request.method} {request.url.path}",
+        extra={
+            "request_id": request_id,
+            "method": request.method,
+            "endpoint": request.url.path,
+            "user_agent": request.headers.get("user-agent", "unknown"),
+            "content_type": request.headers.get("content-type", ""),
+        }
+    )
+    
+    # Store request_id in request state for use in routes
+    request.state.request_id = request_id
+    
+    # Process the request
+    try:
+        response = await call_next(request)
+        process_time = time.time() - start_time
+        
+        # Log response
+        access_logger.info(
+            f"Request completed: {request.method} {request.url.path} - Status: {response.status_code}",
+            extra={
+                "request_id": request_id,
+                "method": request.method,
+                "endpoint": request.url.path,
+                "status_code": response.status_code,
+                "duration": round(process_time, 3),
+            }
+        )
+        
+        # Add custom headers
+        response.headers["X-Request-ID"] = request_id
+        response.headers["X-Process-Time"] = str(round(process_time, 3))
+        
+        return response
+        
+    except Exception as e:
+        process_time = time.time() - start_time
+        
+        # Log error
+        logger.error(
+            f"Request failed: {request.method} {request.url.path}",
+            exc_info=True,
+            extra={
+                "request_id": request_id,
+                "method": request.method,
+                "endpoint": request.url.path,
+                "duration": round(process_time, 3),
+            }
+        )
+        raise
 
 # Include API routes
 app.include_router(router)
@@ -188,5 +267,5 @@ if __name__ == "__main__":
         "main:app",
         host=settings.HOST,
         port=settings.PORT,
-        reload=settings.ENVIRONMENT == "development",  # Auto-reload only in development
+        reload=False,  # Auto-reload only in development
     )
