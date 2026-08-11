@@ -77,9 +77,10 @@ if __name__ == "__main__":
     load_dotenv(os.path.join(app_dir, ".env"))
   
     MONGODB_URI = os.getenv('MONGODB_URI')
+    DB_NAME = os.getenv("MONGODB_DATABASE")
 
     client = MongoClient(MONGODB_URI)
-    db_name = "hr-cleaned"
+    db_name = DB_NAME
     mongoSchemaInferer = MongoSchemaInferer(client, db_name=db_name)
     util = MongoSchemaReport(client, mongoSchemaInferer,db_name=db_name, sample_docs_in_collection_info=2)
     schema_report = util.build_full_report()
