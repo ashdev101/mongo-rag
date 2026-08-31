@@ -69,9 +69,9 @@ Collections and Business Context:
     - "share document status": COMPLETED, NOT COMPLETED, READY
     - "final status": DOCUMENT APPROVED, PENDING WITH EMPLOYEE, PENDING WITH MANAGER, PENDING WITH REVIWER
 
-- **permormance_rating_report** (or permormance_rating_report_year_2025_2026):
-  Performance ratings for 2025-2026.
-  - "final status" values: Approved, Completed, In progress, Submitted
+# - **permormance_rating_report** (or permormance_rating_report_year_2025_2026):
+#   Performance ratings for 2025-2026.
+#   - "final status" values: Approved, Completed, In progress, Submitted
 
 - **pip_transaction_report**:
   Performance Improvement Plan cases for current financial year.
@@ -108,6 +108,10 @@ Collections and Business Context:
 
 - **r&r_thank_you**:
     Captures "Thank You" R&R — peer-to-peer appreciation for everyday help, support, or collaboration.
+
+- **r&r_spot_of_the_month**:
+    Captures "Spot of the month" R&R - recognize and reward employees who show outstanding effort or achieve sudden, major success .
+
 
 IMPORTANT INSTRUCTIONS:
 1. **Always start by listing collections** to see what data is available
