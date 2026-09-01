@@ -98,7 +98,12 @@
     "indexes": {
       "_id_": {
         "v": 2,
-        "key": [["_id", 1]]
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
       }
     },
     "samples": [
@@ -198,8 +203,14 @@
       "employee status": "String",
       "manager name": "String",
       "date of joining": "Timestamp",
-      "date of resignation": ["Timestamp", "Null"],
-      "date of leaving": ["Timestamp", "Null"],
+      "date of resignation": [
+        "Timestamp",
+        "Null"
+      ],
+      "date of leaving": [
+        "Timestamp",
+        "Null"
+      ],
       "Status": {
         "exit checklist employee": "String",
         "exit checklist reporting manager": "String",
@@ -235,20 +246,35 @@
       "Exit Checklist - Facilities": {
         "employee id card returned": "String",
         "access card returned": "String",
-        "recovery amount employee": ["String", "Timestamp"],
+        "recovery amount employee": [
+          "String",
+          "Timestamp"
+        ],
         "stationary returned": "String",
         "keys workstation/locker returned": "String",
         "business card returned": "String",
         "corporate cc returned": "String",
-        "cocp recovery amount mobile": ["Number", "Null"],
-        "cocp recovery amount broadband": ["Number", "Null"],
+        "cocp recovery amount mobile": [
+          "Number",
+          "Null"
+        ],
+        "cocp recovery amount broadband": [
+          "Number",
+          "Null"
+        ],
         "comments": "String"
       },
       "Exit Checklist - IT": {
         "pc/laptop returned": "String",
-        "amount recovery pc/laptop": ["Number", "Null"],
+        "amount recovery pc/laptop": [
+          "Number",
+          "Null"
+        ],
         "consumables accessories returned": "String",
-        "amount recovery consumables/accessories": ["Number", "Null"],
+        "amount recovery consumables/accessories": [
+          "Number",
+          "Null"
+        ],
         "account ids (login id.,email id.)/siebel/sap/ess password disabled": "String",
         "temp network folders deleted": "String",
         "crm(sso)/prm/kenan/vms/evd/victory/bo/sap ids disabled": "String",
@@ -256,24 +282,45 @@
         "comments": "String"
       },
       "Exit Checklist - Finance Accounts": {
-        "outstanding travel advance/imprest recovered": ["Number", "Null"],
-        "outstanding relocation amount recovered": ["Number", "Null"],
+        "outstanding travel advance/imprest recovered": [
+          "Number",
+          "Null"
+        ],
+        "outstanding relocation amount recovered": [
+          "Number",
+          "Null"
+        ],
         "travel claim bill received": "String",
-        "amount recovery travel": ["Number", "Null"],
-        "personal expense": ["Number", "Null"],
+        "amount recovery travel": [
+          "Number",
+          "Null"
+        ],
+        "personal expense": [
+          "Number",
+          "Null"
+        ],
         "comments": "String"
       },
       "Exit Checklist - Finance Assets": {
         "assets submitted employee": "String",
-        "amount to be recovered against asset": ["Number", "Null"],
+        "amount to be recovered against asset": [
+          "Number",
+          "Null"
+        ],
         "comments": "String"
       },
       "Exit Checklist - RHR Ops": {
         "notice period recovery": "String",
         "verified all checklist data submitted by respective department": "String",
-        "dd received notice recovery": ["Number", "Null"],
+        "dd received notice recovery": [
+          "Number",
+          "Null"
+        ],
         "any leave without pay not applied in the system": "String",
-        "recovery amount general except jb np relocation": ["Number", "Null"],
+        "recovery amount general except jb np relocation": [
+          "Number",
+          "Null"
+        ],
         "comments": "String"
       },
       "Exit Checklist - RHR": {
@@ -284,15 +331,30 @@
         "training cost recovered": "String",
         "notice buyout reimbursement recovered": "String",
         "joining bonus recovered": "String",
-        "annual leave balance days": ["Null", "Number"],
-        "sick leave balance encashable in days": ["Null", "Number"],
-        "casual leave balance encashable in days": ["Null", "Number"],
+        "annual leave balance days": [
+          "Null",
+          "Number"
+        ],
+        "sick leave balance encashable in days": [
+          "Null",
+          "Number"
+        ],
+        "casual leave balance encashable in days": [
+          "Null",
+          "Number"
+        ],
         "special leave deduction": "String",
         "group transfer": "String",
         "group company name": "String",
-        "date of joining group company": ["Null", "Timestamp"],
+        "date of joining group company": [
+          "Null",
+          "Timestamp"
+        ],
         "gratuity processed group company": "String",
-        "tata group date of joining": ["Null", "Timestamp"],
+        "tata group date of joining": [
+          "Null",
+          "Timestamp"
+        ],
         "poc name group company": "String",
         "poc designation": "String",
         "poc department": "String",
@@ -306,25 +368,69 @@
       },
       "Exit Checklist - Payroll": {
         "gratuity eligibility": "String",
-        "gratuity payable": ["Null", "Number"],
-        "tataplay subscription": ["Null", "Number"],
-        "performance linked incentive sales incentive": ["Null", "Number"],
-        "performance linked incentive bonus incentive": ["Null", "Number"],
-        "other payout": ["Null", "Number"],
-        "rewards": ["Null", "Number"],
-        "statutory bonus": ["Null", "Number"],
-        "relocation reimbursement": ["Null", "Number"],
-        "city compensatory allowance": ["Null", "Number"],
-        "mip deduct/refund": ["Null", "Number"],
-        "mip topup deduct/refund": ["Null", "Number"],
-        "nps recovery": ["Null", "Number"],
-        "pf recovery": ["Null", "Number"]
+        "gratuity payable": [
+          "Null",
+          "Number"
+        ],
+        "tataplay subscription": [
+          "Null",
+          "Number"
+        ],
+        "performance linked incentive sales incentive": [
+          "Null",
+          "Number"
+        ],
+        "performance linked incentive bonus incentive": [
+          "Null",
+          "Number"
+        ],
+        "other payout": [
+          "Null",
+          "Number"
+        ],
+        "rewards": [
+          "Null",
+          "Number"
+        ],
+        "statutory bonus": [
+          "Null",
+          "Number"
+        ],
+        "relocation reimbursement": [
+          "Null",
+          "Number"
+        ],
+        "city compensatory allowance": [
+          "Null",
+          "Number"
+        ],
+        "mip deduct/refund": [
+          "Null",
+          "Number"
+        ],
+        "mip topup deduct/refund": [
+          "Null",
+          "Number"
+        ],
+        "nps recovery": [
+          "Null",
+          "Number"
+        ],
+        "pf recovery": [
+          "Null",
+          "Number"
+        ]
       }
     },
     "indexes": {
       "_id_": {
         "v": 2,
-        "key": [["_id", 1]]
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
       }
     },
     "samples": [
@@ -627,7 +733,10 @@
       "manager employee code": "Number",
       "manager name": "String",
       "manager email": "String",
-      "reviewer employee code": ["Number", "Null"],
+      "reviewer employee code": [
+        "Number",
+        "Null"
+      ],
       "reviewer name": "String",
       "region": "String",
       "department": "String",
@@ -647,7 +756,12 @@
     "indexes": {
       "_id_": {
         "v": 2,
-        "key": [["_id", 1]]
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
       }
     },
     "samples": [
@@ -727,7 +841,12 @@
     "indexes": {
       "_id_": {
         "v": 2,
-        "key": [["_id", 1]]
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
       }
     },
     "samples": [
@@ -798,7 +917,10 @@
       "reviewer name": "String",
       "reviewer employee code": "Number",
       "reviewer email": "String",
-      "assigned date": ["Null", "Timestamp"],
+      "assigned date": [
+        "Null",
+        "Timestamp"
+      ],
       "assigned to": "String",
       "task status": "String",
       "pip document status": "String",
@@ -807,7 +929,12 @@
     "indexes": {
       "_id_": {
         "v": 2,
-        "key": [["_id", 1]]
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
       }
     },
     "samples": [
@@ -900,7 +1027,10 @@
       "office": "String",
       "region": "String",
       "date of joining": "Timestamp",
-      "manager employee code": ["Null", "Number"],
+      "manager employee code": [
+        "Null",
+        "Number"
+      ],
       "reporting to": "String",
       "state": "String",
       "circle": "String",
@@ -908,8 +1038,14 @@
       "gender": "String",
       "email": "String",
       "assignment status type": "String",
-      "date of resignation": ["Timestamp", "Null"],
-      "date of leaving": ["Timestamp", "Null"],
+      "date of resignation": [
+        "Timestamp",
+        "Null"
+      ],
+      "date of leaving": [
+        "Timestamp",
+        "Null"
+      ],
       "role": "String",
       "reason for resignation": "String",
       "manager details": [
@@ -924,11 +1060,21 @@
     "indexes": {
       "_id_": {
         "v": 2,
-        "key": [["_id", 1]]
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
       },
       "email_1": {
         "v": 2,
-        "key": [["email", 1]]
+        "key": [
+          [
+            "email",
+            1
+          ]
+        ]
       }
     },
     "samples": [
@@ -1015,23 +1161,37 @@
   "performance_goal_report_2025_2026": {
     "fields": {
       "_id": "ObjectId",
-      "employee code": ["Number", "Null"],
+      "employee code": [
+        "Number",
+        "Null"
+      ],
       "employee name": "String",
       "department": "String",
       "sub department": "String",
-      "grade": ["Timestamp", "String"],
+      "grade": [
+        "Timestamp",
+        "String"
+      ],
       "grade level": "String",
       "region": "String",
       "review period name": "String",
       "goal plan name": "String",
       "goal name": "String",
-      "weight": ["Number", "Null"],
+      "weight": [
+        "Number",
+        "Null"
+      ],
       "description": "String"
     },
     "indexes": {
       "_id_": {
         "v": 2,
-        "key": [["_id", 1]]
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
       }
     },
     "samples": [
@@ -1077,7 +1237,10 @@
       "employee code": "Number",
       "name": "String",
       "citation": "String",
-      "grade": ["Timestamp", "String"],
+      "grade": [
+        "Timestamp",
+        "String"
+      ],
       "designation": "String",
       "department": "String",
       "region": "String",
@@ -1088,7 +1251,12 @@
     "indexes": {
       "_id_": {
         "v": 2,
-        "key": [["_id", 1]]
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
       }
     },
     "samples": [
@@ -1139,16 +1307,27 @@
       "goal name": "String",
       "goal description": "String",
       "start date": "Timestamp",
-      "target completion date": ["Null", "Timestamp"],
+      "target completion date": [
+        "Null",
+        "Timestamp"
+      ],
       "creation date": "Timestamp",
       "development goal status": "String",
       "category": "String",
-      "manager approval date": ["Null", "Timestamp"]
+      "manager approval date": [
+        "Null",
+        "Timestamp"
+      ]
     },
     "indexes": {
       "_id_": {
         "v": 2,
-        "key": [["_id", 1]]
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
       }
     },
     "samples": [
@@ -1227,7 +1406,12 @@
     "indexes": {
       "_id_": {
         "v": 2,
-        "key": [["_id", 1]]
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
       }
     },
     "samples": [
@@ -1290,7 +1474,12 @@
     "indexes": {
       "_id_": {
         "v": 2,
-        "key": [["_id", 1]]
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
       }
     },
     "samples": [
@@ -1341,9 +1530,18 @@
       "employee name": "String",
       "email": "String",
       "absence name": "String",
-      "start date": ["Timestamp", "Null"],
-      "end date": ["Timestamp", "Null"],
-      "duration": ["Number", "Null"],
+      "start date": [
+        "Timestamp",
+        "Null"
+      ],
+      "end date": [
+        "Timestamp",
+        "Null"
+      ],
+      "duration": [
+        "Number",
+        "Null"
+      ],
       "status of leave": "String",
       "approval status": "String",
       "manager email": "String",
@@ -1355,7 +1553,12 @@
     "indexes": {
       "_id_": {
         "v": 2,
-        "key": [["_id", 1]]
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
       }
     },
     "samples": [
@@ -1423,14 +1626,22 @@
       "date of joining": "Timestamp",
       "manager employee code": "Number",
       "reporting to": "String",
-      "reviewer employee code": ["Number", "Null"],
+      "reviewer employee code": [
+        "Number",
+        "Null"
+      ],
       "reviewer name": "String",
       "status": "String"
     },
     "indexes": {
       "_id_": {
         "v": 2,
-        "key": [["_id", 1]]
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
       }
     },
     "samples": [
@@ -1501,7 +1712,12 @@
     "indexes": {
       "_id_": {
         "v": 2,
-        "key": [["_id", 1]]
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
       }
     },
     "samples": [
@@ -1565,7 +1781,10 @@
       "current year -3": "Number",
       "current year -2": "Number",
       "current year -1": "Null",
-      "last promotion date": ["Timestamp", "Null"],
+      "last promotion date": [
+        "Timestamp",
+        "Null"
+      ],
       "current year": "Number",
       "experience prior to tata play": "Number",
       "tata play experience": "Number",
@@ -1578,7 +1797,12 @@
     "indexes": {
       "_id_": {
         "v": 2,
-        "key": [["_id", 1]]
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
       }
     },
     "samples": [
@@ -1663,14 +1887,22 @@
       "nomination date": "Timestamp",
       "department": "String",
       "region": "String",
-      "points": ["String", "Timestamp"],
+      "points": [
+        "String",
+        "Timestamp"
+      ],
       "employee code": "Number",
       "grade": "Timestamp"
     },
     "indexes": {
       "_id_": {
         "v": 2,
-        "key": [["_id", 1]]
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
       }
     },
     "samples": [
@@ -1734,7 +1966,12 @@
     "indexes": {
       "_id_": {
         "v": 2,
-        "key": [["_id", 1]]
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
       }
     },
     "samples": [
