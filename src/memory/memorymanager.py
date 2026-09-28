@@ -11,13 +11,15 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 MONGODB_URI = os.getenv("MONGODB_URI")
+DB_NAME = os.getenv("MONGODB_DATABASE")
+CHAT_HISTORY_COLLECTION = os.getenv("CHAT_HISTORY_COLLECTION")
 
 if not MONGODB_URI:
     raise RuntimeError("MONGODB_URI is not set in the environment.")
 
 client = AsyncIOMotorClient(MONGODB_URI)
-db = client["test-saptarshi"]                   
-collection = db["chat-history"]
+db = client[DB_NAME]                   
+collection = db[CHAT_HISTORY_COLLECTION]
 
 async def push_convo_pair(email: str, user_msg: str, bot_msg: str):
     """
