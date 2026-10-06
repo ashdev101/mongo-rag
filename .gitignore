@@ -27,3 +27,4 @@ tex.py
 .uv.*.exe
 
 onepager/
+logs/

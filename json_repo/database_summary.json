@@ -291,7 +291,7 @@
             ]
         },
         "360 Feedback Participation": {
-            "collection": "performance_360_degree_feedback_participants_status_all",
+            "collection": "performance_360_feedback_participants_status_all",
             "key_fields": [
                 "performance document name",
                 "participant name",
@@ -530,54 +530,6 @@
                 "effective date",
                 "category",
                 "location"
-            ]
-        },
-        "Historical Ratings": {
-            "collection": "historical_ratings_and_other_information",
-            "key_fields": [
-                "cy-4",
-                "cy-3",
-                "cy-2",
-                "cy-1",
-                "current year",
-                "experience prior to tata play",
-                "tata play experience",
-                "total years experience",
-                "previous company",
-                "highest qualification",
-                "education",
-                "university name",
-                "last promotion date"
-            ],
-            "synonyms": [
-                "historical rating",
-                "historical ratings",
-                "past performance",
-                "employee history",
-                "performance history"
-            ],
-            "intent_patterns": [
-                "last 3 years ratings by employee",
-                "historical ratings by department",
-                "rating trend by region",
-                "employees with promotion date",
-                "experience summary by employee",
-                "education details by employee",
-                "past ratings vs current year"
-            ],
-            "ambiguous_fields": [
-                "cy-1",
-                "current year",
-                "location",
-                "assignment status type"
-            ],
-            "routing_keywords": [
-                "historical",
-                "ratings",
-                "trend",
-                "experience",
-                "education",
-                "promotion"
             ]
         }
     },

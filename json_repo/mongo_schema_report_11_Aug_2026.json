@@ -1,0 +1,1488 @@
+{
+  "goal_setting_status": {
+    "fields": {
+      "_id": "ObjectId",
+      "date of joining": "Timestamp",
+      "department": "String",
+      "designation": "String",
+      "employee name": "String",
+      "manager employee code": "Number",
+      "office": "String",
+      "grade": "Timestamp",
+      "employee code": "Number",
+      "region": "String",
+      "reporting to": "String",
+      "reviewer name": "String",
+      "reviewer employee code": "Number",
+      "status": "String",
+      "sub department": "String",
+      "grade level": "String",
+      "location": "String"
+    },
+    "indexes": {
+      "_id_": {
+        "v": 2,
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
+      }
+    },
+    "samples": [
+      {
+        "_id": {
+          "$oid": "69143b452324415046424152"
+        },
+        "date of joining": {
+          "$date": "2006-05-29T00:00:00Z"
+        },
+        "department": "Customer Operations",
+        "designation": "Manager - Systems Solutions & Design - COSSG",
+        "employee name": "Vasumathy S.",
+        "manager employee code": 1434,
+        "office": "Hebbal",
+        "grade": "M4",
+        "employee code": 1585,
+        "region": "South",
+        "reporting to": "Abdul Rahim Nazar",
+        "reviewer name": "Reema Kukreja",
+        "reviewer employee code": 5377,
+        "status": "APPROVED",
+        "sub department": "COSSG",
+        "grade level": "M4b",
+        "location": "Bangalore"
+      },
+      {
+        "_id": {
+          "$oid": "69143b452324415046424162"
+        },
+        "date of joining": {
+          "$date": "2006-06-12T00:00:00Z"
+        },
+        "department": "Technology",
+        "designation": "General Manager - Consumer Technology",
+        "employee name": "Vinod K.S.",
+        "manager employee code": 1760,
+        "office": "Hebbal",
+        "grade": "M3",
+        "employee code": 1704,
+        "region": "South",
+        "reporting to": "Rajaneesh Chaubey",
+        "reviewer name": "Kundan Singh",
+        "reviewer employee code": 2536,
+        "status": "APPROVED",
+        "sub department": "Consumer Technology",
+        "grade level": "M3a",
+        "location": "Bangalore"
+      }
+    ]
+  },
+  "pms_task_status_report_all": {
+    "fields": {
+      "_id": "ObjectId",
+      "employee code": "Number",
+      "employee name": "String",
+      "email": "String",
+      "manager employee code": "Number",
+      "manager name": "String",
+      "manager email": "String",
+      "reviewer employee code": [
+        "Number",
+        "Null"
+      ],
+      "reviewer name": "String",
+      "region": "String",
+      "department": "String",
+      "sub department": "String",
+      "grade": "Timestamp",
+      "grade level": "String",
+      "employee evaluation": "String",
+      "employee evaluation status": "String",
+      "manager evaluation": "String",
+      "manager evaluation status": "String",
+      "initiate approval": "String",
+      "initiate approval status": "String",
+      "share document": "String",
+      "share document status": "String",
+      "final status": "String"
+    },
+    "indexes": {
+      "_id_": {
+        "v": 2,
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
+      }
+    },
+    "samples": [
+      {
+        "_id": {
+          "$oid": "69301687324c1daebcf77493"
+        },
+        "employee code": 1034,
+        "employee name": "Monoranjon Dutta",
+        "email": "manoranjand@tataplay.com",
+        "manager employee code": 4922,
+        "manager name": "Joydeep Roy",
+        "manager email": "Joydeep.Roy@tataplay.com",
+        "reviewer employee code": 3631,
+        "reviewer name": "Sujit Mondal",
+        "region": "East",
+        "department": "Field Service Delivery",
+        "sub department": "Field Service Delivery - General",
+        "grade": "M4",
+        "grade level": "M4a",
+        "employee evaluation": "WSEVAL",
+        "employee evaluation status": "COMPLETED",
+        "manager evaluation": "MGREVAL",
+        "manager evaluation status": "COMPLETED",
+        "initiate approval": "FAPPR",
+        "initiate approval status": "COMPLETED",
+        "share document": "SHRPDOC",
+        "share document status": "COMPLETED",
+        "final status": "DOCUMENT APPROVED"
+      },
+      {
+        "_id": {
+          "$oid": "69301687324c1daebcf774a3"
+        },
+        "employee code": 1363,
+        "employee name": "Anup P. Lobo",
+        "email": "anupl@tataplay.com",
+        "manager employee code": 4127,
+        "manager name": "Ashoka B",
+        "manager email": "ashoka.b@tataplay.com",
+        "reviewer employee code": 3082,
+        "reviewer name": "B. Sidharth Varma",
+        "region": "South",
+        "department": "Field Service Delivery",
+        "sub department": "Service Training - FSD",
+        "grade": "M4",
+        "grade level": "M4b",
+        "employee evaluation": "WSEVAL",
+        "employee evaluation status": "COMPLETED",
+        "manager evaluation": "MGREVAL",
+        "manager evaluation status": "COMPLETED",
+        "initiate approval": "FAPPR",
+        "initiate approval status": "COMPLETED",
+        "share document": "SHRPDOC",
+        "share document status": "COMPLETED",
+        "final status": "DOCUMENT APPROVED"
+      }
+    ]
+  },
+  "permormance_rating_report_year_2025_2026": {
+    "fields": {
+      "_id": "ObjectId",
+      "region": "String",
+      "sub department": "String",
+      "email": "String",
+      "employee name": "String",
+      "employee code": "Number",
+      "final status": "String",
+      "grade level": "String",
+      "designation": "String",
+      "office": "String",
+      "manager email": "String",
+      "manager name": "String",
+      "manager employee code": "Number",
+      "manager rating": "Null",
+      "department": "String",
+      "grade": "Timestamp",
+      "performance document name": "String",
+      "self rating": "Number"
+    },
+    "indexes": {
+      "_id_": {
+        "v": 2,
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
+      }
+    },
+    "samples": [
+      {
+        "_id": {
+          "$oid": "69143d452324415046424656"
+        },
+        "region": "South",
+        "sub department": "N.V.S.D",
+        "email": "vasanths@tataplay.com",
+        "employee name": "Vasanth Kumar S.P.",
+        "employee code": 1576,
+        "final status": "Completed",
+        "grade level": "M4b",
+        "designation": "Manager - NVSD Customer Admin",
+        "office": "Hebbal",
+        "manager email": "amalar@tataplay.com",
+        "manager name": "Amala Rani",
+        "manager employee code": 2222,
+        "manager rating": null,
+        "department": "Customer Operations",
+        "grade": "M4",
+        "performance document name": "2025-26 - Q1",
+        "self rating": 4
+      },
+      {
+        "_id": {
+          "$oid": "69143d45232441504642468d"
+        },
+        "region": "North",
+        "sub department": "Field Service Delivery - General",
+        "email": "vikrant.sehgal@tataplay.com",
+        "employee name": "Vikrant Sehgal",
+        "employee code": 2934,
+        "final status": "Submitted",
+        "grade level": "M3a",
+        "designation": "General Manager - Field Service Delivery",
+        "office": "Mohali",
+        "manager email": "sanjaymi@tataplay.com",
+        "manager name": "Sanjay Mittal",
+        "manager employee code": 1480,
+        "manager rating": null,
+        "department": "Field Service Delivery",
+        "grade": "M3",
+        "performance document name": "2025-26 - Q1",
+        "self rating": 3
+      }
+    ]
+  },
+  "performance_goal_report_2025_2026": {
+    "fields": {
+      "_id": "ObjectId",
+      "department": "String",
+      "description": "String",
+      "goal name": "String",
+      "goal plan name": "String",
+      "grade": "Timestamp",
+      "employee name": "String",
+      "employee code": "Number",
+      "region": "String",
+      "review period name": "String",
+      "sub department": "String",
+      "grade level": "String",
+      "weight": "Number"
+    },
+    "indexes": {
+      "_id_": {
+        "v": 2,
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
+      }
+    },
+    "samples": [
+      {
+        "_id": {
+          "$oid": "6916b240f8681175445ed823"
+        },
+        "department": "Field Service Delivery",
+        "description": "Net exposure of Inactive ISPs (< 10 Payable WO's) > 180 Days 0.0 5.0% M2 deactive target vs ach % As per grid 5.0% As per Hygiene report Logic As per grid 10.0% QR code capture vs overall Install completed >=75% 5.0%",
+        "goal name": "Control & Compliance",
+        "goal plan name": "Goal Plan for 2025-26",
+        "grade": "M4",
+        "employee name": "Monoranjon Dutta",
+        "employee code": 1034,
+        "region": "East",
+        "review period name": "Performance Review 2025-26",
+        "sub department": "Field Service Delivery - General",
+        "grade level": "M4a",
+        "weight": 25
+      },
+      {
+        "_id": {
+          "$oid": "6916b240f8681175445ed834"
+        },
+        "department": "Technology",
+        "description": "Regular training for RC staff, monitoring efficiency of training as below: - Pre-Soak: - \u2264 2% Soak: - \u2264 5% FT: -\u2264 10% Impedance: -\u2264 2% QC: -\u2264 1% TPL PDI: -\u2264 0.1%",
+        "goal name": "Training & Grooming",
+        "goal plan name": "Goal Plan for 2025-26",
+        "grade": "M4",
+        "employee name": "Jaipal Singh Bhandari",
+        "employee code": 1192,
+        "region": "North",
+        "review period name": "Performance Review 2025-26",
+        "sub department": "Consumer Technology",
+        "grade level": "M4b",
+        "weight": 10
+      }
+    ]
+  },
+  "base_report": {
+    "fields": {
+      "_id": "ObjectId",
+      "assignment status type": "String",
+      "date of birth": "Timestamp",
+      "date of joining": "Timestamp",
+      "department": "String",
+      "designation": "String",
+      "employee code": "Number",
+      "first name": "String",
+      "grade": "Timestamp",
+      "grade level": "String",
+      "last name": "String",
+      "location": "String",
+      "gender": "String",
+      "office": "String",
+      "region": "String",
+      "state": "String",
+      "sub department": "String",
+      "circle": "String",
+      "date of leaving": [
+        "Timestamp",
+        "Null"
+      ],
+      "date of resignation": [
+        "Timestamp",
+        "Null"
+      ],
+      "last year rating": [
+        "Null",
+        "Number"
+      ],
+      "manager employee code": [
+        "Null",
+        "Number"
+      ],
+      "email": "String",
+      "reason for resignation": "String",
+      "reporting to": "String",
+      "role": "String",
+      "manager details": {
+        "manager name": "String",
+        "manager mail": "String",
+        "manager designation": "String"
+      }
+    },
+    "indexes": {
+      "_id_": {
+        "v": 2,
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
+      }
+    },
+    "samples": [
+      {
+        "_id": {
+          "$oid": "68f871652412ecfdb1234d8f"
+        },
+        "assignment status type": "INACTIVE",
+        "date of birth": {
+          "$date": {
+            "$numberLong": "-109209600000"
+          }
+        },
+        "date of joining": {
+          "$date": "2006-05-08T00:00:00Z"
+        },
+        "department": "Field Service Delivery",
+        "designation": "Senior Manager - Field Service Delivery",
+        "employee code": 1387,
+        "first name": "Anoop Kumar",
+        "grade": "M4",
+        "grade level": "M4a",
+        "last name": "Dukka",
+        "location": "Hyderabad",
+        "gender": "Male",
+        "office": "Hyderabad",
+        "region": "South",
+        "state": "Telangana",
+        "sub department": "Field Service Delivery - General",
+        "circle": "NA",
+        "date of leaving": {
+          "$date": "2015-10-15T00:00:00Z"
+        },
+        "date of resignation": {
+          "$date": "2015-10-15T00:00:00Z"
+        },
+        "last year rating": null,
+        "manager employee code": null,
+        "email": "anoopk@tatasky.com",
+        "reason for resignation": "NA",
+        "reporting to": "NA",
+        "role": "NA",
+        "manager details": {
+          "manager name": "NA",
+          "manager mail": "NA",
+          "manager designation": "NA"
+        }
+      },
+      {
+        "_id": {
+          "$oid": "68f871652412ecfdb1234dbc"
+        },
+        "assignment status type": "INACTIVE",
+        "date of birth": {
+          "$date": "1975-12-02T00:00:00Z"
+        },
+        "date of joining": {
+          "$date": "2006-05-15T00:00:00Z"
+        },
+        "department": "Sales",
+        "designation": "Senior Sales Executive - Agra",
+        "employee code": 1427,
+        "first name": "Seril",
+        "grade": "M5",
+        "grade level": "M5z",
+        "last name": "Singhal",
+        "location": "Agra",
+        "gender": "Male",
+        "office": "Lucknow",
+        "region": "North",
+        "state": "Uttar Pradesh",
+        "sub department": "Trade Sales",
+        "circle": "NA",
+        "date of leaving": {
+          "$date": "2008-01-01T00:00:00Z"
+        },
+        "date of resignation": {
+          "$date": "2008-01-01T00:00:00Z"
+        },
+        "last year rating": null,
+        "manager employee code": null,
+        "email": "serils@tatasky.com",
+        "reason for resignation": "NA",
+        "reporting to": "NA",
+        "role": "NA",
+        "manager details": {
+          "manager name": "NA",
+          "manager mail": "NA",
+          "manager designation": "NA"
+        }
+      }
+    ]
+  },
+  "pip_transaction_report": {
+    "fields": {
+      "_id": "ObjectId",
+      "employee code": "Number",
+      "first name": "String",
+      "last name": "String",
+      "employee email": "String",
+      "grade": "Timestamp",
+      "grade level": "String",
+      "designation": "String",
+      "sub department": "String",
+      "office": "String",
+      "region": "String",
+      "date of joining": "Timestamp",
+      "manager employee code": "Number",
+      "manager email": "String",
+      "pip submitted date": [
+        "Timestamp",
+        "Null"
+      ],
+      "pip completion date": "Timestamp",
+      "rhr name": "String",
+      "rhr employee code": "Number",
+      "rhr email": "String",
+      "reviewer name": "String",
+      "reviewer employee code": "Number",
+      "reviewer email": "String",
+      "assigned date": [
+        "Timestamp",
+        "Null"
+      ],
+      "assigned to": "String",
+      "task status": "String",
+      "pip document status": "String",
+      "department": "String"
+    },
+    "indexes": {
+      "_id_": {
+        "v": 2,
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
+      }
+    },
+    "samples": [
+      {
+        "_id": {
+          "$oid": "692ffbfc324c1daebcf76fa1"
+        },
+        "employee code": 6689,
+        "first name": "Rajesh",
+        "last name": "R",
+        "employee email": "Rajesh.R2@tataplay.com",
+        "grade": "M5",
+        "grade level": "M5a",
+        "designation": "Assistant Manager - Trade Sales",
+        "sub department": "Trade Sales",
+        "office": "Chennai",
+        "region": "South",
+        "date of joining": {
+          "$date": "2021-03-17T00:00:00Z"
+        },
+        "manager employee code": 5828,
+        "manager email": "Srinivasulu.Bharani@tataplay.com",
+        "pip submitted date": {
+          "$date": "2025-03-20T00:00:00Z"
+        },
+        "pip completion date": {
+          "$date": "2024-12-06T00:00:00Z"
+        },
+        "rhr name": "Atul Goyal",
+        "rhr employee code": 4146,
+        "rhr email": "atul.goyal@tataplay.com",
+        "reviewer name": "Vivek Damodaran E",
+        "reviewer employee code": 7494,
+        "reviewer email": "vivek.damodarane@tataplay.com",
+        "assigned date": {
+          "$date": "2025-03-20T00:00:00Z"
+        },
+        "assigned to": "Atul Goyal",
+        "task status": "ASSIGNED",
+        "pip document status": "PENDING",
+        "department": "Sales"
+      },
+      {
+        "_id": {
+          "$oid": "692ffbfc324c1daebcf76f9f"
+        },
+        "employee code": 3159,
+        "first name": "Kalpesh Kumar",
+        "last name": "Sagar",
+        "employee email": "kalpeshkumar.sagar@tataplay.com",
+        "grade": "M5",
+        "grade level": "M5b",
+        "designation": "Senior Executive - Field Service Delivery",
+        "sub department": "Field Service Delivery - General",
+        "office": "Ahmedabad",
+        "region": "West",
+        "date of joining": {
+          "$date": "2011-07-04T00:00:00Z"
+        },
+        "manager employee code": 4735,
+        "manager email": "Sandesh.Patel@tataplay.com",
+        "pip submitted date": {
+          "$date": "2024-11-28T00:00:00Z"
+        },
+        "pip completion date": {
+          "$date": "2024-08-20T00:00:00Z"
+        },
+        "rhr name": "Pramatesh V. Kumar",
+        "rhr employee code": 871,
+        "rhr email": "pramateshk@tataplay.com",
+        "reviewer name": "Vikas Chugh",
+        "reviewer employee code": 299,
+        "reviewer email": "vikasc@tataplay.com",
+        "assigned date": null,
+        "assigned to": "NA",
+        "task status": "COMPLETE",
+        "pip document status": "APPROVED",
+        "department": "Field Service Delivery"
+      }
+    ]
+  },
+  "offboarding_checklist": {
+    "fields": {
+      "_id": "ObjectId",
+      "Status": {
+        "exit checklist employee": "String",
+        "exit checklist reporting manager": "String",
+        "exit checklist customer operations": "String",
+        "exit checklist facilities": "String",
+        "exit checklist it": "String",
+        "exit checklist finance accounts": "String",
+        "exit checklist finance assets": "String",
+        "exit checklist rhr ops": "String",
+        "exit checklist payroll": "String",
+        "exit checklist rhr": "String",
+        "exit checklist chr ops": "String",
+        "exit checklist chr": "String",
+        "all task status": "String"
+      },
+      "Exit Checklist - Employee": {
+        "pending flexi pay claims sent to payroll": "String",
+        "proof of investments sent to payroll": "String",
+        "travel claims approved by manager": "String",
+        "pending hotel bills sent to osource": "String",
+        "personal email": "String"
+      },
+      "Exit Checklist - Reporting Manager": {
+        "outstanding matters completed": "String",
+        "material returned": "String",
+        "password and documents handed over": "String",
+        "all expenses and claims approved": "String",
+        "comments": "String"
+      },
+      "Exit Checklist - Customer Operations": {
+        "employee account disabled": "String"
+      },
+      "Exit Checklist - Facilities": {
+        "employee id card returned": "String",
+        "access card returned": "String",
+        "recovery amount employee": [
+          "String",
+          "Timestamp"
+        ],
+        "stationary returned": "String",
+        "keys workstation/locker returned": "String",
+        "business card returned": "String",
+        "corporate cc returned": "String",
+        "cocp recovery amount mobile": [
+          "Null",
+          "Number"
+        ],
+        "cocp recovery amount broadband": [
+          "Null",
+          "Number"
+        ],
+        "comments": "String"
+      },
+      "Exit Checklist - IT": {
+        "pc/laptop returned": "String",
+        "amount recovery pc/laptop": [
+          "Null",
+          "Number"
+        ],
+        "consumables accessories returned": "String",
+        "amount recovery consumables/accessories": [
+          "Null",
+          "Number"
+        ],
+        "account ids (login id.,email id.)/siebel/sap/ess password disabled": "String",
+        "temp network folders deleted": "String",
+        "crm(sso)/prm/kenan/vms/evd/victory/bo/sap ids disabled": "String",
+        "nas folder access disabled": "String",
+        "comments": "String"
+      },
+      "Exit Checklist - Finance Accounts": {
+        "outstanding travel advance/imprest recovered": [
+          "Null",
+          "Number"
+        ],
+        "outstanding relocation amount recovered": [
+          "Null",
+          "Number"
+        ],
+        "travel claim bill received": "String",
+        "amount recovery travel": [
+          "Null",
+          "Number"
+        ],
+        "personal expense": [
+          "Null",
+          "Number"
+        ],
+        "comments": "String"
+      },
+      "Exit Checklist - Finance Assets": {
+        "assets submitted employee": "String",
+        "amount to be recovered against asset": [
+          "Null",
+          "Number"
+        ],
+        "comments": "String"
+      },
+      "Exit Checklist - RHR Ops": {
+        "notice period recovery": "String",
+        "verified all checklist data submitted by respective department": "String",
+        "dd received notice recovery": [
+          "Null",
+          "Number"
+        ],
+        "any leave without pay not applied in the system": "String",
+        "recovery amount general except jb np relocation": [
+          "String",
+          "Timestamp"
+        ],
+        "comments": "String"
+      },
+      "Exit Checklist - RHR": {
+        "employee status": "String",
+        "comments": "String"
+      },
+      "Exit Checklist - CHR Ops": {
+        "training cost recovered": "String",
+        "notice buyout reimbursement recovered": "String",
+        "joining bonus recovered": "String",
+        "annual leave balance days": [
+          "Null",
+          "Number"
+        ],
+        "sick leave balance encashable in days": [
+          "Null",
+          "Number"
+        ],
+        "casual leave balance encashable in days": [
+          "Null",
+          "Number"
+        ],
+        "special leave deduction": "String",
+        "group transfer": "String",
+        "group company name": "String",
+        "date of joining group company": "Null",
+        "gratuity processed group company": "String",
+        "tata group date of joining": "Null",
+        "poc name group company": "String",
+        "poc designation": "String",
+        "poc department": "String",
+        "poc email": "String",
+        "poc contact number": "String",
+        "annual leave transfer group company": "String",
+        "leave transfer days": "Null"
+      },
+      "Exit Checklist - CHR": {
+        "comments": "String"
+      },
+      "Exit Checklist - Payroll": {
+        "gratuity eligibility": "String",
+        "gratuity payable": [
+          "Null",
+          "Number"
+        ],
+        "tataplay subscription": [
+          "Null",
+          "Number"
+        ],
+        "performance linked incentive sales incentive": [
+          "Null",
+          "Number"
+        ],
+        "performance linked incentive bonus incentive": [
+          "Null",
+          "Number"
+        ],
+        "other payout": [
+          "Null",
+          "Number"
+        ],
+        "rewards": [
+          "Null",
+          "Number"
+        ],
+        "statutory bonus": [
+          "Null",
+          "Number"
+        ],
+        "relocation reimbursement": [
+          "Null",
+          "Number"
+        ],
+        "city compensatory allowance": [
+          "Null",
+          "Number"
+        ],
+        "mip deduct/refund": [
+          "Null",
+          "Number"
+        ],
+        "mip topup deduct/refund": [
+          "Null",
+          "Number"
+        ],
+        "nps recovery": [
+          "Null",
+          "Number"
+        ],
+        "pf recovery": [
+          "Null",
+          "Number"
+        ]
+      },
+      "employee code": "Number",
+      "employee name": "String",
+      "grade": "Timestamp",
+      "grade level": "String",
+      "designation": "String",
+      "department": "String",
+      "sub department": "String",
+      "region": "String",
+      "employee status": "String",
+      "manager name": "String",
+      "date of joining": "Timestamp",
+      "date of resignation": "Timestamp",
+      "date of leaving": "Timestamp"
+    },
+    "indexes": {
+      "_id_": {
+        "v": 2,
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
+      }
+    },
+    "samples": [
+      {
+        "_id": {
+          "$oid": "69317515d9c30f3baeffba48"
+        },
+        "Status": {
+          "exit checklist employee": "Pending",
+          "exit checklist reporting manager": "Pending",
+          "exit checklist customer operations": "Pending",
+          "exit checklist facilities": "Pending",
+          "exit checklist it": "Pending",
+          "exit checklist finance accounts": "Pending",
+          "exit checklist finance assets": "Pending",
+          "exit checklist rhr ops": "Pending",
+          "exit checklist payroll": "Pending",
+          "exit checklist rhr": "Pending",
+          "exit checklist chr ops": "Pending",
+          "exit checklist chr": "Pending",
+          "all task status": "Pending"
+        },
+        "Exit Checklist - Employee": {
+          "pending flexi pay claims sent to payroll": "NA",
+          "proof of investments sent to payroll": "NA",
+          "travel claims approved by manager": "NA",
+          "pending hotel bills sent to osource": "NA",
+          "personal email": "NA"
+        },
+        "Exit Checklist - Reporting Manager": {
+          "outstanding matters completed": "NA",
+          "material returned": "NA",
+          "password and documents handed over": "NA",
+          "all expenses and claims approved": "NA",
+          "comments": "NA"
+        },
+        "Exit Checklist - Customer Operations": {
+          "employee account disabled": "NA"
+        },
+        "Exit Checklist - Facilities": {
+          "employee id card returned": "NA",
+          "access card returned": "NA",
+          "recovery amount employee": "nan",
+          "stationary returned": "NA",
+          "keys workstation/locker returned": "NA",
+          "business card returned": "NA",
+          "corporate cc returned": "NA",
+          "cocp recovery amount mobile": null,
+          "cocp recovery amount broadband": null,
+          "comments": "NA"
+        },
+        "Exit Checklist - IT": {
+          "pc/laptop returned": "NA",
+          "amount recovery pc/laptop": null,
+          "consumables accessories returned": "NA",
+          "amount recovery consumables/accessories": null,
+          "account ids (login id.,email id.)/siebel/sap/ess password disabled": "NA",
+          "temp network folders deleted": "NA",
+          "crm(sso)/prm/kenan/vms/evd/victory/bo/sap ids disabled": "NA",
+          "nas folder access disabled": "NA",
+          "comments": "NA"
+        },
+        "Exit Checklist - Finance Accounts": {
+          "outstanding travel advance/imprest recovered": null,
+          "outstanding relocation amount recovered": null,
+          "travel claim bill received": "NA",
+          "amount recovery travel": null,
+          "personal expense": null,
+          "comments": "nan"
+        },
+        "Exit Checklist - Finance Assets": {
+          "assets submitted employee": "NA",
+          "amount to be recovered against asset": null,
+          "comments": "NA"
+        },
+        "Exit Checklist - RHR Ops": {
+          "notice period recovery": "NA",
+          "verified all checklist data submitted by respective department": "NA",
+          "dd received notice recovery": null,
+          "any leave without pay not applied in the system": "NA",
+          "recovery amount general except jb np relocation": "nan",
+          "comments": "NA"
+        },
+        "Exit Checklist - RHR": {
+          "employee status": "NA",
+          "comments": "NA"
+        },
+        "Exit Checklist - CHR Ops": {
+          "training cost recovered": "NA",
+          "notice buyout reimbursement recovered": "NA",
+          "joining bonus recovered": "NA",
+          "annual leave balance days": null,
+          "sick leave balance encashable in days": null,
+          "casual leave balance encashable in days": null,
+          "special leave deduction": "NA",
+          "group transfer": "NA",
+          "group company name": "nan",
+          "date of joining group company": null,
+          "gratuity processed group company": "nan",
+          "tata group date of joining": null,
+          "poc name group company": "nan",
+          "poc designation": "nan",
+          "poc department": "nan",
+          "poc email": "nan",
+          "poc contact number": "nan",
+          "annual leave transfer group company": "nan",
+          "leave transfer days": null
+        },
+        "Exit Checklist - CHR": {
+          "comments": "NA"
+        },
+        "Exit Checklist - Payroll": {
+          "gratuity eligibility": "NA",
+          "gratuity payable": null,
+          "tataplay subscription": null,
+          "performance linked incentive sales incentive": null,
+          "performance linked incentive bonus incentive": null,
+          "other payout": null,
+          "rewards": null,
+          "statutory bonus": null,
+          "relocation reimbursement": null,
+          "city compensatory allowance": null,
+          "mip deduct/refund": null,
+          "mip topup deduct/refund": null,
+          "nps recovery": null,
+          "pf recovery": null
+        },
+        "employee code": 3558,
+        "employee name": "Seshadri Manivannan",
+        "grade": "M2",
+        "grade level": "M2a",
+        "designation": "Senior Vice President - Head IT Architecture",
+        "department": "IT",
+        "sub department": "IT Architecture",
+        "region": "South",
+        "employee status": "Active",
+        "manager name": "Vijay Sharma",
+        "date of joining": {
+          "$date": "2012-05-28T00:00:00Z"
+        },
+        "date of resignation": {
+          "$date": "2025-07-23T00:00:00Z"
+        },
+        "date of leaving": {
+          "$date": "2025-10-06T00:00:00Z"
+        }
+      },
+      {
+        "_id": {
+          "$oid": "69317515d9c30f3baeffba4b"
+        },
+        "Status": {
+          "exit checklist employee": "Pending",
+          "exit checklist reporting manager": "Pending",
+          "exit checklist customer operations": "Pending",
+          "exit checklist facilities": "Pending",
+          "exit checklist it": "Pending",
+          "exit checklist finance accounts": "Pending",
+          "exit checklist finance assets": "Pending",
+          "exit checklist rhr ops": "Pending",
+          "exit checklist payroll": "Pending",
+          "exit checklist rhr": "Pending",
+          "exit checklist chr ops": "Pending",
+          "exit checklist chr": "Pending",
+          "all task status": "Pending"
+        },
+        "Exit Checklist - Employee": {
+          "pending flexi pay claims sent to payroll": "NA",
+          "proof of investments sent to payroll": "NA",
+          "travel claims approved by manager": "NA",
+          "pending hotel bills sent to osource": "NA",
+          "personal email": "NA"
+        },
+        "Exit Checklist - Reporting Manager": {
+          "outstanding matters completed": "NA",
+          "material returned": "NA",
+          "password and documents handed over": "NA",
+          "all expenses and claims approved": "NA",
+          "comments": "NA"
+        },
+        "Exit Checklist - Customer Operations": {
+          "employee account disabled": "NA"
+        },
+        "Exit Checklist - Facilities": {
+          "employee id card returned": "NA",
+          "access card returned": "NA",
+          "recovery amount employee": "nan",
+          "stationary returned": "NA",
+          "keys workstation/locker returned": "NA",
+          "business card returned": "NA",
+          "corporate cc returned": "NA",
+          "cocp recovery amount mobile": null,
+          "cocp recovery amount broadband": null,
+          "comments": "NA"
+        },
+        "Exit Checklist - IT": {
+          "pc/laptop returned": "NA",
+          "amount recovery pc/laptop": null,
+          "consumables accessories returned": "NA",
+          "amount recovery consumables/accessories": null,
+          "account ids (login id.,email id.)/siebel/sap/ess password disabled": "NA",
+          "temp network folders deleted": "NA",
+          "crm(sso)/prm/kenan/vms/evd/victory/bo/sap ids disabled": "NA",
+          "nas folder access disabled": "NA",
+          "comments": "NA"
+        },
+        "Exit Checklist - Finance Accounts": {
+          "outstanding travel advance/imprest recovered": null,
+          "outstanding relocation amount recovered": null,
+          "travel claim bill received": "NA",
+          "amount recovery travel": null,
+          "personal expense": null,
+          "comments": "nan"
+        },
+        "Exit Checklist - Finance Assets": {
+          "assets submitted employee": "NA",
+          "amount to be recovered against asset": null,
+          "comments": "NA"
+        },
+        "Exit Checklist - RHR Ops": {
+          "notice period recovery": "NA",
+          "verified all checklist data submitted by respective department": "NA",
+          "dd received notice recovery": null,
+          "any leave without pay not applied in the system": "NA",
+          "recovery amount general except jb np relocation": "nan",
+          "comments": "NA"
+        },
+        "Exit Checklist - RHR": {
+          "employee status": "NA",
+          "comments": "NA"
+        },
+        "Exit Checklist - CHR Ops": {
+          "training cost recovered": "NA",
+          "notice buyout reimbursement recovered": "NA",
+          "joining bonus recovered": "NA",
+          "annual leave balance days": null,
+          "sick leave balance encashable in days": null,
+          "casual leave balance encashable in days": null,
+          "special leave deduction": "NA",
+          "group transfer": "NA",
+          "group company name": "nan",
+          "date of joining group company": null,
+          "gratuity processed group company": "nan",
+          "tata group date of joining": null,
+          "poc name group company": "nan",
+          "poc designation": "nan",
+          "poc department": "nan",
+          "poc email": "nan",
+          "poc contact number": "nan",
+          "annual leave transfer group company": "nan",
+          "leave transfer days": null
+        },
+        "Exit Checklist - CHR": {
+          "comments": "NA"
+        },
+        "Exit Checklist - Payroll": {
+          "gratuity eligibility": "NA",
+          "gratuity payable": null,
+          "tataplay subscription": null,
+          "performance linked incentive sales incentive": null,
+          "performance linked incentive bonus incentive": null,
+          "other payout": null,
+          "rewards": null,
+          "statutory bonus": null,
+          "relocation reimbursement": null,
+          "city compensatory allowance": null,
+          "mip deduct/refund": null,
+          "mip topup deduct/refund": null,
+          "nps recovery": null,
+          "pf recovery": null
+        },
+        "employee code": 3179,
+        "employee name": "Sohail Pathan",
+        "grade": "M4",
+        "grade level": "M4a",
+        "designation": "Senior Manager - Direct Sales",
+        "department": "Sales",
+        "sub department": "Direct Sales",
+        "region": "West",
+        "employee status": "Active",
+        "manager name": "Neeraj Sharma",
+        "date of joining": {
+          "$date": "2011-07-11T00:00:00Z"
+        },
+        "date of resignation": {
+          "$date": "2025-09-03T00:00:00Z"
+        },
+        "date of leaving": {
+          "$date": "2025-11-01T00:00:00Z"
+        }
+      }
+    ]
+  },
+  "leave_transaction_with_balance_report": {
+    "fields": {
+      "_id": "ObjectId",
+      "employee code": "Number",
+      "employee name": "String",
+      "email": "String",
+      "absence name": "String",
+      "start date": [
+        "Timestamp",
+        "Null"
+      ],
+      "end date": [
+        "Timestamp",
+        "Null"
+      ],
+      "duration": [
+        "Number",
+        "Null"
+      ],
+      "status of leave": "String",
+      "approval status": "String",
+      "manager email": "String",
+      "balance value": "Number",
+      "department": "String",
+      "grade": "Timestamp",
+      "region": "String"
+    },
+    "indexes": {
+      "_id_": {
+        "v": 2,
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
+      }
+    },
+    "samples": [
+      {
+        "_id": {
+          "$oid": "69314b78d9c30f3baeffa102"
+        },
+        "employee code": 2461,
+        "employee name": "Dillip Kumar",
+        "email": "dillip.samantaray@tataplay.com",
+        "absence name": "Casual Leave",
+        "start date": {
+          "$date": "2025-08-25T00:00:00Z"
+        },
+        "end date": {
+          "$date": "2025-08-25T00:00:00Z"
+        },
+        "duration": 0,
+        "status of leave": "SUBMITTED",
+        "approval status": "NA",
+        "manager email": "vijay.sharma@tataplay.com",
+        "balance value": 7,
+        "department": "IT",
+        "grade": "M3",
+        "region": "South"
+      },
+      {
+        "_id": {
+          "$oid": "69314b78d9c30f3baeffa104"
+        },
+        "employee code": 2461,
+        "employee name": "Dillip Kumar",
+        "email": "dillip.samantaray@tataplay.com",
+        "absence name": "Annual -Leave",
+        "start date": {
+          "$date": "2025-09-29T00:00:00Z"
+        },
+        "end date": {
+          "$date": "2025-10-03T00:00:00Z"
+        },
+        "duration": 4,
+        "status of leave": "SUBMITTED",
+        "approval status": "AWAITING",
+        "manager email": "vijay.sharma@tataplay.com",
+        "balance value": 41,
+        "department": "IT",
+        "grade": "M3",
+        "region": "South"
+      }
+    ]
+  },
+  "performance_360_feedback_participants_status_all": {
+    "fields": {
+      "_id": "ObjectId",
+      "employee code": "Number",
+      "employee name": "String",
+      "grade": "Timestamp",
+      "region": "String",
+      "department": "String",
+      "sub department": "String",
+      "performance document name": "String",
+      "participant name": "String",
+      "role": "String",
+      "role status": "String",
+      "participation status": "String"
+    },
+    "indexes": {
+      "_id_": {
+        "v": 2,
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
+      }
+    },
+    "samples": [
+      {
+        "_id": {
+          "$oid": "692ff672324c1daebcf767e4"
+        },
+        "employee code": 1480,
+        "employee name": "Sanjay Mittal",
+        "grade": "M2",
+        "region": "North",
+        "department": "Field Service Delivery",
+        "sub department": "Field Service Delivery - General",
+        "performance document name": "Anchor Competency 360 Feedback - M2 - 2025 (People Manager)",
+        "participant name": "Krishan Kansal",
+        "role": "Peer",
+        "role status": "Active",
+        "participation status": "Awaiting Reply"
+      },
+      {
+        "_id": {
+          "$oid": "692ff672324c1daebcf767e6"
+        },
+        "employee code": 1480,
+        "employee name": "Sanjay Mittal",
+        "grade": "M2",
+        "region": "North",
+        "department": "Field Service Delivery",
+        "sub department": "Field Service Delivery - General",
+        "performance document name": "Anchor Competency 360 Feedback - M2 - 2025 (People Manager)",
+        "participant name": "Prashant Deshmukh",
+        "role": "Peer",
+        "role status": "Active",
+        "participation status": "Awaiting Reply"
+      }
+    ]
+  },
+  "goal_detail_report": {
+    "fields": {
+      "_id": "ObjectId",
+      "employee code": "Number",
+      "first name": "String",
+      "last name": "String",
+      "department": "String",
+      "sub department": "String",
+      "grade": "Timestamp",
+      "grade level": "String",
+      "region": "String",
+      "goal type": "String",
+      "goal name": "String",
+      "goal description": "String",
+      "start date": "Timestamp",
+      "target completion date": [
+        "Timestamp",
+        "Null"
+      ],
+      "creation date": "Timestamp",
+      "development goal status": "String",
+      "category": "String",
+      "manager approval date": [
+        "Null",
+        "Timestamp"
+      ]
+    },
+    "indexes": {
+      "_id_": {
+        "v": 2,
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
+      }
+    },
+    "samples": [
+      {
+        "_id": {
+          "$oid": "69315000d9c30f3baeffb021"
+        },
+        "employee code": 1060,
+        "first name": "Thangudu",
+        "last name": "Srinivasa Rao",
+        "department": "Field Service Delivery",
+        "sub department": "Field Service Delivery - General",
+        "grade": "M4",
+        "grade level": "M4b",
+        "region": "South",
+        "goal type": "DEVELOPMENT",
+        "goal name": "Anchor Competency - Chase Results",
+        "goal description": "Started From 1st October 2021 and target on 31st Mar-22.",
+        "start date": {
+          "$date": "2021-10-01T00:00:00Z"
+        },
+        "target completion date": {
+          "$date": "2022-03-31T00:00:00Z"
+        },
+        "creation date": {
+          "$date": "2020-10-14T09:08:56.666Z"
+        },
+        "development goal status": "IN_PROGRESS",
+        "category": "70% - On the Job learning",
+        "manager approval date": null
+      },
+      {
+        "_id": {
+          "$oid": "69315000d9c30f3baeffb022"
+        },
+        "employee code": 1060,
+        "first name": "Thangudu",
+        "last name": "Srinivasa Rao",
+        "department": "Field Service Delivery",
+        "sub department": "Field Service Delivery - General",
+        "grade": "M4",
+        "grade level": "M4b",
+        "region": "South",
+        "goal type": "DEVELOPMENT",
+        "goal name": "Anchor Competency - Chase Results",
+        "goal description": "will focus on making 3 to 6 months material zero over a benchmark of >6months Material zero.",
+        "start date": {
+          "$date": "2021-10-01T00:00:00Z"
+        },
+        "target completion date": {
+          "$date": "2022-03-31T00:00:00Z"
+        },
+        "creation date": {
+          "$date": "2020-10-14T09:05:58Z"
+        },
+        "development goal status": "NOT_STARTED",
+        "category": "70% - On the Job learning",
+        "manager approval date": null
+      }
+    ]
+  },
+  "assignment details": {
+    "fields": {
+      "_id": "ObjectId",
+      "employee code": "Number",
+      "name": "String",
+      "email": "String",
+      "assignment status type": "String",
+      "person count": "Number",
+      "designation": "String",
+      "region": "String",
+      "sub department": "String",
+      "department": "String",
+      "grade level": "String",
+      "grade": "Timestamp",
+      "legal employer": "String",
+      "location": "String",
+      "notice period": "Number",
+      "notice period uom": "String",
+      "user person type": "String",
+      "probation period": "Number",
+      "probation unit": "String",
+      "action code": "String",
+      "effective start date": "Timestamp",
+      "effective end date": "Timestamp",
+      "assignment category": "String",
+      "employee category": "String",
+      "normal working hours": "Number",
+      "normal working hours frequency": "String",
+      "probation end date": "Timestamp",
+      "hourly/salaried": "String",
+      "primary phone": "String"
+    },
+    "indexes": {
+      "_id_": {
+        "v": 2,
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
+      }
+    },
+    "samples": [
+      {
+        "_id": {
+          "$oid": "6936c47c3fa5d44b823afbcb"
+        },
+        "employee code": 1005,
+        "name": "Vineet Kumar Tomar",
+        "email": "vineetk@tatasky.com",
+        "assignment status type": "Inactive",
+        "person count": 1,
+        "designation": "Senior Service Engineer - Delhi",
+        "region": "North",
+        "sub department": "Service - Service",
+        "department": "Service",
+        "grade level": "M6z",
+        "grade": "M6",
+        "legal employer": "Tata Play Ltd.",
+        "location": "Delhi",
+        "notice period": 1,
+        "notice period uom": "Months",
+        "user person type": "Employee",
+        "probation period": 6,
+        "probation unit": "Months",
+        "action code": "RESIGNATION",
+        "effective start date": {
+          "$date": "2008-06-04T00:00:00Z"
+        },
+        "effective end date": {
+          "$date": "4712-12-31T00:00:00Z"
+        },
+        "assignment category": "Full-time",
+        "employee category": "Confirmed",
+        "normal working hours": 8,
+        "normal working hours frequency": "Daily",
+        "probation end date": {
+          "$date": "2006-10-02T00:00:00Z"
+        },
+        "hourly/salaried": "Salaried",
+        "primary phone": "NA"
+      },
+      {
+        "_id": {
+          "$oid": "6936c47c3fa5d44b823afbd0"
+        },
+        "employee code": 1007,
+        "name": "Lynette D' Cunha",
+        "email": "lynetted@tataplay.com",
+        "assignment status type": "Active",
+        "person count": 1,
+        "designation": "Executive Secretary",
+        "region": "Corporate",
+        "sub department": "Legal - General",
+        "department": "Legal",
+        "grade level": "M5z",
+        "grade": "M5",
+        "legal employer": "Tata Play Ltd.",
+        "location": "Mumbai",
+        "notice period": 60,
+        "notice period uom": "Days",
+        "user person type": "Employee",
+        "probation period": 6,
+        "probation unit": "Months",
+        "action code": "HIRE",
+        "effective start date": {
+          "$date": "2006-04-03T00:00:00Z"
+        },
+        "effective end date": {
+          "$date": "2013-03-31T00:00:00Z"
+        },
+        "assignment category": "Full-time",
+        "employee category": "Confirmed",
+        "normal working hours": 8,
+        "normal working hours frequency": "Daily",
+        "probation end date": {
+          "$date": "2006-10-02T00:00:00Z"
+        },
+        "hourly/salaried": "Salaried",
+        "primary phone": "9769199894"
+      }
+    ]
+  }
+}

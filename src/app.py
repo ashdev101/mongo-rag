@@ -15,6 +15,8 @@ import asyncio
 # from utils.QueueFileLogger import QueueFileLogger
 import logging
 
+logger = logging.getLogger(__name__)
+
 # =====================================================================
 # Existing processor
 # =====================================================================
@@ -41,9 +43,7 @@ async def run_query(email, question):
         db_results = output["db_results"]
         agg_pipeline = output.get("agg_pipeline")
 
-        print("===="*10,"app.py","===="*10)
-        print("User Question:",agent_output["question"])
-        print("Generated Output:",output["db_results"])
+        logger.debug("Query processed by app.py")
 
         try:
             agent_out_str = json.dumps(agent_output, indent=2, default=str)
@@ -61,9 +61,9 @@ async def run_query(email, question):
 # =====================================================================
 # Policy Q&A function
 # =====================================================================
-async def run_policy_query(question):
+async def run_policy_query(question , email):
     try:
-        response = await query_main_store(question)
+        response = await query_main_store(question , email)
         return str(response)
     except Exception as e:
         # logger.exception("Error in run_policy_query for question: %s", question)
@@ -208,7 +208,7 @@ async def combined_execute(email, question):
             final_output = db_results
 
         elif route == "policy":
-            final_output = await run_policy_query(query)
+            final_output = await run_policy_query(query , email)
         
         elif route == "chat":
             final_output = chat_system(query , email)
@@ -342,6 +342,7 @@ async def combined_execute_api(email: str, question: str):
         resolve_conversation_result = await resolve_conversation(question, email)
         route_result = await query_router(resolve_conversation_result, email)
         route = route_result.get("route")
+        logger.debug(f"Resolved route: {route}")
         query = route_result.get("query", "")
 
         if route == "document":
@@ -349,7 +350,7 @@ async def combined_execute_api(email: str, question: str):
             final_output = db_results
 
         elif route == "policy":
-            final_output =  await run_policy_query(query)
+            final_output =  await run_policy_query(query , email)
         
         elif route == "chat":
             final_output = await chat_system(query , email)

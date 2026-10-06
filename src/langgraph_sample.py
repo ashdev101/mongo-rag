@@ -196,6 +196,10 @@ async def fetch_role_node(state: AccessState):
     email = state["email"]
     record = await employees.find_one({"email": email , "assignment status type": "ACTIVE"}, {"_id": 0, "employee code" : 1 , "designation": 1 , "region":1 , "department" : 1})
 
+    if not record:
+        # this can happen if the user email address is stored in all lower case then as expected in db 
+        record = await employees.find_one({"email": email.lower() , "assignment status type": "ACTIVE"}, {"_id": 0, "employee code" : 1 , "designation": 1 , "region":1 , "department" : 1})
+
     if record and "designation" in record:
         role = record["designation"].lower()
         region = record["region"]

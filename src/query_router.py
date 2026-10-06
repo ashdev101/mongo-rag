@@ -33,7 +33,7 @@ def fallback_classify(query: str) -> str:
     "employee", "person number", "emp code", "classroom", "attendance",
     "pms", "pip", "leave", "transaction", "goal", "status", "requests",
     "xls", "xlsx", "csv", "table", "data", "value", "document", "balance", "payroll",
-    "performance", "manager email", "assigned on", "start date", "end date"
+    "performance", "manager email", "assigned on", "start date", "end date","historical rating" ,"r&r","Rewards & Recognition","ceo of the quarter","cross-functional","debutant of the quarter","intrafunctional","job well done"
     ]
 
     if any(k in q for k in policy_keywords):
@@ -86,6 +86,8 @@ async def router(query, email):
             - "meta"
             Use for questions about the assistant, its data usage, privacy, or limitations.
 
+        Exceptions:
+            - If the user ask for who is my hr or who is my regional hr , route to "policy" instead of "document" since it's a common question that can be answered with a policy document or a static FAQ.
 
         
         Instructions:

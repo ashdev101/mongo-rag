@@ -16,7 +16,11 @@ settings = get_settings()
 @lru_cache(maxsize=1)
 def get_jwks_client() -> PyJWKClient:
     """Get cached JWKS client for token validation."""
-    return PyJWKClient(settings.JWKS_URL)
+    return PyJWKClient(settings.JWKS_URL,
+            headers={
+            "User-Agent": "FastAPI-JWT-Validator/1.0",
+            "Accept": "application/json"
+            })
 
 
 async def verify_token(authorization: Optional[str] = Header(None)) -> Dict[str, Any]:

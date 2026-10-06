@@ -6,12 +6,12 @@ Centralized mapping of MongoDB collection names
 # Collection name mappings - Update these based on your actual collections
 COLLECTIONS = {
     "base_report": "base_report",
-    "assignment_details": "assignment details",
+    "assignment_details": "assignment_report",
     "goal_detail_report": "goal_detail_report",
     "goal_setting_status": "goal_setting_status",
     "historical_ratings_and_other_information": "historical_ratings_and_other_information",
     "historical_ratings_and_other_information_old": "historical_ratings_and_other_information_old",
-    "leave_transaction_with_balance_report": "leave_transaction_with_balance_report_leave_transaction_with_balance_report",
+    "leave_transaction_with_balance_report": "leave_transaction_with_balance_report",
     "offboarding_checklist": "offboarding_checklist",
     "performance_360_degree_feedback_participants_status_all": "performance_360_degree_feedback_participants_status_all",
     "performance_goal_report_2025_2026": "performance_goal_report_2025_2026",

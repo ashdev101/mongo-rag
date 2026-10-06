@@ -1,5 +1,5 @@
 """Pydantic models for request/response validation."""
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional, Dict, Any
 
 
@@ -11,7 +11,18 @@ class Message(BaseModel):
 class SharePointMessage(BaseModel):
     """Message request model for Sharepoint."""
     text: str
-    email: str
+
+class TestSharePointMessage(BaseModel):
+    """Message request model for Sharepoint."""
+    text: str
+    email: EmailStr
+
+    @field_validator("email")
+    @classmethod
+    def validate_email_length(cls, v: str) -> str:
+        if len(v) < 5 or len(v) > 254:
+            raise ValueError("email must be between 5 and 254 characters")
+        return v
 
 
 class MessageResponse(BaseModel):

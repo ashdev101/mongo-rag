@@ -110,7 +110,7 @@ class ClaudeQnA:
 
             response = await self.client.messages.create(
                 model=CLAUDE_MODEL,
-                max_tokens= 4096,
+                max_tokens= 12000,
                 system=self.system_prompt,
                 tools=TOOLS,
                 messages=messages,

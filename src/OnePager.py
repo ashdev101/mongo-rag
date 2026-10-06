@@ -3,6 +3,7 @@ OnePager Report Generator
 Fetches employee data from multiple MongoDB collections to generate a comprehensive report
 """
 import json
+import logging
 from typing import Dict, Any, Optional
 from pymongo import MongoClient
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -10,6 +11,8 @@ from datetime import datetime
 import os
 from dotenv import load_dotenv
 from db_collections import get_collection
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -437,8 +440,7 @@ class OnePager:
         Returns:
             Dictionary containing all employee information or access denial
         """
-        print(f"Generating OnePager report (aggregation) for employee: {employee_code}")
-        print(f"Requested by: {requesting_email}")
+        logger.debug("Generating OnePager report (aggregation)")
         
         # RBAC Check: Verify HR access
         # access_check = self.verify_hr_access(requesting_email, employee_code)
@@ -723,8 +725,7 @@ class OnePager:
         Returns:
             Dictionary containing all employee information or access denial
         """
-        print(f"Generating OnePager report for employee: {employee_code}")
-        print(f"Requested by: {requesting_email}")
+        logger.debug("Generating OnePager report")
         
         # RBAC Check: Verify HR access
         # access_check = self.verify_hr_access(requesting_email, employee_code)
