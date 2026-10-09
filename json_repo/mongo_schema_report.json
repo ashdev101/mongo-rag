@@ -1777,10 +1777,10 @@
       "region": "String",
       "date of joining": "Null",
       "assignment status type": "String",
-      "current year -4": "Number",
-      "current year -3": "Number",
-      "current year -2": "Number",
-      "current year -1": "Null",
+      "cy-4": "Number",
+      "cy-3": "Number",
+      "cy-2": "Number",
+      "cy-1": "Number",
       "last promotion date": [
         "Timestamp",
         "Null"
@@ -1823,10 +1823,10 @@
         "region": "Maharashtra",
         "date of joining": null,
         "assignment status type": "Active",
-        "current year -4": 3,
-        "current year -3": 3,
-        "current year -2": 3,
-        "current year -1": null,
+        "cy-4": 3,
+        "cy-3": 3,
+        "cy-2": 3,
+        "cy-1": null,
         "last promotion date": {
           "$date": "2019-04-01T00:00:00Z"
         },
@@ -1856,10 +1856,10 @@
         "region": "Maharashtra",
         "date of joining": null,
         "assignment status type": "Active",
-        "current year -4": 3,
-        "current year -3": 3,
-        "current year -2": 4,
-        "current year -1": null,
+        "cy-4": 3,
+        "cy-3": 3,
+        "cy-2": 4,
+        "cy-1": null,
         "last promotion date": {
           "$date": "2026-04-01T00:00:00Z"
         },
