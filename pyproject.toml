@@ -42,3 +42,12 @@ dependencies = [
     "anthropic>=0.75.0",
     "numpy==1.26.4",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

@@ -11,7 +11,6 @@ sys.path.insert(0, str(src_path))
 
 import gradio as gr
 from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import time
 import uuid
@@ -19,6 +18,12 @@ import uuid
 from app import QueryProcessor
 from backend.config import get_settings
 from backend.routes import router
+from backend.security import (
+    add_head_support,
+    add_restrict_methods,
+    add_security_headers,
+    configure_cors,
+)
 from backend.logging_config import setup_logging, get_logger
 
 # Get application settings
@@ -59,29 +64,17 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configure CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=settings.ALLOWED_METHODS,
-    allow_headers=["*"],
-    expose_headers=["*"],
-    max_age=600,
-)
+# Security middleware - order matters: first added = innermost.
+# head_to_get must sit closest to the router (FastAPI routes don't match HEAD);
+# restrict_methods and security_headers must be wrapped by CORS so that
+# 405/500 responses still carry Access-Control-* headers.
+add_head_support(app)
+add_restrict_methods(app)
+add_security_headers(app)
+configure_cors(app)
 
-# Restrict HTTP methods middleware
-@app.middleware("http")
-async def restrict_methods(request: Request, call_next):
-    if request.method not in settings.ALLOWED_METHODS and request.method != "OPTIONS":
-        from fastapi.responses import JSONResponse
-        return JSONResponse(
-            status_code=405,
-            content={"detail": f"Method {request.method} not allowed"}
-        )
-    return await call_next(request)
-
-# Add request logging middleware
+# Add request logging middleware (added last = outermost, so every request
+# including CORS preflights is access-logged)
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     """Log all incoming requests and responses with structured logging."""

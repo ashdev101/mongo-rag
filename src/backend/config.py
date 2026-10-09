@@ -4,9 +4,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 from functools import lru_cache
 
-# Load .env from root directory
-root_dir = Path(__file__).parent.parent
-env_path = root_dir / ".env"
+# Load .env from the repository root (src/backend/config.py -> parents[2])
+env_path = Path(__file__).resolve().parents[2] / ".env"
 load_dotenv(dotenv_path=env_path)
 
 
@@ -33,7 +32,7 @@ class Settings:
             "https://localhost:53000"
         ).split(",")
     )
-    ALLOWED_METHODS: list = ["GET", "POST"]
+    ALLOWED_METHODS: list = ["GET", "HEAD", "POST"]
     
     # Server Configuration
     HOST: str = os.getenv("HOST", "0.0.0.0")
